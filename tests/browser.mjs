@@ -13,7 +13,7 @@ await fs.mkdir('output/verification',{recursive:true});
 async function login(p,name){await p.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:120000});await p.waitForFunction(()=>typeof window.render_game_to_text==='function');await p.locator('#password').fill('rae1210');await p.locator('#login-form button').click();await p.locator(`[data-character="${name}"]`).click({noWaitAfter:true});await p.waitForSelector('#entry-gate',{state:'detached'});}
 try{
   await ely.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:120000});await ely.waitForFunction(()=>typeof window.render_game_to_text==='function');
-  await ely.locator('#password').fill('wrong');await ely.locator('#login-form button').click();await ely.waitForFunction(()=>document.querySelector('#gate-error').textContent.includes('密碼不正確'));
+  await ely.locator('#password').fill('wrong');await ely.locator('#login-form button').click();await ely.waitForFunction(()=>document.querySelector('#gate-error').textContent.includes('Incorrect password'));
   console.log('Password rejection passed');await login(ely,'Ely');console.log('Ely joined');await login(rae,'Rae');console.log('Rae joined');
   await ely.waitForFunction(()=>JSON.parse(render_game_to_text()).players===2);
   await ely.keyboard.press('Enter');await ely.locator('#chat-input').fill('你好 Rae！<script>不應執行</script>');await ely.keyboard.press('Enter');

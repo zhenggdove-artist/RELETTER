@@ -7,5 +7,5 @@ test('HTML returned by a static host produces an actionable message instead of a
   const start=source.indexOf('async function api('),end=source.indexOf('\nfunction message',start);
   const context=vm.createContext({fetch:async()=>new Response('<html><head>404</head></html>',{status:404,headers:{'Content-Type':'text/html'}}),location:{hostname:'example.github.io'},Response,JSON,Error});
   vm.runInContext(source.slice(start,end)+'\nglobalThis.request=api;',context);
-  await assert.rejects(context.request('/api/login',{password:'diagnostic-invalid'}),/登入伺服器|後端/);
+  await assert.rejects(context.request('/api/login',{password:'diagnostic-invalid'}),/server|backend/i);
 });
