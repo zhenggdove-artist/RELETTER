@@ -209,14 +209,7 @@
       font-family:"Saint",sans-serif;color:#3a2050;font-size:14px;line-height:1.9;
       letter-spacing:0.8px;white-space:pre-wrap;word-break:break-word;
       box-shadow:0 12px 40px rgba(0,0,0,0.3);text-align:center}
-    #statement-box .st-title{font-size:17px;font-weight:bold;color:#7555a8;margin-bottom:14px;letter-spacing:2px}
-    #statement-box .st-sign{margin-top:16px;font-size:13px;color:#9a7bbb;letter-spacing:1.5px}
-    #statement-box .st-hint{margin-top:12px;font-size:11px;color:#bba8d0;letter-spacing:1px}
-    #st-lang-btn{margin-top:14px;padding:6px 24px;font-size:13px;font-family:"Saint","Trebuchet MS",sans-serif;
-      color:#7555a8;background:radial-gradient(circle at 25% 20%,#fff 0%,#e7cfff 55%,#d7b8ff 100%);
-      border:2px solid rgba(180,140,220,0.4);border-radius:999px;cursor:pointer;letter-spacing:2px;
-      display:block;margin-left:auto;margin-right:auto}
-    #st-lang-btn:hover{opacity:0.85}
+
     /* Bulk plant panel (Shift+A) */
     #bulk-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
       width:360px;max-height:80vh;background:radial-gradient(circle at 30% 20%,#fff3fb 0%,#f3d5ea 55%,#e8b8d8 100%);
@@ -294,41 +287,11 @@ RELETTER
   </div>
   <div id="pop"></div>
   <div id="statement-overlay">
-    <div id="statement-box">
-      <div class="st-title">&lt; RELETTER — Our Garden &gt;</div>
-      <div id="st-en">
-As the silhouettes of unknown falls overlap and accumulate,
-they gradually merge into the backdrop of our new everyday reality.
-These inexplicable vanishings slowly strip away the colors of the real world.
-People have grown accustomed to the scrubbed-clean pavements,
-just as they are habituated to taking the long way around.
+    <div id="statement-box" lang="zh-Hant">Rae 你是我認識過最特別的女生，因為種種因素我幸運地能進入你的生命中，待在你身邊的時光真的很快樂，我不確定我們之後各自會走向何方，但我希望能建造一個地方讓一些東西留下來，於是就做了這個花園：）
 
-Ultimately, they become untraceable urban legends—
-flickers of light slipping through virtual rifts,
-carrying the final words left behind,
-falling to become the very nutrients of a bizarre forest.
+我好喜歡你
 
-The artwork embeds hidden QR codes at various ostensibly ordinary scenes of fatal falls.
-Once you reach the top of the stairs and enter your words,
-you will plummet, transforming into a beautiful plant.
-      </div>
-      <div id="st-zh" style="display:none">
-隨著不明墜落的身影疊加，
-它們逐漸合成了全新的背景日常。
-那些無解的消逝漸漸剝落了寫實的色彩，人們看慣了清洗過後的地面，也習慣了繞道而行。
-
-最終它們成了不可考證的都市傳說
-—那些來自虛擬裂縫的靈光，
-帶著人們最後留下的話語
-落成了奇異森林的養分。
-
-作品以隱藏的二維條碼鑲嵌在各個無可疑的墜樓命案現場
-抵達樓梯頂部並輸入文字後，你將墜落成一株美麗的植物
-      </div>
-      <div class="st-sign">— GGDOVE</div>
-      <button id="st-lang-btn" onclick="event.stopPropagation();const en=document.getElementById('st-en'),zh=document.getElementById('st-zh'),b=this;if(en.style.display!=='none'){en.style.display='none';zh.style.display='';b.textContent='C / E'}else{en.style.display='';zh.style.display='none';b.textContent='C / E'}">C / E</button>
-      <div class="st-hint">tap anywhere to close</div>
-    </div>
+-Ely</div>
   </div>
   <div id="bulk-panel">
     <button class="close-x" onclick="document.getElementById('bulk-panel').classList.remove('show')">&times;</button>
