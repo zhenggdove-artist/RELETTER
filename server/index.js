@@ -11,10 +11,12 @@ let db,pool;
 if(process.env.RELETTER_DATABASE_URL){
   const {default:pg}=await import('pg');
   pool=new pg.Pool({connectionString:process.env.RELETTER_DATABASE_URL,ssl:process.env.DB_SSL==='false'?false:{rejectUnauthorized:false}});
+  await pool.query('CREATE TABLE IF NOT EXISTS reletter_chat (id TEXT PRIMARY KEY, payload JSONB NOT NULL)');
   await pool.query('CREATE TABLE IF NOT EXISTS reletter_entries (id TEXT PRIMARY KEY, payload JSONB NOT NULL)');
 }else{
   await mkdir(resolve(root,'data'),{recursive:true});
   db=new DatabaseSync(process.env.SQLITE_PATH||resolve(root,'data/reletter.sqlite'));
+  db.exec('CREATE TABLE IF NOT EXISTS reletter_chat (id TEXT PRIMARY KEY, payload TEXT NOT NULL)');
   db.exec('CREATE TABLE IF NOT EXISTS reletter_entries (id TEXT PRIMARY KEY, payload TEXT NOT NULL)');
 }
 async function entries(){const rows=pool?(await pool.query('SELECT payload FROM reletter_entries')).rows.map(x=>x.payload):db.prepare('SELECT payload FROM reletter_entries').all().map(x=>JSON.parse(x.payload));return rows.sort((a,b)=>a.created_at.localeCompare(b.created_at));}
@@ -65,11 +67,12 @@ try{
       if(!Array.isArray(b.position)||b.position.length!==3||!b.position.every(Number.isFinite)||!Number.isFinite(b.rotation))return json(res,400,{error:'Invalid position'});
       p.state={position:b.position,rotation:b.rotation,visible:!!b.visible,phase:b.phase};broadcast('state',{id,character:p.character,state:p.state});return json(res,200,{ok:true});
     }
+    if(url.pathname==='/api/chat'&&req.method==='GET'){const rows=pool?(await pool.query('SELECT payload FROM reletter_chat')).rows.map(r=>r.payload):db.prepare('SELECT payload FROM reletter_chat').all().map(r=>JSON.parse(r.payload));return json(res,200,rows.sort((a,b)=>a.time-b.time||a.id.localeCompare(b.id)));}
     if(url.pathname==='/api/chat'&&req.method==='POST'){
       const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});
       if(typeof b.text!=='string'||!b.text.trim()||b.text.length>500)return json(res,400,{error:'Message must contain 1–500 characters'});
       if(p.lastChat&&Date.now()-p.lastChat<400)return json(res,429,{error:'Please wait before sending again'});
-      p.lastChat=Date.now();broadcast('chat',{id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()});return json(res,200,{ok:true});
+      const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);return json(res,200,{ok:true});
     }
     return json(res,404,{error:'API not found'});
   }

@@ -22,6 +22,7 @@ export class ReletterGarden extends DurableObject {
     super(ctx,env);this.sql=ctx.storage.sql;this.closedSockets=new Set();
     this.sql.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, expires INTEGER NOT NULL, character TEXT);
       CREATE TABLE IF NOT EXISTS entries (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, payload TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS chat_messages (id TEXT PRIMARY KEY, name TEXT NOT NULL, text TEXT NOT NULL, time INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS entries_by_date ON entries(created_at);
       CREATE TABLE IF NOT EXISTS media (entry_id TEXT NOT NULL, kind TEXT NOT NULL, chunk INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(entry_id,kind,chunk));`);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping','pong'));
@@ -87,12 +88,13 @@ export class ReletterGarden extends DurableObject {
         this.ctx.storage.transactionSync(()=>{this.sql.exec('DELETE FROM media WHERE entry_id=?',deletion[1]);this.sql.exec('DELETE FROM entries WHERE id=?',deletion[1]);});
         this.broadcast('deleted',{id:deletion[1]});return json({ok:true});
       }
+      if(path==='/api/chat'&&request.method==='GET')return json(this.sql.exec('SELECT * FROM chat_messages ORDER BY time,id').toArray());
       if(path==='/api/chat'&&request.method==='POST'){
         const ws=this.ctx.getWebSockets(session.id).find(ws=>ws.readyState===1);if(!ws)return json({error:'Not connected'},409);
         const body=await readBody(request),p=ws.deserializeAttachment();
         if(typeof body.text!=='string'||!body.text.trim()||body.text.length>500)return json({error:'Message must contain 1–500 characters'},400);
         if(Date.now()-p.lastChat<400)return json({error:'Please wait before sending again'},429);
-        p.lastChat=Date.now();ws.serializeAttachment(p);this.broadcast('chat',{id:crypto.randomUUID(),name:p.character,text:body.text.trim(),time:Date.now()});return json({ok:true});
+        const chat={id:crypto.randomUUID(),name:p.character,text:body.text.trim(),time:Date.now()};this.sql.exec('INSERT INTO chat_messages VALUES(?,?,?,?)',chat.id,chat.name,chat.text,chat.time);p.lastChat=chat.time;ws.serializeAttachment(p);this.broadcast('chat',chat);return json({ok:true});
       }
       return json({error:'API not found'},404);
     }catch(error){console.error('RELETTER request failed',error.message);return json({error:'Server request failed. Please try again later.'},500);}

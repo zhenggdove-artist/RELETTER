@@ -265,7 +265,6 @@
       border:none;border-radius:999px;cursor:pointer;letter-spacing:1px}
     #admin-list li .del-btn:hover{opacity:0.8}
     #admin-panel .admin-empty{text-align:center;color:#9a7bbb;font-size:13px;padding:20px 0}
-  #chat-open,#chat-form button{pointer-events:auto;min-height:44px;padding:8px 14px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f;cursor:pointer}#chat-form{display:flex;gap:6px;align-items:center}#chat-form[hidden],#chat-open[hidden]{display:none}#chat-input{min-width:0;flex:1;margin-top:0;font-size:16px}#chat-open{margin-top:8px}#online-panel{max-height:45dvh;overflow:auto}
 </style>
 </head>
 <body>
@@ -275,9 +274,11 @@
 #entry-gate input{box-sizing:border-box;width:100%;padding:14px;border-radius:14px;border:1px solid #c3abce;background:white}#entry-gate button{margin-top:14px;padding:14px 25px;border:0;border-radius:14px;background:#725782;color:white;cursor:pointer}#characters[hidden],#login-form[hidden]{display:none}#characters button{display:inline-flex;flex-direction:column;align-items:center;margin:8px;background:white;color:#493554;width:130px}.character-orb{display:block;width:60px;height:70px;border-radius:45% 45% 35% 35%;background:#eccab2;margin:8px;box-shadow:inset -12px -6px 0 #0001}.rae{background:#8b65c5}#gate-error,#media-error{color:#a23a59;font-size:13px}
 #ui{max-height:80vh;overflow:auto}#media-tools{padding:4px 12px 12px;font-family:sans-serif}#drawing{width:100%;height:145px;background:#fff;border-radius:12px;touch-action:none;cursor:crosshair}#media-tools label{font-size:12px}#media-tools button{padding:6px 10px;margin:4px 0;width:auto;font-size:12px}.upload-button{display:inline-block;padding:6px 10px;margin:4px 6px 4px 0;border:1px solid #ae91bd;border-radius:8px;background:#fff9;cursor:pointer}#upload-name{display:block;font-size:11px;overflow-wrap:anywhere}#image-preview{max-width:100%;max-height:90px;object-fit:contain}#ui.mini #media-tools{display:none}#plant-label{max-width:300px;max-height:55vh;overflow:auto;white-space:normal;pointer-events:none}#plant-label img{display:block;max-width:260px;max-height:140px;object-fit:contain;margin:6px auto;background:#fff;border-radius:8px}
 #online-panel{position:fixed;bottom:16px;left:16px;width:min(360px,85vw);z-index:150;font:13px sans-serif;color:#46344f;pointer-events:none}#connection{font-size:11px;margin-bottom:8px}#chat-log{max-height:160px;overflow-y:auto;overflow-wrap:anywhere;pointer-events:auto;background:#ffffff70;border-radius:10px;padding:8px}#chat-log:empty{display:none}#chat-log div{padding:3px 0}#chat-input{box-sizing:border-box;width:100%;padding:10px;border:1px solid #ae91bd;border-radius:10px;margin-top:8px;pointer-events:auto}
+  #chat-open,#chat-form button{pointer-events:auto;min-height:44px;padding:8px 14px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f;cursor:pointer}#chat-form{display:flex;gap:6px;align-items:center}#chat-form[hidden],#chat-open[hidden]{display:none}#chat-input{min-width:0;flex:1;margin-top:0;font-size:16px}#chat-open{margin-top:8px}#online-panel{max-height:45dvh;overflow:auto}
+#chat-minimize{pointer-events:auto;min-height:44px;padding:8px 12px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f}#chat-minimize[hidden]{display:none}#chat-history{display:flex;gap:6px;pointer-events:auto}#chat-log{flex:1;min-width:0;max-height:160px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:auto;overscroll-behavior:contain;touch-action:pan-y}#chat-log::-webkit-scrollbar{width:12px}#chat-log::-webkit-scrollbar-thumb{background:#ae91bd;border-radius:8px}#chat-scroll{writing-mode:vertical-lr;direction:ltr;width:20px;height:160px;flex:none;touch-action:none}#online-panel.minimized #chat-history,#online-panel.minimized #connection{display:none}@media(pointer:coarse){#online-panel{bottom:180px;max-height:calc(100dvh - 200px)}#chat-log{max-height:min(160px,25dvh)}#chat-scroll{height:min(160px,25dvh)}}
 </style>
 <div id="entry-gate"><section class="gate-card"><form id="login-form"><input id="password" type="password" aria-label="Password" required autocomplete="current-password"><button type="submit">ENTER</button></form><div id="characters" hidden><button data-character="Ely"><span class="character-orb"></span><b>Ely</b></button><button data-character="Rae"><span class="character-orb rae"></span><b>Rae</b></button></div><p id="gate-error" role="alert"></p></section></div>
-<div id="online-panel"><div id="connection">Offline</div><div id="chat-log" role="log" aria-live="polite"></div><button id="chat-open" type="button" hidden>CHAT</button><form id="chat-form" hidden><input id="chat-input" placeholder="Message…" maxlength="500" aria-label="Chat message" hidden><button type="submit">SEND</button><button id="chat-close" type="button" aria-label="Close chat">×</button></form></div>
+<div id="online-panel"><div id="connection">Offline</div><button id="chat-minimize" type="button" aria-expanded="true" hidden>MINIMIZE</button><div id="chat-history"><div id="chat-log" role="log" aria-live="polite" tabindex="0"></div><input id="chat-scroll" type="range" min="0" max="0" value="0" aria-label="Scroll chat history"></div><button id="chat-open" type="button" hidden>CHAT</button><form id="chat-form" hidden><input id="chat-input" placeholder="Message…" maxlength="500" aria-label="Chat message" hidden><button type="submit">SEND</button><button id="chat-close" type="button" aria-label="Close chat">×</button></form></div>
 
   <canvas id="c"></canvas>
   <div id="coin-counter"><div id="coin-icon">$</div><span id="coin-num">x 0</span></div>
@@ -3575,12 +3576,12 @@ function updateRoster(players){
   message(players.length===2?'2 / 2 online · Enter to chat':'1 / 2 online · Waiting for a friend');
 }
 function receive(type,data){
-  if(type==='welcome'){selfId=data.id;connected=true;updateRoster(data.players);if(admitted)loadEntries().then(es=>es.forEach(e=>addStoredPlant(e))).catch(e=>message(e.message));}
+  if(type==='welcome'){selfId=data.id;connected=true;updateRoster(data.players);api('/api/chat',undefined,'GET').then(history=>{history.forEach(appendChat);}).catch(e=>message(e.message));if(admitted)loadEntries().then(es=>es.forEach(e=>addStoredPlant(e))).catch(e=>message(e.message));}
   if(type==='players')updateRoster(data);
   if(type==='state'&&data.id!==selfId&&remotePlayers.has(data.id))remotePlayers.get(data.id).state=data.state;
   if(type==='plant'&&data.sender!==selfId)addStoredPlant(data,true);
   if(type==='deleted'){const i=plantEntries.findIndex(p=>p.entryId===data.id);if(i>=0){plantRoot.remove(plantEntries[i].mesh);plantEntries.splice(i,1);hidePlantLabel();}}
-  if(type==='chat'){const line=document.createElement('div'),name=document.createElement('b');name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));$('chat-log').append(line);while($('chat-log').children.length>100)$('chat-log').firstChild.remove();$('chat-log').scrollTop=$('chat-log').scrollHeight;}
+  if(type==='chat')appendChat(data);
 }
 async function openConnection(character){
   if(window.RELETTER_TRANSPORT==='websocket')return openCloudConnection(character);
@@ -3604,7 +3605,7 @@ function openCloudConnection(character){
   });
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
-  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;$('chat-open').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;$('chat-open').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;}
 };
 let lastOnlineState='';
@@ -3674,6 +3675,12 @@ canvas.addEventListener('pointermove',e=>{
   else hidePlantLabel();
 });
 canvas.addEventListener('pointerleave',e=>{if(e.pointerType==='touch')return;hoverPoint=null;hidePlantLabel();});
+const chatMessages=new Map(),chatLog=$('chat-log'),chatScroll=$('chat-scroll');
+function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog.clientHeight);chatScroll.value=chatLog.scrollTop;}
+chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
+new ResizeObserver(syncChatScroll).observe(chatLog);
+function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
+$('chat-minimize').onclick=()=>{const small=$('online-panel').classList.toggle('minimized');$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));closeChat();if(!small)syncChatScroll();};
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();}
 function openChat(){if(!admitted)return;keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}

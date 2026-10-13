@@ -39,6 +39,11 @@ try{
   const plant=state.plants.find(p=>p.text===plantedText);
   const stored=await a.request.get(baseUrl+'/api/entries');assert.ok((await stored.json()).some(p=>p.id===plant.id&&p.part.drawing&&p.part.image));
   await screenshot(ely,'output/verification/gameplay-ely.png');await screenshot(rae,'output/verification/gameplay-rae.png');
+  await ely.locator('#chat-minimize').tap();assert.equal(await ely.locator('#chat-history').isVisible(),false);
+  const controls=await ely.evaluate(()=>['joystick-zone','jump-btn'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}));assert.deepEqual(controls,[true,true],'Movement and jump must be reachable');
+  await ely.locator('#chat-minimize').tap();assert.equal(await ely.locator('#chat-history').isVisible(),true);
+  await ely.locator('#chat-minimize').tap();
+  await ely.evaluate(()=>document.getElementById('online-panel').hidden=true);
   // Hover the actual plant projection to exercise the original raycast tooltip.
   await Promise.all([ely,rae].map(p=>p.evaluate(()=>window.__reletterTestPause=true)));
   const hover=await ely.evaluate(()=>window.reletterPlantScreenPoint?.());
@@ -51,6 +56,7 @@ try{
   await fs.writeFile('output/verification/state.json',JSON.stringify(state,null,2));
   await ely.reload({waitUntil:'domcontentloaded',timeout:120000});await ely.waitForFunction(()=>typeof render_game_to_text==='function');await ely.locator('#password').fill('RAE1210');await ely.locator('#login-form button').click();await ely.locator('[data-character="Ely"]').click();await ely.waitForSelector('#entry-gate',{state:'detached'});
   await ely.waitForFunction(id=>JSON.parse(render_game_to_text()).plants.some(p=>p.id===id&&p.drawing&&p.image),plant.id);
+  await ely.waitForFunction(()=>document.querySelector('#chat-log').textContent.includes('你好 Rae'));assert.equal(await ely.locator('#chat-log div').count(),state.chat.length,'Persisted messages restored without duplicates');
   await b.close();await ely.waitForFunction(()=>JSON.parse(render_game_to_text()).players===1);
   const savedEntries=await (await a.request.get(baseUrl+'/api/entries')).json();
   for(const entry of savedEntries)if(entry.text.startsWith('給 Rae 的花園測試 '))await a.request.delete(baseUrl+'/api/entries/'+entry.id);

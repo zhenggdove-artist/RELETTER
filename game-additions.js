@@ -75,12 +75,12 @@ function updateRoster(players){
   message(players.length===2?'2 / 2 online · Enter to chat':'1 / 2 online · Waiting for a friend');
 }
 function receive(type,data){
-  if(type==='welcome'){selfId=data.id;connected=true;updateRoster(data.players);if(admitted)loadEntries().then(es=>es.forEach(e=>addStoredPlant(e))).catch(e=>message(e.message));}
+  if(type==='welcome'){selfId=data.id;connected=true;updateRoster(data.players);api('/api/chat',undefined,'GET').then(history=>{history.forEach(appendChat);}).catch(e=>message(e.message));if(admitted)loadEntries().then(es=>es.forEach(e=>addStoredPlant(e))).catch(e=>message(e.message));}
   if(type==='players')updateRoster(data);
   if(type==='state'&&data.id!==selfId&&remotePlayers.has(data.id))remotePlayers.get(data.id).state=data.state;
   if(type==='plant'&&data.sender!==selfId)addStoredPlant(data,true);
   if(type==='deleted'){const i=plantEntries.findIndex(p=>p.entryId===data.id);if(i>=0){plantRoot.remove(plantEntries[i].mesh);plantEntries.splice(i,1);hidePlantLabel();}}
-  if(type==='chat'){const line=document.createElement('div'),name=document.createElement('b');name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));$('chat-log').append(line);while($('chat-log').children.length>100)$('chat-log').firstChild.remove();$('chat-log').scrollTop=$('chat-log').scrollHeight;}
+  if(type==='chat')appendChat(data);
 }
 async function openConnection(character){
   if(window.RELETTER_TRANSPORT==='websocket')return openCloudConnection(character);
@@ -104,7 +104,7 @@ function openCloudConnection(character){
   });
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
-  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;$('chat-open').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;$('chat-open').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;}
 };
 let lastOnlineState='';
@@ -174,6 +174,12 @@ canvas.addEventListener('pointermove',e=>{
   else hidePlantLabel();
 });
 canvas.addEventListener('pointerleave',e=>{if(e.pointerType==='touch')return;hoverPoint=null;hidePlantLabel();});
+const chatMessages=new Map(),chatLog=$('chat-log'),chatScroll=$('chat-scroll');
+function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog.clientHeight);chatScroll.value=chatLog.scrollTop;}
+chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
+new ResizeObserver(syncChatScroll).observe(chatLog);
+function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
+$('chat-minimize').onclick=()=>{const small=$('online-panel').classList.toggle('minimized');$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));closeChat();if(!small)syncChatScroll();};
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();}
 function openChat(){if(!admitted)return;keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
