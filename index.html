@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>RELETTER · 雙人花園</title>
+  <title>RELETTER</title>
+  <meta name="description" content="RELETTER" />
+  <meta property="og:title" content="RELETTER" />
+  <meta property="og:description" content="RELETTER" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:title" content="RELETTER" />
+  <meta name="twitter:description" content="RELETTER" />
   <script src="./hosting-config.js"></script>
   <link rel="preload" as="fetch" href="character.glb" crossorigin>
   <link rel="preload" as="fetch" href="monster.glb" crossorigin>
@@ -345,7 +351,7 @@ function saveEntry(text,username=''){
  const entry=plantEntries[plantEntries.length-1];const media=plantingMedia||{};plantingMedia=null;
  if(entry)entry.media={...media,username:selectedCharacter};
  const payload={id:crypto.randomUUID(),text,part:{...media,username:selectedCharacter,position:entry?.mesh.position.toArray(),scale:entry?.mesh.scale.toArray()}};
- const persist=()=>api('/api/entries',payload).then(saved=>{if(entry)entry.entryId=saved.id;message('Saved to RELETTER');}).catch(err=>{message('Save failed. Retrying in 5 seconds: '+err.message);setTimeout(persist,5000);});persist();
+ const persist=()=>api('/api/entries',payload).then(saved=>{if(entry)entry.entryId=saved.id;}).catch(err=>{message('Save failed. Retrying in 5 seconds: '+err.message);setTimeout(persist,5000);});persist();
 }
 function deleteEntry(entryId){if(entryId)api('/api/entries/'+encodeURIComponent(entryId),undefined,'DELETE').catch(e=>message(e.message));}
 // ===== Seeded Random =====
