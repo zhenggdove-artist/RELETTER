@@ -24,6 +24,7 @@ try{
   const before=await ely.evaluate(()=>JSON.parse(render_game_to_text()).position);
   await ely.locator('#chat-open').tap();await ely.locator('#chat-input').fill('wasd');await ely.evaluate(()=>advanceTime(400));await ely.locator('#chat-close').tap();
   const after=await ely.evaluate(()=>JSON.parse(render_game_to_text()).position);assert.deepEqual(after,before);
+  await ely.locator('#ui').tap();
   await ely.locator('#brush-size').fill('18');await ely.locator('#brush-color').fill('#e04477');
   const box=await ely.locator('#drawing').boundingBox();await ely.mouse.move(box.x+20,box.y+30);await ely.mouse.down();await ely.mouse.move(box.x+150,box.y+90,{steps:15});await ely.mouse.up();
   const png=await ely.locator('#drawing').screenshot();await ely.locator('#upload-image').setInputFiles({name:'flower.png',mimeType:'image/png',buffer:png});
@@ -39,6 +40,7 @@ try{
   const plant=state.plants.find(p=>p.text===plantedText);
   const stored=await a.request.get(baseUrl+'/api/entries');assert.ok((await stored.json()).some(p=>p.id===plant.id&&p.part.drawing&&p.part.image));
   await screenshot(ely,'output/verification/gameplay-ely.png');await screenshot(rae,'output/verification/gameplay-rae.png');
+  if(!await ely.locator('#chat-history').isVisible())await ely.locator('#chat-minimize').tap();
   await ely.locator('#chat-minimize').tap();assert.equal(await ely.locator('#chat-history').isVisible(),false);
   const controls=await ely.evaluate(()=>['joystick-zone','jump-btn'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}));assert.deepEqual(controls,[true,true],'Movement and jump must be reachable');
   await ely.locator('#chat-minimize').tap();assert.equal(await ely.locator('#chat-history').isVisible(),true);

@@ -161,7 +161,7 @@ function positionPlantLabel(){
   const half=plantLabel.offsetWidth/2+8,height=plantLabel.offsetHeight;
   const x=hoverPoint?.x??W()/2,y=hoverPoint?hoverPoint.y+20:H()*.78;
   plantLabel.style.left=Math.max(half,Math.min(W()-half,x))+'px';
-  plantLabel.style.top=Math.max(8,Math.min(H()-height-16,y))+'px';
+  const bottom=matchMedia('(pointer: coarse)').matches?166:16,top=matchMedia('(pointer: coarse)').matches?64:8;plantLabel.style.top=Math.max(top,Math.min(H()-height-bottom,y))+'px';
 }
 new ResizeObserver(positionPlantLabel).observe(plantLabel);
 canvas.addEventListener('pointermove',e=>{
@@ -179,10 +179,20 @@ function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog
 chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
 new ResizeObserver(syncChatScroll).observe(chatLog);
 function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
-$('chat-minimize').onclick=()=>{const small=$('online-panel').classList.toggle('minimized');$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));closeChat();if(!small)syncChatScroll();};
+const phoneLayout=matchMedia('(pointer: coarse)');
+function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));}
+$('chat-minimize').onclick=()=>{const small=!$('online-panel').classList.contains('minimized');closeChat();if(!small&&phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');hidePlantLabel();pop.classList.remove('show');}setHistorySmall(small);if(!small)syncChatScroll();};
+$('writer-close').onclick=e=>{e.stopPropagation();ui.classList.add('mini');};
+searchBtn.addEventListener('click',()=>{if(phoneLayout.matches&&searchPanel.classList.contains('show'))ui.classList.add('mini');});
+let mobilePanel='';
+function syncPhonePanels(){if(!phoneLayout.matches)return;const next=!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':'';if(next&&next!==mobilePanel){setHistorySmall(true);closeChat();hidePlantLabel();pop.classList.remove('show');if(next==='write')searchPanel.classList.remove('show');else ui.classList.add('mini');}mobilePanel=next;}
+new MutationObserver(syncPhonePanels).observe(ui,{attributes:true,attributeFilter:['class']});new MutationObserver(syncPhonePanels).observe(searchPanel,{attributes:true,attributeFilter:['class']});
+if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);}
+phoneLayout.addEventListener('change',()=>{if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);closeChat();}});
+
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();}
-function openChat(){if(!admitted)return;keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
+function openChat(){if(!admitted)return;if(phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');setHistorySmall(true);hidePlantLabel();pop.classList.remove('show');}keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
 async function sendChat(){const text=chatInput.value.trim();if(!text){closeChat();return;}try{await api('/api/chat',{text});chatInput.value='';closeChat();}catch(e){message(e.message);}}
 $('chat-open').onclick=openChat;$('chat-close').onclick=closeChat;
 chatForm.onsubmit=e=>{e.preventDefault();sendChat();};

@@ -276,6 +276,21 @@
 #online-panel{position:fixed;bottom:16px;left:16px;width:min(360px,85vw);z-index:150;font:13px sans-serif;color:#46344f;pointer-events:none}#connection{font-size:11px;margin-bottom:8px}#chat-log{max-height:160px;overflow-y:auto;overflow-wrap:anywhere;pointer-events:auto;background:#ffffff70;border-radius:10px;padding:8px}#chat-log:empty{display:none}#chat-log div{padding:3px 0}#chat-input{box-sizing:border-box;width:100%;padding:10px;border:1px solid #ae91bd;border-radius:10px;margin-top:8px;pointer-events:auto}
   #chat-open,#chat-form button{pointer-events:auto;min-height:44px;padding:8px 14px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f;cursor:pointer}#chat-form{display:flex;gap:6px;align-items:center}#chat-form[hidden],#chat-open[hidden]{display:none}#chat-input{min-width:0;flex:1;margin-top:0;font-size:16px}#chat-open{margin-top:8px}#online-panel{max-height:45dvh;overflow:auto}
 #chat-minimize{pointer-events:auto;min-height:44px;padding:8px 12px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f}#chat-minimize[hidden]{display:none}#chat-history{display:flex;gap:6px;pointer-events:auto}#chat-log{flex:1;min-width:0;max-height:160px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:auto;overscroll-behavior:contain;touch-action:pan-y}#chat-log::-webkit-scrollbar{width:12px}#chat-log::-webkit-scrollbar-thumb{background:#ae91bd;border-radius:8px}#chat-scroll{writing-mode:vertical-lr;direction:ltr;width:20px;height:160px;flex:none;touch-action:none}#online-panel.minimized #chat-history,#online-panel.minimized #connection{display:none}@media(pointer:coarse){#online-panel{bottom:180px;max-height:calc(100dvh - 200px)}#chat-log{max-height:min(160px,25dvh)}#chat-scroll{height:min(160px,25dvh)}}
+
+#writer-close{display:none}
+@media(pointer:coarse){
+#ui{transition:none!important}
+:root{--dock-bottom:calc(8px + env(safe-area-inset-bottom));--panel-bottom:calc(166px + env(safe-area-inset-bottom))}
+#ui.mini,#search-btn,#chat-open,#chat-minimize{position:fixed!important;top:auto!important;bottom:var(--dock-bottom)!important;width:calc((100vw - 40px)/4)!important;height:44px!important;min-height:44px;box-sizing:border-box;margin:0!important;font:11px sans-serif;z-index:210;border-radius:14px}
+#search-btn{left:8px!important;right:auto!important}#chat-open{left:calc(25vw + 6px)!important;right:auto!important}#chat-minimize{left:calc(50vw + 4px)!important;right:auto!important}#ui.mini{right:8px!important;left:auto!important}#ui.mini::after{font:11px sans-serif}
+#ui:not(.mini){position:fixed;left:12px;right:12px;top:64px;bottom:var(--panel-bottom);width:auto;max-height:none;height:auto;box-sizing:border-box;z-index:200;transition:none;padding:8px 0;overflow-y:auto}
+#ui:not(.mini) h2{padding-right:48px;min-height:44px;line-height:44px}#writer-close{display:block;position:absolute;right:8px;top:8px;min-width:44px;min-height:44px;border:0;border-radius:12px;background:#fff9;font-size:20px}#ui.mini #writer-close{display:none}
+#ui textarea{box-sizing:border-box;font-size:16px}#media-tools label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;font:12px sans-serif}#media-tools label input[type=range]{flex:1;min-width:80px;max-width:100%;margin:0}#media-tools label.upload-button{display:inline-flex}#media-tools button,#media-tools .upload-button{min-height:44px;box-sizing:border-box}#go{min-height:44px}#drawing{display:block;box-sizing:border-box}#ui #username{max-width:calc(100% - 24px);box-sizing:border-box}
+#online-panel{left:12px;right:12px;width:auto;bottom:var(--panel-bottom);max-height:calc(100dvh - 236px - env(safe-area-inset-bottom));overflow:visible;z-index:200}#connection{background:#f5e5ff;padding:6px;border-radius:8px;margin:0}#chat-history{background:#f5e5ff;border-radius:14px;padding:8px;box-sizing:border-box}#chat-log{background:#fff9;max-height:min(160px,calc(100dvh - 300px));font:13px/1.5 sans-serif}#chat-scroll{height:min(160px,calc(100dvh - 300px))}#chat-form{background:#f5e5ff;border-radius:14px;padding:8px;flex-wrap:nowrap}#chat-input{flex:1 1 0;width:0}#chat-form button{min-height:44px}
+#game-controls{z-index:190;height:154px}#joystick-zone{left:20px;bottom:calc(70px + env(safe-area-inset-bottom));width:70px;height:70px}#jump-btn{right:20px;bottom:calc(80px + env(safe-area-inset-bottom));width:54px;height:54px}
+#search-panel{position:fixed;left:12px;right:12px;top:64px;bottom:var(--panel-bottom);width:auto;max-height:none;box-sizing:border-box;z-index:200;overflow:auto}#search-results{max-height:calc(100% - 50px);overflow:auto}
+#plant-label,#pop{max-width:calc(100vw - 32px);max-height:calc(100dvh - 244px);box-sizing:border-box;z-index:180}#plant-label{pointer-events:auto;touch-action:pan-y}#pop{bottom:var(--panel-bottom)}#plant-label img{max-width:100%;max-height:min(120px,calc(100dvh - 280px))}#title{top:8px;font-size:24px}#coin-counter{top:42px;left:12px}
+}
 </style>
 <div id="entry-gate"><section class="gate-card"><form id="login-form"><input id="password" type="password" aria-label="Password" required autocomplete="current-password"><button type="submit">ENTER</button></form><div id="characters" hidden><button data-character="Ely"><span class="character-orb"></span><b>Ely</b></button><button data-character="Rae"><span class="character-orb rae"></span><b>Rae</b></button></div><p id="gate-error" role="alert"></p></section></div>
 <div id="online-panel"><div id="connection">Offline</div><button id="chat-minimize" type="button" aria-expanded="true" hidden>MINIMIZE</button><div id="chat-history"><div id="chat-log" role="log" aria-live="polite" tabindex="0"></div><input id="chat-scroll" type="range" min="0" max="0" value="0" aria-label="Scroll chat history"></div><button id="chat-open" type="button" hidden>CHAT</button><form id="chat-form" hidden><input id="chat-input" placeholder="Message…" maxlength="500" aria-label="Chat message" hidden><button type="submit">SEND</button><button id="chat-close" type="button" aria-label="Close chat">×</button></form></div>
@@ -291,7 +306,7 @@ RELETTER
     <textarea id="ta" placeholder="Leave your message to the world"></textarea>
     <div style="margin:0 12px 4px;font-size:10px;letter-spacing:1px;color:var(--bubble-text);opacity:0.7">Plant a message, drawing or image</div>
     <input id="username" type="hidden" value="Ely" />
-    <div id="media-tools"><label>Canvas · Brush size <span id="brush-value">6 px</span><input id="brush-size" type="range" min="1" max="48" value="6" aria-label="Brush size"></label><label>Color wheel <input id="brush-color" type="color" value="#8b65c5" aria-label="Brush color"></label><canvas id="drawing" width="600" height="300" aria-label="Drawing canvas"></canvas><button id="clear-drawing" type="button">Clear canvas</button><label for="upload-image" class="upload-button" tabindex="0">Upload image</label><input id="upload-image" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload image" hidden><span id="upload-name">No image selected</span><img id="image-preview" alt="Image preview" hidden><button id="remove-image" type="button">Remove image</button><span id="media-error" role="alert"></span></div><button id="go" disabled>PLANT</button>
+    <button id="writer-close" type="button" aria-label="Close writing panel">×</button><div id="media-tools"><label>Canvas · Brush size <span id="brush-value">6 px</span><input id="brush-size" type="range" min="1" max="48" value="6" aria-label="Brush size"></label><label>Color wheel <input id="brush-color" type="color" value="#8b65c5" aria-label="Brush color"></label><canvas id="drawing" width="600" height="300" aria-label="Drawing canvas"></canvas><button id="clear-drawing" type="button">Clear canvas</button><label for="upload-image" class="upload-button" tabindex="0">Upload image</label><input id="upload-image" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload image" hidden><span id="upload-name">No image selected</span><img id="image-preview" alt="Image preview" hidden><button id="remove-image" type="button">Remove image</button><span id="media-error" role="alert"></span></div><button id="go" disabled>PLANT</button>
   </div>
   <div id="pop"></div>
   <div id="statement-overlay">
@@ -3063,6 +3078,7 @@ const labelBox=new THREE.Box3();
 const labelPos=new THREE.Vector3();
 const labelCenter=new THREE.Vector3();
 function showPlantLabel(entry){
+  if(phoneLayout.matches){setHistorySmall(true);closeChat();ui.classList.add('mini');searchPanel.classList.remove('show');}
   activeLabelEntry=entry;
   showMedia(entry);
   plantLabel.style.display='block';
@@ -3662,7 +3678,7 @@ function positionPlantLabel(){
   const half=plantLabel.offsetWidth/2+8,height=plantLabel.offsetHeight;
   const x=hoverPoint?.x??W()/2,y=hoverPoint?hoverPoint.y+20:H()*.78;
   plantLabel.style.left=Math.max(half,Math.min(W()-half,x))+'px';
-  plantLabel.style.top=Math.max(8,Math.min(H()-height-16,y))+'px';
+  const bottom=matchMedia('(pointer: coarse)').matches?166:16,top=matchMedia('(pointer: coarse)').matches?64:8;plantLabel.style.top=Math.max(top,Math.min(H()-height-bottom,y))+'px';
 }
 new ResizeObserver(positionPlantLabel).observe(plantLabel);
 canvas.addEventListener('pointermove',e=>{
@@ -3680,10 +3696,20 @@ function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog
 chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
 new ResizeObserver(syncChatScroll).observe(chatLog);
 function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
-$('chat-minimize').onclick=()=>{const small=$('online-panel').classList.toggle('minimized');$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));closeChat();if(!small)syncChatScroll();};
+const phoneLayout=matchMedia('(pointer: coarse)');
+function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));}
+$('chat-minimize').onclick=()=>{const small=!$('online-panel').classList.contains('minimized');closeChat();if(!small&&phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');hidePlantLabel();pop.classList.remove('show');}setHistorySmall(small);if(!small)syncChatScroll();};
+$('writer-close').onclick=e=>{e.stopPropagation();ui.classList.add('mini');};
+searchBtn.addEventListener('click',()=>{if(phoneLayout.matches&&searchPanel.classList.contains('show'))ui.classList.add('mini');});
+let mobilePanel='';
+function syncPhonePanels(){if(!phoneLayout.matches)return;const next=!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':'';if(next&&next!==mobilePanel){setHistorySmall(true);closeChat();hidePlantLabel();pop.classList.remove('show');if(next==='write')searchPanel.classList.remove('show');else ui.classList.add('mini');}mobilePanel=next;}
+new MutationObserver(syncPhonePanels).observe(ui,{attributes:true,attributeFilter:['class']});new MutationObserver(syncPhonePanels).observe(searchPanel,{attributes:true,attributeFilter:['class']});
+if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);}
+phoneLayout.addEventListener('change',()=>{if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);closeChat();}});
+
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();}
-function openChat(){if(!admitted)return;keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
+function openChat(){if(!admitted)return;if(phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');setHistorySmall(true);hidePlantLabel();pop.classList.remove('show');}keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
 async function sendChat(){const text=chatInput.value.trim();if(!text){closeChat();return;}try{await api('/api/chat',{text});chatInput.value='';closeChat();}catch(e){message(e.message);}}
 $('chat-open').onclick=openChat;$('chat-close').onclick=closeChat;
 chatForm.onsubmit=e=>{e.preventDefault();sendChat();};
