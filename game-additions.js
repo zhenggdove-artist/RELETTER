@@ -1,13 +1,19 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
-let selectedCharacter='Ely', admitted=false, selfId=null, connected=false;
+let selectedCharacter='Ely', admitted=false, selfId=null, connected=false, onlineSocket=null;
 let draftMedia={drawing:null,image:null}, plantingMedia=null;
 const remotePlayers=new Map();
 let resolveEntryGate;
 const entryGate=new Promise(r=>resolveEntryGate=r);
 const $=id=>document.getElementById(id);
 async function api(path,body,method='POST'){
-  const res=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
-  const data=await res.json();if(!res.ok)throw new Error(data.error||'連線失敗');return data;
+  let res;
+  try{res=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});}catch{throw new Error('無法連線到 RELETTER 伺服器，請確認伺服器已啟動');}
+  if(!res.headers.get('content-type')?.includes('application/json')){
+    if(location.hostname.endsWith('.github.io'))throw new Error('此網址只有靜態網頁，尚未連接 RELETTER 登入後端。請開啟已部署的遊戲伺服器網址。');
+    throw new Error('登入伺服器未正確啟動。請用 npm start 啟動 RELETTER，並開啟 http://localhost:3000。');
+  }
+  let data;try{data=await res.json();}catch{throw new Error('RELETTER 伺服器回應異常，請稍後再試');}
+  if(!res.ok)throw new Error(data?.error||'連線失敗');return data;
 }
 function message(text){$('connection').textContent=text;}
 $('login-form').onsubmit=async e=>{
@@ -50,16 +56,37 @@ function receive(type,data){
   if(type==='chat'){const line=document.createElement('div'),name=document.createElement('b');name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));$('chat-log').append(line);while($('chat-log').children.length>100)$('chat-log').firstChild.remove();$('chat-log').scrollTop=$('chat-log').scrollHeight;}
 }
 async function openConnection(character){
+  if(window.RELETTER_TRANSPORT==='websocket')return openCloudConnection(character);
   const res=await fetch('/api/events?character='+character);
   if(!res.ok){const e=await res.json();throw new Error(e.error);}
   const reader=res.body.getReader(),decoder=new TextDecoder();
   (async()=>{let buffer='';try{while(true){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let end;while((end=buffer.indexOf('\n\n'))>=0){const chunk=buffer.slice(0,end);buffer=buffer.slice(end+2);const event=chunk.match(/event: (.+)/),data=chunk.match(/data: (.+)/);if(event&&data)receive(event[1],JSON.parse(data[1]));}}}catch{}finally{connected=false;message('連線中斷 · 正在重新連線');if(admitted)setTimeout(()=>openConnection(selectedCharacter).catch(()=>message('重連失敗，請重新整理')),2500);}})();
 }
+function openCloudConnection(character){
+  return new Promise((resolve,reject)=>{
+    const url=new URL('/api/socket',location.href);url.protocol=location.protocol==='https:'?'wss:':'ws:';url.searchParams.set('character',character);
+    const socket=new WebSocket(url);let joined=false,heartbeat;
+    const timeout=setTimeout(()=>{if(!joined){socket.close();reject(new Error('連線逾時，請稍後再試'));}},12000);
+    socket.onmessage=e=>{
+      if(e.data==='pong')return;
+      const message=JSON.parse(e.data);receive(message.type,message.data);
+      if(message.type==='welcome'){joined=true;clearTimeout(timeout);onlineSocket=socket;lastOnlineState='';heartbeat=setInterval(()=>{if(socket.readyState===1)socket.send('ping');},20000);resolve();}
+    };
+    socket.onerror=()=>{if(!joined){clearTimeout(timeout);reject(new Error('角色可能正在使用或伺服器尚未就緒，請選另一位或稍後重試'));}};
+    socket.onclose=()=>{clearTimeout(timeout);clearInterval(heartbeat);if(onlineSocket===socket){onlineSocket=null;connected=false;message('連線中斷 · 正在重新連線');if(admitted)setTimeout(()=>openCloudConnection(selectedCharacter).catch(e=>message(e.message)),2500);}if(!joined)reject(new Error('無法進入，請重新登入或選另一位角色'));};
+  });
+}
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
   try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;}
 };
-setInterval(()=>{if(connected&&admitted)api('/api/state',{position:charRoot.position.toArray(),rotation:charModel?.rotation.y||0,visible:charRoot.visible,phase}).catch(()=>{});},100);
+let lastOnlineState='';
+setInterval(()=>{
+  if(!connected||!admitted)return;
+  const state={position:charRoot.position.toArray(),rotation:charModel?.rotation.y||0,visible:charRoot.visible,phase};
+  if(onlineSocket?.readyState===1){const serialized=JSON.stringify(state);if(serialized!==lastOnlineState){onlineSocket.send(JSON.stringify({type:'state',data:state}));lastOnlineState=serialized;}}
+  else api('/api/state',state).catch(()=>{});
+},100);
 const draw=$('drawing'),ctx=draw.getContext('2d');let drawing=false,hasDrawing=false;
 // True hue/saturation wheel; the brightness slider also provides black and white.
 const wheel=document.createElement('canvas');wheel.id='color-wheel';wheel.width=144;wheel.height=144;wheel.setAttribute('aria-label','畫筆色輪');wheel.style.cssText='display:block;width:110px;height:110px;touch-action:none;margin:6px auto;cursor:crosshair';

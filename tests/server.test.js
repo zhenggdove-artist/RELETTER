@@ -13,6 +13,7 @@ test('isolated database, password enforcement, two seats, safe media and shared 
   try{
     assert.equal((await request('/api/entries')).status,401);
     assert.equal((await request('/api/login','POST',{password:'bad'})).status,401);
+    assert.equal((await request('/api/login','POST',{password:'rae1210'})).status,200,'lowercase password must also log in');
     const login=async()=>{const r=await request('/api/login','POST',{password:'RAE1210'});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
     const a=await login(),b=await login(),c=await login();
     const ea=await request('/api/events?character=Ely','GET',undefined,a);streams.push(ea.body);assert.equal(ea.status,200);

@@ -30,7 +30,7 @@ try{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/health')return json(res,200,{ok:true,database:pool?'postgres':'sqlite'});
   if(url.pathname==='/api/login'&&req.method==='POST'){
-    const b=await body(req), supplied=Buffer.from(String(b.password||'')),expected=Buffer.from(password);
+    const b=await body(req), supplied=Buffer.from(String(b.password||'').trim().toUpperCase()),expected=Buffer.from(password.trim().toUpperCase());
     if(supplied.length!==expected.length||!timingSafeEqual(supplied,expected))return json(res,401,{error:'密碼不正確'});
     const id=randomUUID();sessions.set(id,{expires:Date.now()+86400000});
     return json(res,200,{ok:true},{'Set-Cookie':`reletter_session=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV==='production'?'; Secure':''}`});

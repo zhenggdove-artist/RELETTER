@@ -1,0 +1,8 @@
+{
+  "service": "reletter-garden",
+  "url": "https://reletter-garden.zhenggdove-artist.workers.dev/",
+  "plan_verified": "Workers Free",
+  "database": "RELETTER_GARDEN / ReletterGarden / reletter-garden-v1",
+  "initial_version_id": "facef47e-78ad-444e-beb5-b3e475245a60",
+  "deployed_date_taipei": "2026-10-13"
+}
