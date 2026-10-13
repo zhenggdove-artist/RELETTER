@@ -104,7 +104,7 @@ function openCloudConnection(character){
   });
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
-  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;admitted=true;$('chat-open').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;}
 };
 let lastOnlineState='';
@@ -173,18 +173,23 @@ canvas.addEventListener('pointermove',e=>{
   if(entry){if(activeLabelEntry!==entry)showPlantLabel(entry);positionPlantLabel();}
   else hidePlantLabel();
 });
-canvas.addEventListener('pointerleave',()=>{hoverPoint=null;hidePlantLabel();});
-const chatInput=$('chat-input');
+canvas.addEventListener('pointerleave',e=>{if(e.pointerType==='touch')return;hoverPoint=null;hidePlantLabel();});
+const chatInput=$('chat-input'),chatForm=$('chat-form');
+function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();}
+function openChat(){if(!admitted)return;keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;chatInput.focus();}
+async function sendChat(){const text=chatInput.value.trim();if(!text){closeChat();return;}try{await api('/api/chat',{text});chatInput.value='';closeChat();}catch(e){message(e.message);}}
+$('chat-open').onclick=openChat;$('chat-close').onclick=closeChat;
+chatForm.onsubmit=e=>{e.preventDefault();sendChat();};
+
 window.addEventListener('keydown',e=>{
   const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
   if(!admitted){e.stopImmediatePropagation();return;}
   if(e.key==='Enter'&&!e.isComposing){
     if(typing&&e.target!==chatInput){e.stopImmediatePropagation();return;}
     e.preventDefault();e.stopImmediatePropagation();keysDown.clear();
-    if(document.activeElement===chatInput){const text=chatInput.value.trim();if(text)api('/api/chat',{text}).then(()=>{chatInput.value='';chatInput.hidden=true;chatInput.blur();}).catch(e=>message(e.message));else{chatInput.hidden=true;chatInput.blur();}}
-    else{chatInput.hidden=false;chatInput.focus();}return;
+    if(document.activeElement===chatInput)sendChat();else openChat();return;
   }
-  if(e.key==='Escape'&&e.target===chatInput){chatInput.hidden=true;chatInput.blur();}
+  if(e.key==='Escape'&&e.target===chatInput)closeChat();
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
