@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: reletter-game
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.20.0
+      - key: NODE_ENV
+        value: production
+      - key: GAME_PASSWORD
+        sync: false
+      - key: RELETTER_DATABASE_URL
+        fromDatabase:
+          name: reletter-db
+          property: connectionString
+databases:
+  - name: reletter-db
+    plan: 0.1c-256mb
+    databaseName: reletter
+    user: reletter
+    ipAllowList: []
