@@ -4,7 +4,39 @@ The deployed backend queues one notification per successful player session,
 new garden entry, and new chat message. Both recipients are fixed on the server:
 `zhenggdove@gmail.com` and `partoftheszene@gmail.com`.
 
-## Free option without a domain (selected by user)
+## Free alternative: Brevo (current setup)
+
+The user requested an alternative after the Google consent flow remained blocked.
+Brevo's free plan currently allows 300 email sends/day, about 150 events when
+each event has two recipients. Signup is open in the browser and awaiting the
+owner's signup. The owner accepted Brevo's terms in chat on 2026-10-15, but
+Google signup returned "We could not process your sign-up request" and
+"Could not connect to the reCAPTCHA service", including after a reload.
+Owner handoff is needed to finish signup in their browser. No account or
+API key has been created yet. No paid plan should be activated.
+
+Verify `zhenggdove@gmail.com` as a sender named RELETTER in Brevo. Free-provider
+sender addresses can be rewritten by Brevo for authentication/deliverability;
+actual sending availability is subject to account approval. Then store these
+Worker secrets (never in frontend, Git, logs, or chat):
+
+* `BREVO_API_KEY`: transactional email API credential.
+* `BREVO_SENDER_EMAIL`: the verified sender email address.
+
+Brevo takes precedence when both secrets exist. Its transport uses plaintext,
+fixed recipients, a stable UUID idempotency key per event, and deferred retries
+for quota exhaustion. Brevo idempotency lasts 15 minutes; a timeout followed by
+a retry beyond that window can duplicate a message. Provider acceptance is not
+proof of inbox delivery. Confirm a real notification reaches both inboxes after
+activation. Until credentials are configured, events remain queued and unsent.
+
+Official references:
+https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan
+https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email
+https://developers.brevo.com/reference/send-transac-email
+https://developers.brevo.com/docs/heterogenous-versions-batch-emails
+
+## Previous Google option (not activated)
 
 Use the Google Apps Script source `GoogleMailRelay.gs`, owned by
 `zhenggdove@gmail.com`. The project was created in the browser:

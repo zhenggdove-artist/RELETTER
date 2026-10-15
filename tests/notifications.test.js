@@ -3,6 +3,23 @@ import assert from 'node:assert/strict';
 import {configured,notificationMail,deliverNotification,recipients} from '../cloudflare/notifications.js';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+test('Brevo sends to both recipients with stable UUID, verified sender and quota deferral',async()=>{
+ const env={BREVO_API_KEY:'test-only',BREVO_SENDER_EMAIL:'zhenggdove@gmail.com'},event={kind:'chat',name:'Rae',text:'Hello',time:Date.now()};
+ assert.equal(configured(env),true);assert.equal(configured({BREVO_API_KEY:'test-only'}),false);
+ const keys=[];
+ for(let i=0;i<2;i++)assert.equal(await deliverNotification(env,'chat-123',event,async(url,request)=>{
+  assert.equal(url,'https://api.brevo.com/v3/smtp/email');assert.equal(request.headers['api-key'],'test-only');
+  const body=JSON.parse(request.body);assert.deepEqual(body.to,recipients.map(email=>({email})));assert.equal(body.sender.email,env.BREVO_SENDER_EMAIL);assert.equal(body.textContent.includes('Hello'),true);
+  assert.match(body.headers.idempotencyKey,/^[a-f0-9]{8}-[a-f0-9]{4}-5[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);keys.push(body.headers.idempotencyKey);
+  return Response.json({messageId:'brevo-id'});
+ }), 'brevo-id');
+ assert.equal(keys[0],keys[1]);
+ await assert.rejects(deliverNotification(env,'chat-123',event,async()=>Response.json({code:'not_enough_credits'},{status:400})),e=>e.retryAfterMs===3600000);
+ await assert.rejects(deliverNotification(env,'chat-123',event,async()=>Response.json({},{status:401})),/HTTP_401/);
+ await assert.rejects(deliverNotification(env,'chat-123',event,async()=>Response.json({})),/INVALID_RESPONSE/);
+ assert.equal(await deliverNotification(env,'chat-123',event,async()=>Response.json({code:'duplicate_parameter',message:'idempotency key already used'},{status:400})),'duplicate:chat-123');
+ await assert.rejects(deliverNotification(env,'chat-123',event,async()=>Response.json({code:'duplicate_parameter',message:'invalid recipient'},{status:400})),/HTTP_400/);
+});
 test('all event kinds notify both intended recipients with Taiwan time and literal user text',()=>{
  for(const kind of ['online','plant','chat']){
   const mail=notificationMail({kind,name:'Rae',text:'<script>hello</script>',time:Date.parse('2026-10-15T06:30:00Z')},'Garden <notify@example.com>');
