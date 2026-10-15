@@ -151,9 +151,11 @@ function addStoredPlant(e,grow=false){
   const mesh=addPlant(e.text,grow,e.created_at,e.part?.username||'');
   if(mesh){const p=plantEntries[plantEntries.length-1];p.entryId=e.id;p.media=e.part;if(e.part?.position)mesh.position.fromArray(e.part.position);if(e.part?.scale)mesh.scale.fromArray(e.part.scale);}
 }
+function messageTimestamp(value){if(value==null)return null;const date=new Date(value);if(!Number.isFinite(date.getTime()))return null;const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));const time=document.createElement('time');time.className='message-time';time.dateTime=date.toISOString();time.textContent=`${parts.year} ${parts.month}.${parts.day} ${parts.hour}:${parts.minute}`;return time;}
 function showMedia(entry){
   plantLabel.replaceChildren();const text=document.createElement('div');text.textContent=entry.text+(entry.username?' — '+entry.username:'');plantLabel.append(text);
   for(const key of ['drawing','image'])if(entry.media?.[key]){const img=document.createElement('img');img.src=entry.media[key];img.alt=key==='drawing'?'Drawing':'Uploaded image';plantLabel.append(img);}
+  const time=messageTimestamp(entry.ts);if(time)plantLabel.append(time);
 }
 let hoverPoint=null, hoverAt=0;
 function positionPlantLabel(){
@@ -178,7 +180,7 @@ const chatMessages=new Map(),chatLog=$('chat-log'),chatScroll=$('chat-scroll');
 function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog.clientHeight);chatScroll.value=chatLog.scrollTop;}
 chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
 new ResizeObserver(syncChatScroll).observe(chatLog);
-function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
+function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const time=messageTimestamp(data.time);if(time)line.append(time);const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom)chatLog.scrollTop=chatLog.scrollHeight;syncChatScroll();}
 const phoneLayout=matchMedia('(pointer: coarse)');
 function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));}
 $('chat-minimize').onclick=()=>{const small=!$('online-panel').classList.contains('minimized');closeChat();if(!small&&phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');hidePlantLabel();pop.classList.remove('show');}setHistorySmall(small);if(!small)syncChatScroll();};

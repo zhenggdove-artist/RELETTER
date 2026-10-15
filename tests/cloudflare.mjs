@@ -13,6 +13,7 @@ async function until(predicate){for(let i=0;i<100;i++){if(predicate())return;awa
 const a=await login('rae1210'),b=await login('RAE1210'),c=await login('rae1210');
 assert.equal((await request('/api/entries')).status,401);
 assert.equal((await request('/api/login','POST',{password:'incorrect'})).status,401);
+const baselineNotices=await(await request('/api/notifications/status','GET',undefined,a)).json();const initialPending=baselineNotices.counts.find(r=>r.status==='pending')?.count||0;
 const ely=await socket(a,'Ely'),rae=await socket(b,'Rae');let entry;
 try{
   await assert.rejects(socket(c,'Rae'),/409/);
@@ -33,6 +34,7 @@ try{
   const list=await (await request('/api/entries','GET',undefined,b)).json();assert.equal(list.filter(e=>e.id===id).length,1,'retry is idempotent');
   ely.ws.close();await until(()=>rae.events.some(e=>e.type==='players'&&e.data.length===1));
   const replacement=await socket(c,'Ely');replacement.ws.close();
+  const notices=await(await request('/api/notifications/status','GET',undefined,a)).json();assert.equal(notices.configured,false);assert.equal(notices.counts.find(r=>r.status==='pending').count,initialPending+5,'Three distinct sessions, one chat and one idempotent plant');
   console.log('PASS Cloudflare: password, two seats, WebSocket state/chat/ping, authenticated chunked media, idempotency, released seat');
 }finally{
   if(entry)await request('/api/entries/'+entry.id,'DELETE',undefined,a);
