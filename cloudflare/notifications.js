@@ -1,5 +1,5 @@
 export const recipients=['zhenggdove@gmail.com','partoftheszene@gmail.com'];
-export const configured=env=>Boolean((env.BREVO_API_KEY&&env.BREVO_SENDER_EMAIL)||(env.GOOGLE_MAIL_RELAY_URL&&env.GOOGLE_MAIL_RELAY_TOKEN)||(env.RESEND_API_KEY&&env.NOTIFICATION_FROM));
+export const configured=env=>Boolean((env.EMAILJS_SERVICE_ID&&env.EMAILJS_TEMPLATE_ID&&env.EMAILJS_PUBLIC_KEY)||(env.BREVO_API_KEY&&env.BREVO_SENDER_EMAIL)||(env.GOOGLE_MAIL_RELAY_URL&&env.GOOGLE_MAIL_RELAY_TOKEN)||(env.RESEND_API_KEY&&env.NOTIFICATION_FROM));
 export function notificationMail(event,from){
  const date=new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',dateStyle:'medium',timeStyle:'medium',hourCycle:'h23'}).format(new Date(event.time));
  const action={online:'上線了',plant:'在花園留下了留言',chat:'傳送了聊天留言'}[event.kind];
@@ -7,6 +7,13 @@ export function notificationMail(event,from){
 }
 export async function deliverNotification(env,id,event,transport=fetch){
  if(!configured(env))throw new Error('EMAIL_NOT_CONFIGURED');
+ if(env.EMAILJS_SERVICE_ID&&env.EMAILJS_TEMPLATE_ID&&env.EMAILJS_PUBLIC_KEY){
+  const mail=notificationMail(event,'RELETTER');
+  const response=await transport('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service_id:env.EMAILJS_SERVICE_ID,template_id:env.EMAILJS_TEMPLATE_ID,user_id:env.EMAILJS_PUBLIC_KEY,...(env.EMAILJS_PRIVATE_KEY?{accessToken:env.EMAILJS_PRIVATE_KEY}:{}),template_params:{subject:mail.subject,message:mail.text,event_id:id}}),signal:AbortSignal.timeout(15000)});
+  const result=await response.text();
+  if(!response.ok){const error=new Error(`EMAIL_HTTP_${response.status}`);if(response.status===429)error.retryAfterMs=60000;throw error;}
+  if(result.trim()!=='OK')throw new Error('EMAIL_INVALID_RESPONSE');return id;
+ }
  if(env.BREVO_API_KEY&&env.BREVO_SENDER_EMAIL){
   const mail=notificationMail(event,env.BREVO_SENDER_EMAIL);
   const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`reletter/${id}`)));

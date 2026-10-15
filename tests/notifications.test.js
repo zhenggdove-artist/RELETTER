@@ -3,6 +3,19 @@ import assert from 'node:assert/strict';
 import {configured,notificationMail,deliverNotification,recipients} from '../cloudflare/notifications.js';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+test('EmailJS uses a fixed template without dynamic recipient overrides and rejects failed sends',async()=>{
+ const env={EMAILJS_SERVICE_ID:'service_test',EMAILJS_TEMPLATE_ID:'template_test',EMAILJS_PUBLIC_KEY:'test-public'},event={kind:'chat',name:'Ely',text:'Hello',time:Date.now()};
+ assert.equal(configured(env),true);assert.equal(configured({...env,EMAILJS_TEMPLATE_ID:''}),false);
+ assert.equal(await deliverNotification(env,'chat-test',event,async(url,request)=>{
+  assert.equal(url,'https://api.emailjs.com/api/v1.0/email/send');const body=JSON.parse(request.body);
+  assert.equal(body.service_id,'service_test');assert.equal(body.template_id,'template_test');assert.equal(body.user_id,'test-public');
+  assert.deepEqual(Object.keys(body.template_params).sort(),['event_id','message','subject']);assert.ok(body.template_params.message.includes('Hello'));
+  return new Response('OK');
+ }), 'chat-test');
+ await assert.rejects(deliverNotification(env,'chat-test',event,async()=>new Response('quota',{status:429})),e=>e.retryAfterMs===60000);
+ await assert.rejects(deliverNotification(env,'chat-test',event,async()=>new Response('error',{status:403})),/HTTP_403/);
+ await assert.rejects(deliverNotification(env,'chat-test',event,async()=>new Response('<html>error</html>')),/INVALID_RESPONSE/);
+});
 test('Brevo sends to both recipients with stable UUID, verified sender and quota deferral',async()=>{
  const env={BREVO_API_KEY:'test-only',BREVO_SENDER_EMAIL:'zhenggdove@gmail.com'},event={kind:'chat',name:'Rae',text:'Hello',time:Date.now()};
  assert.equal(configured(env),true);assert.equal(configured({BREVO_API_KEY:'test-only'}),false);

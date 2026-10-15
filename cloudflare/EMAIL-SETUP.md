@@ -4,7 +4,32 @@ The deployed backend queues one notification per successful player session,
 new garden entry, and new chat message. Both recipients are fixed on the server:
 `zhenggdove@gmail.com` and `partoftheszene@gmail.com`.
 
-## Free alternative: Brevo (current setup)
+## Current setup: EmailJS without a postal address
+
+The owner declined Brevo's required postal address. EmailJS free account was
+created and successfully signed in on 2026-10-15. Gmail configuration is open
+with service ID `service_t95klc2`, display name `RELETTER Gmail`. Connect Account
+did not open an OAuth tab through the in-app browser, so owner handoff was requested.
+The Gmail service has NOT been created or connected yet.
+
+After connection create ONE notification template, with fixed To address
+`zhenggdove@gmail.com` and fixed CC `partoftheszene@gmail.com`. Subject is
+`{{subject}}`; body is `{{message}}` rendered as escaped text with line breaks.
+Do not use dynamic recipients. Disable stored email history if supported.
+Store `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY` as Worker
+secrets; add `EMAILJS_PRIVATE_KEY` if required by server-side account security.
+Confirm account security permits non-browser REST requests before activation.
+
+The transport uses https://api.emailjs.com/api/v1.0/email/send. Free plan is
+200 requests/month. It has no provider idempotency guarantee: accepted sends
+whose responses are lost can be duplicated on retry. HTTP 429 retries in one
+minute. Pending outbox events are delivered on activation, including older
+events from the setup period. Sending is still inactive until setup is complete.
+
+https://www.emailjs.com/pricing/
+https://www.emailjs.com/docs/rest-api/send/
+
+## Previous alternative: Brevo (not activated)
 
 The user requested an alternative after the Google consent flow remained blocked.
 Brevo's free plan currently allows 300 email sends/day, about 150 events when
