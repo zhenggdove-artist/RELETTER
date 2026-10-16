@@ -33,7 +33,7 @@ export class ReletterGarden extends DurableObject {
   async scheduleNotifications(){if(!configured(this.env))return;const row=this.sql.exec("SELECT MIN(retry_at) AS time FROM notification_outbox WHERE status='pending'").toArray()[0];if(row?.time==null)return;if(await this.ctx.storage.getAlarm()===null)await this.ctx.storage.setAlarm(Math.max(Date.now()+1000,row.time));}
   async alarm(){
     if(!configured(this.env))return;
-    const rows=this.sql.exec("SELECT * FROM notification_outbox WHERE status='pending' AND retry_at<=? ORDER BY retry_at,id LIMIT 5",Date.now()).toArray();
+    const rows=this.sql.exec("SELECT * FROM notification_outbox WHERE status='pending' AND retry_at<=? ORDER BY retry_at,id LIMIT ?",Date.now(),this.env.EMAILJS_SERVICE_ID?1:5).toArray();
     for(const row of rows){try{await deliverNotification(this.env,row.id,JSON.parse(row.payload));this.sql.exec("UPDATE notification_outbox SET status='sent',error=NULL WHERE id=?",row.id);}catch(error){const attempts=error.retryAfterMs?row.attempts:row.attempts+1;this.sql.exec('UPDATE notification_outbox SET attempts=?,retry_at=?,status=?,error=? WHERE id=?',attempts,Date.now()+(error.retryAfterMs||Math.min(3600000,30000*2**attempts)),attempts>=8?'failed':'pending',error.message,row.id);}}
     await this.scheduleNotifications();
   }

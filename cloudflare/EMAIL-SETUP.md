@@ -6,25 +6,21 @@ new garden entry, and new chat message. Both recipients are fixed on the server:
 
 ## Current setup: EmailJS without a postal address
 
-The owner declined Brevo's required postal address. EmailJS free account was
-created and successfully signed in on 2026-10-15. Gmail configuration is open
-with service ID `service_t95klc2`, display name `RELETTER Gmail`. Connect Account
-did not open an OAuth tab through the in-app browser, so owner handoff was requested.
-The Gmail service has NOT been created or connected yet.
+EmailJS is active in production as of 2026-10-16. Gmail service
+`service_dzz7nob` is connected. Template `template_00sseq2` has fixed To
+`zhenggdove@gmail.com` and CC `partoftheszene@gmail.com`, subject `{{subject}}`
+and escaped `{{message}}` content. Private message history storage is disabled.
 
-After connection create ONE notification template, with fixed To address
-`zhenggdove@gmail.com` and fixed CC `partoftheszene@gmail.com`. Subject is
-`{{subject}}`; body is `{{message}}` rendered as escaped text with line breaks.
-Do not use dynamic recipients. Disable stored email history if supported.
-Store `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY` as Worker
-secrets; add `EMAILJS_PRIVATE_KEY` if required by server-side account security.
-Confirm account security permits non-browser REST requests before activation.
+The owner approved non-browser API access with mandatory Private Key verification.
+All four EMAILJS_* settings are stored in Cloudflare Worker secrets, never in
+frontend assets or Git. A real setup test was accepted and EmailJS history shows
+OK for production outbox deliveries. This confirms provider acceptance, not each
+recipient's inbox delivery.
 
-The transport uses https://api.emailjs.com/api/v1.0/email/send. Free plan is
-200 requests/month. It has no provider idempotency guarantee: accepted sends
-whose responses are lost can be duplicated on retry. HTTP 429 retries in one
-minute. Pending outbox events are delivered on activation, including older
-events from the setup period. Sending is still inactive until setup is complete.
+Free plan: 200 requests/month. The worker sends one event per alarm, at least one
+second apart; HTTP 429 defers retry for one minute. Older pending notifications
+from setup are delivered automatically. EmailJS has no provider idempotency
+guarantee, so a lost success response can cause a duplicate on retry.
 
 https://www.emailjs.com/pricing/
 https://www.emailjs.com/docs/rest-api/send/
