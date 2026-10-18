@@ -20,8 +20,10 @@ export function battleAction(game,actor,players,body,now=Date.now()){
  if(body.action!=='shoot')return {error:'Unknown action'};
  if(now-(game.shots[name]||0)<650)return {error:'Water gun is refilling'};
  const d=body.direction;if(!Array.isArray(d)||d.length!==3||!d.every(Number.isFinite)||Math.abs(Math.hypot(...d)-1)>.05)return {error:'Invalid aim'};
- game.shots[name]=now;const origin=[pos[0],pos[1]+1,pos[2]],shot={origin,direction:d,hit:null};
- for(const target of players){if(target.id===actor.id||!target.state?.visible)continue;const t=target.state.position,delta=[t[0]-origin[0],t[1]+1-origin[1],t[2]-origin[2]],along=delta.reduce((s,v,i)=>s+v*d[i],0);if(along<0||along>18||Math.hypot(...delta.map((v,i)=>v-d[i]*along))>1.25)continue;
+ const charge=typeof body.charge==='number'&&Number.isFinite(body.charge)?Math.max(0,Math.min(1,body.charge)):0;
+ const range=18+24*charge,radius=.12+.38*charge;
+ game.shots[name]=now;const origin=[pos[0],pos[1]+1,pos[2]],shot={origin,direction:d,charge,range,radius,hit:null};
+ for(const target of players){if(target.id===actor.id||!target.state?.visible)continue;const t=target.state.position,delta=[t[0]-origin[0],t[1]+1-origin[1],t[2]-origin[2]],along=delta.reduce((s,v,i)=>s+v*d[i],0);if(along<0||along>range||Math.hypot(...delta.map((v,i)=>v-d[i]*along))>1.25+radius-.12)continue;
   shot.hit=target.character;const hits=(game.hits[target.character]||0)+1;game.hits[target.character]=hits%3;
   if(hits===3){const amount=Math.max(1,game.wallets[target.character]||0);game.wallets[target.character]=0;game.loot.push({id:crypto.randomUUID(),position:[...t],amount,owner:target.character,time:now});}break;
  }
