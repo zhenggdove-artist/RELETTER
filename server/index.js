@@ -1,3 +1,4 @@
+import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,worldView} from './world-rules.js';
 import {mediaKinds,validMedia,battleAction} from './game-rules.js';
 import http from 'node:http';
 import {randomUUID,timingSafeEqual} from 'node:crypto';
@@ -7,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const sessions=new Map(), peers=new Map(),game={};
-function prunePeers(){for(const [id,p] of peers)if(Date.now()-(p.lastSeen||0)>35000){peers.delete(id);p.res.end();}}
+function prunePeers(){for(const [id,p] of peers)if(Date.now()-(p.lastSeen||0)>35000){peers.delete(id);p.res.end();}resetIfEmpty();}
 const password=process.env.GAME_PASSWORD||'RAE1210';
 let db,pool;
 if(process.env.RELETTER_DATABASE_URL){
@@ -24,6 +25,11 @@ if(process.env.RELETTER_DATABASE_URL){
 async function entries(){const rows=pool?(await pool.query('SELECT payload FROM reletter_entries')).rows.map(x=>x.payload):db.prepare('SELECT payload FROM reletter_entries').all().map(x=>JSON.parse(x.payload));return rows.sort((a,b)=>a.created_at.localeCompare(b.created_at));}
 async function insert(e){if(pool)return (await pool.query('INSERT INTO reletter_entries VALUES ($1,$2) ON CONFLICT (id) DO NOTHING',[e.id,JSON.stringify(e)])).rowCount;return db.prepare('INSERT OR IGNORE INTO reletter_entries VALUES (?,?)').run(e.id,JSON.stringify(e)).changes;}
 async function remove(id){if(pool)await pool.query('DELETE FROM reletter_entries WHERE id=$1',[id]);else db.prepare('DELETE FROM reletter_entries WHERE id=?').run(id);}
+if(pool){await pool.query('CREATE TABLE IF NOT EXISTS reletter_world (id INTEGER PRIMARY KEY,payload JSONB NOT NULL)');Object.assign(game,(await pool.query('SELECT payload FROM reletter_world WHERE id=1')).rows[0]?.payload||{});}else{db.exec('CREATE TABLE IF NOT EXISTS reletter_world (id INTEGER PRIMARY KEY,payload TEXT NOT NULL)');Object.assign(game,JSON.parse(db.prepare('SELECT payload FROM reletter_world WHERE id=1').get()?.payload||'{}'));}
+resetEncounter(game);
+let worldWrite=Promise.resolve();
+function saveWorld(){const payload=JSON.stringify(game);worldWrite=worldWrite.catch(()=>{}).then(async()=>{if(pool)await pool.query('INSERT INTO reletter_world VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',[payload]);else db.prepare('INSERT OR REPLACE INTO reletter_world VALUES(1,?)').run(payload);});return worldWrite;}
+function resetIfEmpty(){if(peers.size){delete game.offlineSince;return;}if(!game.redMode&&game.boss.hp===100)return;if(!game.offlineSince){game.offlineSince=Date.now();setTimeout(resetIfEmpty,5100).unref();}else if(Date.now()-game.offlineSince>=5000){resetEncounter(game);delete game.offlineSince;saveWorld().catch(console.error);}}
 const broadcast=(type,data)=>{for(const p of peers.values())p.res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);};
 const roster=()=>[...peers].map(([id,p])=>({id,character:p.character,state:p.state}));
 function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>20_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
@@ -54,8 +60,8 @@ try{
     }
     if(url.pathname.startsWith('/api/entries/')&&req.method==='DELETE'){const entryId=url.pathname.split('/').pop();await remove(entryId);broadcast('deleted',{id:entryId});return json(res,200,{ok:true});}
     if(url.pathname==='/api/players'){prunePeers();return json(res,200,roster().map(p=>({...p,self:p.id===id})));}
-    if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);broadcast('players',roster());}return json(res,200,{ok:true});}
-    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const result=battleAction(game,{...p,id},roster(),await body(req));if(result.error)return json(res,400,{error:result.error});broadcast('game',{wallets:game.wallets||{},hits:game.hits||{},loot:game.loot||[]});if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true});}
+    if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);resetIfEmpty();broadcast('players',roster());}return json(res,200,{ok:true});}
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true});}
     if(url.pathname==='/api/events'){
       prunePeers();
       const character=url.searchParams.get('character');
@@ -64,22 +70,22 @@ try{
       if(peers.size>=2&&!peers.has(id))return json(res,409,{error:'Both seats are occupied'});
       peers.get(id)?.res.end();session.character=character;
       res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});
-      const peer={res,character,state:null,lastSeen:Date.now(),connectionId:url.searchParams.get('connectionId')};peers.set(id,peer);
-      res.write(`event: welcome\ndata: ${JSON.stringify({id,players:roster()})}\n\n`);broadcast('players',roster());res.write(`event: game\ndata: ${JSON.stringify({wallets:game.wallets||{},hits:game.hits||{},loot:game.loot||[]})}\n\n`);
+      const peer={res,character,state:null,lastSeen:Date.now(),connectionId:url.searchParams.get('connectionId')};peers.set(id,peer);resetIfEmpty();
+      res.write(`event: welcome\ndata: ${JSON.stringify({id,players:roster()})}\n\n`);broadcast('players',roster());res.write(`event: game\ndata: ${JSON.stringify(worldView(game))}\n\n`);
       const heartbeat=setInterval(()=>res.write(': heartbeat\n\n'),15000);
-      res.on('close',()=>{clearInterval(heartbeat);if(peers.get(id)===peer){peers.delete(id);broadcast('players',roster());}});return;
+      res.on('close',()=>{clearInterval(heartbeat);if(peers.get(id)===peer){peers.delete(id);resetIfEmpty();broadcast('players',roster());}});return;
     }
     if(url.pathname==='/api/state'&&req.method==='POST'){
       const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});p.lastSeen=Date.now();
       if(!Array.isArray(b.position)||b.position.length!==3||!b.position.every(Number.isFinite)||!Number.isFinite(b.rotation))return json(res,400,{error:'Invalid position'});
-      p.state={position:b.position,rotation:b.rotation,visible:!!b.visible,phase:b.phase};broadcast('state',{id,character:p.character,state:p.state});return json(res,200,{ok:true});
+      p.state={position:b.position,rotation:b.rotation,visible:!!b.visible,phase:b.phase,paused:!!b.paused};broadcast('state',{id,character:p.character,state:p.state});return json(res,200,{ok:true});
     }
     if(url.pathname==='/api/chat'&&req.method==='GET'){const rows=pool?(await pool.query('SELECT payload FROM reletter_chat')).rows.map(r=>r.payload):db.prepare('SELECT payload FROM reletter_chat').all().map(r=>JSON.parse(r.payload));return json(res,200,rows.sort((a,b)=>a.time-b.time||a.id.localeCompare(b.id)));}
     if(url.pathname==='/api/chat'&&req.method==='POST'){
       const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});
       if(typeof b.text!=='string'||!b.text.trim()||b.text.length>500)return json(res,400,{error:'Message must contain 1–500 characters'});
       if(p.lastChat&&Date.now()-p.lastChat<400)return json(res,429,{error:'Please wait before sending again'});
-      const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);return json(res,200,{ok:true});
+      const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);if(activateEncounter(game,chat.text)){await saveWorld();broadcast('game',worldView(game));}return json(res,200,{ok:true});
     }
     return json(res,404,{error:'API not found'});
   }
@@ -90,4 +96,5 @@ try{
   const content=await readFile(path);res.writeHead(200,{'Content-Type':mime[extname(path).toLowerCase()]});res.end(content);
 }catch(e){if(!res.headersSent)json(res,e.code==='ENOENT'?404:500,{error:'Request failed'});else res.end();console.error(e.message);}
 });
+setInterval(()=>{if(!peers.size||!game.redMode||game.boss.hp<=0)return;prunePeers();advanceBoss(game,roster());broadcast('boss',game.boss);},100).unref();
 server.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('RELETTER http://localhost:'+(process.env.PORT||3000)));

@@ -26,12 +26,12 @@ GitHub Pages 只提供靜態網頁，不會執行 `server/index.js`。把專案�
 - 留文字、畫畫或上傳圖片後按 PLANT，沿用原本動畫種成植物。
 - 色輪、明暗滑桿、顏色選擇器與 1–48 px 筆頭可自由搭配；圖片接受 PNG、JPG、WebP，最大 5 MB，上傳前自動縮到最長邊 1024 px。
 - 滑鼠經過植物顯示文字、作者、塗鴉和圖片。
-- 按 Enter 開啟聊天，再按 Enter 傳送；Esc 關閉。雙方訊息出現在左下角，最多保留最近 100 則。
+- 按 Enter 開啟聊天，再按 Enter 傳送；Esc 關閉。雙方訊息出現在左下角，訊息永久保存，可向上捲動查看歷史；手機可點 CHAT。
 - 每個角色只有一個在線席位。另一位的位置、朝向及動畫會即時同步；斷線會嘗試重新連線。
 
 ## 獨立資料庫
 
-未設定 `RELETTER_DATABASE_URL` 時，伺服器自動建立本專案的 `data/reletter.sqlite`。這是全新資料庫，不會請求原網站 Supabase。植物、文字、塗鴉和圖片由伺服器保存；聊天與在線位置只保留在目前連線期間。
+未設定 `RELETTER_DATABASE_URL` 時，伺服器自動建立本專案的 `data/reletter.sqlite`。這是全新資料庫，不會請求原網站 Supabase。植物、文字、塗鴉和圖片由伺服器保存；聊天永久保存；在線位置只保留在目前連線期間。建物會獨立保存，直到玩家主動銷毀。
 
 ## 免費 Cloudflare 部署
 
@@ -91,3 +91,13 @@ node tests/browser.mjs
 通知信只含「有玩家正在使用RELETTER」、「有玩家使用了留言功能」或「有玩家使用了聊天功能」，不含角色姓名、留言或聊天文字。
 
 隔離 Cloudflare 測試：先以 `npx wrangler dev --local --port 8788 --persist-to output/oct19-db` 啟動，依序執行 `node tests/oct19-backend.mjs`、`node tests/oct19-browser.mjs`、`node tests/oct19-water.mjs`。勿將這些會寫入測試資料的腳本指向正式網站。
+
+## 共同打怪與建造
+
+- 任一玩家在 CHAT 送出完整文字「一起打阿姨」，雙方本輪的水會變紅，只傷怪物，不傷 Ely／Rae。怪物 100 血，普通命中扣 1，蓄力隨時間增加到滿蓄力扣 5；WATER 或 Q 長按 1.5 秒蓄滿、放開射擊。
+- 螢幕上方顯示共用血條，命中會閃爍、血跡隨傷勢增加，死亡使用黃色粒子爆炸。任一玩家仍在線時不會復活；雙方都離線 5 秒後重置。HISTORY／留言／BUILD 操作期間會暫停怪物。
+- 抵達地面後點 BUILD，選 Cube／Bar／Cylinder。點地面或既有積木設定預覽位置，再按 PLACE；點積木上面可堆疊，Rotate 可轉動長條。點選既有物件後按 DESTROY 銷毀。
+- 建物兩邊同步、永久保存，重整或兩人離線都不會清除；牆、屋頂、怪物與水流具有碰撞／遮擋。建物保存於 RELETTER 專屬資料庫，與原參考遊戲無關。
+- 新植物會使用整個種植範圍，包含中央空位；舊植物仍沿用儲存的位置，指定回覆仍長在原植物的分岔上。
+
+共用規則與重啟保存測試：`node --test tests/world-rules.test.js tests/build-persistence.test.js`。隔離 Cloudflare 本機環境 `127.0.0.1:8788` 的雙人、建造與排版測試見 `tests/coop-build-browser.mjs`、`tests/build-physics-browser.mjs`、`tests/layout-panels.mjs`。
