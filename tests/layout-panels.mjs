@@ -15,7 +15,7 @@ try{
     const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;};
     const rect=el=>{const r=el.getBoundingClientRect();return {id:el.id,x:r.x,y:r.y,w:r.width,h:r.height,hit:el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};};
     const panels=['ui','search-panel','online-panel','build-panel'].map(id=>document.getElementById(id)).filter(visible);
-    const controls=['search-btn','chat-open','write-open','water-gun','build-open','boss-health','joystick-zone','jump-btn'].map(id=>document.getElementById(id)).filter(visible);
+    const controls=['search-btn','chat-open','write-open','water-gun','build-open','go-down','boss-health','joystick-zone','jump-btn'].map(id=>document.getElementById(id)).filter(visible);
     return {mode:document.body.dataset.panel,panels:panels.map(rect),boxes:[...panels,...controls].map(rect),inside:panels.flatMap(el=>[...el.querySelectorAll('input:not([hidden]),textarea,button')].filter(visible).filter(n=>{const a=n.getBoundingClientRect(),b=el.getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom;}).map(rect)),width:innerWidth,height:innerHeight};
    });
    assert.equal(state.mode,expected);assert.ok(state.panels.length<=1,`${touch}: simultaneous panels`);

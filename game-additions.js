@@ -395,6 +395,7 @@ function syncBossMonster(dt){
  return true;
 }
 function updateGardenWorld(dt){
+ const canGoDown=phase===PHASE.IDLE||phase===PHASE.DONE||(phase===PHASE.EXPLORE&&charRoot.position.y>3);goDownButton.hidden=!canGoDown;buildButton.hidden=canGoDown;buildButton.disabled=phase!==PHASE.EXPLORE;
  bossHud.hidden=!admitted;bossFlash=Math.max(0,bossFlash-dt);
  const boss=gameView.boss;
  for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}if(!gameView.redMode){m.root.visible=true;bossDefeatGeneration=null;if(m.bloodUniform){m.bloodUniform.amount.value=0;m.bloodUniform.flash.value=0;m.drips.geometry.setDrawRange(0,0);}continue;}
@@ -409,6 +410,16 @@ function updateGardenWorld(dt){
 const buildMeshes=new Map(),buildGhost=new THREE.Mesh(new THREE.BoxGeometry(2,2,2),new THREE.MeshStandardMaterial({color:'#f8e29b',transparent:true,opacity:.45,depthWrite:false}));scene.add(buildGhost);buildGhost.visible=false;buildGhost.name='Build preview';
 let buildShape='cube',buildRotation=0,buildPosition=[0,0,4],selectedBlock=null,buildBusy=false;
 const buildButton=document.createElement('button');buildButton.id='build-open';buildButton.textContent='BUILD';buildButton.type='button';dock.append(buildButton);
+const goDownButton=document.createElement('button');goDownButton.id='go-down';goDownButton.type='button';goDownButton.textContent='GO DOWN';goDownButton.setAttribute('aria-label','Go down to the ground without planting');dock.append(goDownButton);buildButton.hidden=true;
+goDownButton.onclick=()=>{
+ if(!admitted||monsterDeathActive||![PHASE.IDLE,PHASE.DONE,PHASE.EXPLORE].includes(phase))return;
+ const sign=selectedCharacter==='Ely'?-1:1;let landing=null;
+ for(let i=0;i<256;i++){const x=sign*(8+Math.floor(i/16)*2),z=STAIR_Z_FAR+4+(i%16)*2;if(!blockedByBuild(x,z,0)&&!monsters.some(m=>m.root.visible&&Math.hypot(m.root.position.x-x,m.root.position.z-z)<6)){landing=new THREE.Vector3(x,0,z);break;}}
+ if(!landing){message('No clear landing spot. Please try again.');return;}
+ claimPanel('none');document.activeElement?.blur();pendingStartText=null;keysDown.clear();cancelWaterCharge();resetToStart();
+ charRoot.position.copy(landing);jumpVelX=0;jumpVelZ=0;camTarget.copy(landing).add(new THREE.Vector3(0,1.5,0));camera.position.copy(landing).add(new THREE.Vector3(0,4,6));camera.lookAt(camTarget);
+ $('title').classList.remove('fade-out');monsterResumeGraceUntil=performance.now()+2000;reflectPanels();updateGardenWorld(0);
+};
 const buildPanel=document.createElement('section');buildPanel.id='build-panel';buildPanel.hidden=true;buildPanel.innerHTML='<header><b>BUILD</b><button id="build-close" type="button" aria-label="Close build">×</button></header><div class="build-shapes"><button data-shape="cube">Cube</button><button data-shape="bar">Bar</button><button data-shape="cylinder">Cylinder</button></div><p>Tap ground or a block to aim. Stack blocks to build.</p><div class="build-actions"><button id="build-front">In front</button><button id="build-rotate">Rotate ↻</button><button id="build-place">PLACE</button><button id="build-destroy" disabled>DESTROY</button></div><div id="build-status" role="status"></div>';document.body.append(buildPanel);
 const footprint=b=>b.shape==='bar'?(b.rotation===1?[2,2,6]:[6,2,2]):[2,2,2];
 function blockGeometry(b){return b.shape==='cylinder'?new THREE.CylinderGeometry(1,1,2,24):new THREE.BoxGeometry(...footprint(b));}
