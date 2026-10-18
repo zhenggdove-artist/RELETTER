@@ -163,16 +163,34 @@ goBtn.addEventListener('click',()=>{
 function addStoredPlant(e,grow=false){
   if(plantEntries.some(p=>p.entryId===e.id))return;
   const mesh=addPlant(e.text,grow,e.created_at,e.part?.username||'');
-  if(mesh){const p=plantEntries[plantEntries.length-1];p.entryId=e.id;p.media=e.part;if(e.part?.position)mesh.position.fromArray(e.part.position);if(e.part?.scale)mesh.scale.fromArray(e.part.scale);mesh.rotation.z=e.part?.rotation||0;mesh.userData.replyTilt=mesh.rotation.z;}
+  if(mesh){const p=plantEntries[plantEntries.length-1];p.entryId=e.id;p.media=e.part;if(e.part?.position)mesh.position.fromArray(e.part.position);if(e.part?.scale)mesh.scale.fromArray(e.part.scale);mesh.rotation.z=e.part?.rotation||0;mesh.userData.replyTilt=mesh.rotation.z;}if(searchPanel.classList.contains('show'))renderSearchList(searchInput.value);
 }
 function messageTimestamp(value){if(value==null)return null;const date=new Date(value);if(!Number.isFinite(date.getTime()))return null;const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));const time=document.createElement('time');time.className='message-time';time.dateTime=date.toISOString();time.textContent=`${parts.year} ${parts.month}.${parts.day} ${parts.hour}:${parts.minute}`;return time;}
 function showMedia(entry){
   plantLabel.replaceChildren();const text=document.createElement('div');text.textContent=entry.text+(entry.username?' — '+entry.username:'');plantLabel.append(text);
   for(const key of ['drawing','image'])if(entry.media?.[key]){const img=document.createElement('img');img.src=entry.media[key];img.alt=key==='drawing'?'Drawing':'Uploaded image';plantLabel.append(img);}
   for(const kind of ['audio','video'])if(entry.media?.[kind]){const el=document.createElement(kind);el.src=entry.media[kind];el.controls=true;el.preload='metadata';if(kind==='video')el.playsInline=true;plantLabel.append(el);}
-  if(entry.entryId){const reply=document.createElement('button');reply.textContent='Reply';reply.onclick=e=>{e.stopPropagation();replyParentId=entry.entryId;$('reply-draft').hidden=false;$('reply-draft').textContent='Reply to: '+entry.text.slice(0,100);const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel reply';cancel.onclick=e=>{e.stopPropagation();replyParentId=null;$('reply-draft').hidden=true;};$('reply-draft').append(cancel);closeChat();setHistorySmall(true);searchPanel.classList.remove('show');ui.classList.remove('mini','hidden');hidePlantLabel();ta.focus();};plantLabel.append(reply);}
+  if(entry.entryId){const reply=document.createElement('button');reply.textContent='Reply';reply.onclick=e=>{e.stopPropagation();beginPlantReply(entry);};plantLabel.append(reply);}
   const time=messageTimestamp(entry.ts);if(time)plantLabel.append(time);
 }
+
+function beginPlantReply(entry){
+ if(!entry.entryId)return;
+ replyParentId=entry.entryId;$('reply-draft').hidden=false;$('reply-draft').textContent='Reply to: '+entry.text.slice(0,100);
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel reply';cancel.onclick=e=>{e.stopPropagation();replyParentId=null;$('reply-draft').hidden=true;};$('reply-draft').append(cancel);
+ claimPanel('write');
+ // A completed planting cinematic must not swallow the next reply submission.
+ if(phase===PHASE.DONE){phase=PHASE.EXPLORE;phaseT=0;charRoot.visible=true;if(charModel)charModel.visible=true;}
+ ui.classList.remove('mini','hidden');reflectPanels();keysDown.clear();ta.focus();
+}
+let monsterInteractionWasPaused=false,monsterResumeGraceUntil=0;
+function monstersPausedForGarden(){
+ const paused=admitted&&(document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
+ if(paused){monsterInteractionWasPaused=true;return true;}
+ if(monsterInteractionWasPaused){monsterInteractionWasPaused=false;monsterResumeGraceUntil=performance.now()+1200;}
+ return performance.now()<monsterResumeGraceUntil;
+}
+
 let hoverPoint=null, hoverAt=0,labelHideTimer=null;
 function delayHideLabel(){clearTimeout(labelHideTimer);labelHideTimer=setTimeout(()=>{if(!plantLabel.matches(':hover')&&![...plantLabel.querySelectorAll('audio,video')].some(m=>!m.paused))hidePlantLabel();},400);}
 plantLabel.addEventListener('pointerenter',()=>clearTimeout(labelHideTimer));
@@ -203,7 +221,7 @@ function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=cha
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 const dock=document.createElement('nav');dock.id='action-dock';dock.setAttribute('aria-label','Game tools');dock.hidden=true;
 const writeOpen=document.createElement('button');writeOpen.id='write-open';writeOpen.type='button';writeOpen.textContent='WRITE';
-$('search-btn').textContent='SEARCH';$('search-btn').setAttribute('aria-label','Search plants');
+$('search-btn').textContent='HISTORY';$('search-btn').setAttribute('aria-label','Plant history');searchInput.placeholder='Search messages…';
 dock.append($('search-btn'),$('chat-open'),writeOpen,$('water-gun'));document.body.append(dock);
 const searchHeader=document.createElement('div');searchHeader.id='search-header';const searchClose=document.createElement('button');searchClose.id='search-close';searchClose.type='button';searchClose.textContent='×';searchClose.setAttribute('aria-label','Close search');searchInput.before(searchHeader);searchHeader.append(searchInput,searchClose);searchClose.onclick=()=>{searchInput.blur();claimPanel('none');};
 function reflectPanels(){const open=!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':$('online-panel').classList.contains('chatting')?'chat':'none';document.body.dataset.panel=open;writeOpen.textContent=ui.classList.contains('done-state')?'RETURN':'WRITE';for(const [id,name] of [['search-btn','search'],['chat-open','chat'],['write-open','write']])$(id).setAttribute('aria-expanded',String(open===name));}
@@ -240,9 +258,9 @@ window.addEventListener('keydown',e=>{
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
-window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
+window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
-if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},world:()=>({charRoot,camera,plantRoot,plantEntries})};
+if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries})};
 window.reletterPlantScreenPoint=()=>{
   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   for(const entry of [...plantEntries].reverse()){
