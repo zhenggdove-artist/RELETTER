@@ -118,3 +118,5 @@ absolute positioning that could overlap text or images.
 headers and failure handling with a mock provider. `node tests/cloudflare.mjs`
 checks persisted event counts and duplicate-save handling against an isolated
 local Wrangler instance with no email credentials configured.
+
+2026-10-19: Subject and body now contain only the fixed anonymous activity sentence. Names, entry text, and chat text are not sent to EmailJS. Queue and recipient configuration are unchanged.

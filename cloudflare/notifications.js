@@ -1,9 +1,8 @@
 export const recipients=['zhenggdove@gmail.com','partoftheszene@gmail.com'];
 export const configured=env=>Boolean((env.EMAILJS_SERVICE_ID&&env.EMAILJS_TEMPLATE_ID&&env.EMAILJS_PUBLIC_KEY)||(env.BREVO_API_KEY&&env.BREVO_SENDER_EMAIL)||(env.GOOGLE_MAIL_RELAY_URL&&env.GOOGLE_MAIL_RELAY_TOKEN)||(env.RESEND_API_KEY&&env.NOTIFICATION_FROM));
 export function notificationMail(event,from){
- const date=new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',dateStyle:'medium',timeStyle:'medium',hourCycle:'h23'}).format(new Date(event.time));
- const action={online:'上線了',plant:'在花園留下了留言',chat:'傳送了聊天留言'}[event.kind];
- return {from,to:recipients,subject:`RELETTER · ${event.name} ${action}`,text:`${event.name} ${action}\n時間：${date}（台灣時間）${event.text?'\n\n'+event.text:''}\n\nhttps://reletter-garden.zhenggdove-artist.workers.dev/`};
+ const action={online:'有玩家正在使用RELETTER',plant:'有玩家使用了留言功能',chat:'有玩家使用了聊天功能'}[event.kind]||'RELETTER';
+ return {from,to:recipients,subject:action,text:action};
 }
 export async function deliverNotification(env,id,event,transport=fetch){
  if(!configured(env))throw new Error('EMAIL_NOT_CONFIGURED');

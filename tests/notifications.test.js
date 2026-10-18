@@ -9,7 +9,7 @@ test('EmailJS uses a fixed template without dynamic recipient overrides and reje
  assert.equal(await deliverNotification(env,'chat-test',event,async(url,request)=>{
   assert.equal(url,'https://api.emailjs.com/api/v1.0/email/send');const body=JSON.parse(request.body);
   assert.equal(body.service_id,'service_test');assert.equal(body.template_id,'template_test');assert.equal(body.user_id,'test-public');
-  assert.deepEqual(Object.keys(body.template_params).sort(),['event_id','message','subject']);assert.ok(body.template_params.message.includes('Hello'));
+  assert.deepEqual(Object.keys(body.template_params).sort(),['event_id','message','subject']);assert.equal(body.template_params.message,'有玩家使用了聊天功能');assert.ok(!JSON.stringify(body.template_params).includes('Hello'));
   return new Response('OK');
  }), 'chat-test');
  await assert.rejects(deliverNotification(env,'chat-test',event,async()=>new Response('quota',{status:429})),e=>e.retryAfterMs===60000);
@@ -22,7 +22,7 @@ test('Brevo sends to both recipients with stable UUID, verified sender and quota
  const keys=[];
  for(let i=0;i<2;i++)assert.equal(await deliverNotification(env,'chat-123',event,async(url,request)=>{
   assert.equal(url,'https://api.brevo.com/v3/smtp/email');assert.equal(request.headers['api-key'],'test-only');
-  const body=JSON.parse(request.body);assert.deepEqual(body.to,recipients.map(email=>({email})));assert.equal(body.sender.email,env.BREVO_SENDER_EMAIL);assert.equal(body.textContent.includes('Hello'),true);
+  const body=JSON.parse(request.body);assert.deepEqual(body.to,recipients.map(email=>({email})));assert.equal(body.sender.email,env.BREVO_SENDER_EMAIL);assert.equal(body.textContent,'有玩家使用了聊天功能');
   assert.match(body.headers.idempotencyKey,/^[a-f0-9]{8}-[a-f0-9]{4}-5[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);keys.push(body.headers.idempotencyKey);
   return Response.json({messageId:'brevo-id'});
  }), 'brevo-id');
@@ -33,10 +33,10 @@ test('Brevo sends to both recipients with stable UUID, verified sender and quota
  assert.equal(await deliverNotification(env,'chat-123',event,async()=>Response.json({code:'duplicate_parameter',message:'idempotency key already used'},{status:400})),'duplicate:chat-123');
  await assert.rejects(deliverNotification(env,'chat-123',event,async()=>Response.json({code:'duplicate_parameter',message:'invalid recipient'},{status:400})),/HTTP_400/);
 });
-test('all event kinds notify both intended recipients with Taiwan time and literal user text',()=>{
+test('notifications disclose only the requested anonymous activity type',()=>{
  for(const kind of ['online','plant','chat']){
   const mail=notificationMail({kind,name:'Rae',text:'<script>hello</script>',time:Date.parse('2026-10-15T06:30:00Z')},'Garden <notify@example.com>');
-  assert.deepEqual(mail.to,['zhenggdove@gmail.com','partoftheszene@gmail.com']);assert.ok(mail.text.includes('14:30'));assert.ok(mail.text.includes('<script>hello</script>'));assert.ok(mail.subject.includes('Rae'));
+  assert.deepEqual(mail.to,['zhenggdove@gmail.com','partoftheszene@gmail.com']);const expected={online:'有玩家正在使用RELETTER',plant:'有玩家使用了留言功能',chat:'有玩家使用了聊天功能'}[kind];assert.equal(mail.text,expected);assert.equal(mail.subject,expected);
  }
  assert.equal(configured({}),false);assert.equal(configured({RESEND_API_KEY:'test',NOTIFICATION_FROM:'test@example.com'}),true);
 });

@@ -24,7 +24,7 @@ GitHub Pages 只提供靜態網頁，不會執行 `server/index.js`。把專案�
 免費公開部署使用下方的 Cloudflare Workers 方案，前端、登入、資料庫與雙人連線都在同一個 HTTPS 網址。若想保留現有 GitHub Pages 網址作入口，將 `hosting-config.js` 的 `RELETTER_SERVER_URL` 填成部署成功後的 HTTPS 遊戲網址，再更新 Pages；它會導向完整遊戲，不需要把密碼或登入 Cookie 跨站傳送。
 
 - 留文字、畫畫或上傳圖片後按 PLANT，沿用原本動畫種成植物。
-- 色輪、明暗滑桿、顏色選擇器與 1–48 px 筆頭可自由搭配；圖片接受 PNG、JPG、WebP，最大 10 MB，上傳前自動縮到最長邊 1024 px。
+- 色輪、明暗滑桿、顏色選擇器與 1–48 px 筆頭可自由搭配；圖片接受 PNG、JPG、WebP，最大 5 MB，上傳前自動縮到最長邊 1024 px。
 - 滑鼠經過植物顯示文字、作者、塗鴉和圖片。
 - 按 Enter 開啟聊天，再按 Enter 傳送；Esc 關閉。雙方訊息出現在左下角，最多保留最近 100 則。
 - 每個角色只有一個在線席位。另一位的位置、朝向及動畫會即時同步；斷線會嘗試重新連線。
@@ -78,3 +78,16 @@ node tests/browser.mjs
 瀏覽器測試需先 `npm start`，並安裝對應的 Playwright Chromium（`npx playwright install chromium`）。測試圖片放在忽略版控的 `output/`。
 
 `index.html` 保留原場景程式。新增功能的原始片段位於 `game-additions.js`；修改後執行 `node sync-game.mjs` 同步至主頁。修改頁面布局直接編輯 `index.html`。
+
+
+## 2026-10-19 互動功能
+
+手機 CHAT 同時顯示對話紀錄和輸入欄，開啟時定位最新訊息；送出後繼續輸入，× 可收起。畫板 Undo 可復原最近 30 次筆畫／清除。留言支援圖片、音訊和影片（音／影片每檔上限 5 MB；播放格式依手機支援，建議 MP3、M4A、MP4、WebM）。
+
+點植物浮動框中的 Reply，再種下留言，會從該植物莖上長出分岔；回覆對象、位置、角度和影音皆存於 RELETTER 的獨立資料庫。WATER 按鈕（電腦也可按 Q）朝視線方向射擊，在視線前方的另一名玩家可輔助瞄準。三次命中後掉落其全部金幣，沒有金幣則產生一枚；靠近掉落處即可撿取。命中、掉落與金幣歸屬由後端統一更新。
+
+登入會重用有效 session；同一 session 新連線取代舊連線。手機離開頁面主動釋放，未正常關閉的連線在停止心跳 35 秒後可被回收。離線請求帶有連線識別，避免舊頁面的延遲請求關閉新頁面。
+
+通知信只含「有玩家正在使用RELETTER」、「有玩家使用了留言功能」或「有玩家使用了聊天功能」，不含角色姓名、留言或聊天文字。
+
+隔離 Cloudflare 測試：先以 `npx wrangler dev --local --port 8788 --persist-to output/oct19-db` 啟動，依序執行 `node tests/oct19-backend.mjs`、`node tests/oct19-browser.mjs`、`node tests/oct19-water.mjs`。勿將這些會寫入測試資料的腳本指向正式網站。

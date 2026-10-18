@@ -1,10 +1,10 @@
 import {DurableObject} from 'cloudflare:workers';
+import {mediaKinds,validMedia,battleAction} from '../server/game-rules.js';
 import {configured,deliverNotification} from './notifications.js';
 
 const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...extra}});
-const imagePattern=/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 const vector=v=>Array.isArray(v)&&v.length===3&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<100000)?v:null;
-async function readBody(request){const text=await request.text();if(text.length>5_000_000)throw new Error('File too large');return JSON.parse(text||'{}');}
+async function readBody(request){const text=await request.text();if(text.length>20_000_000)throw new Error('File too large');return JSON.parse(text||'{}');}
 
 export default {
   async fetch(request,env){
@@ -20,24 +20,33 @@ export default {
 
 export class ReletterGarden extends DurableObject {
   constructor(ctx,env){
-    super(ctx,env);this.sql=ctx.storage.sql;this.closedSockets=new Set();
+    super(ctx,env);ctx.setWebSocketAutoResponse();this.sql=ctx.storage.sql;this.closedSockets=new Set();
     this.sql.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, expires INTEGER NOT NULL, character TEXT);
       CREATE TABLE IF NOT EXISTS entries (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS chat_messages (id TEXT PRIMARY KEY, name TEXT NOT NULL, text TEXT NOT NULL, time INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS notification_outbox (id TEXT PRIMARY KEY, payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, retry_at INTEGER NOT NULL DEFAULT 0, error TEXT);
       CREATE INDEX IF NOT EXISTS entries_by_date ON entries(created_at);
+      CREATE TABLE IF NOT EXISTS game_state (id INTEGER PRIMARY KEY, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS media (entry_id TEXT NOT NULL, kind TEXT NOT NULL, chunk INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(entry_id,kind,chunk));`);
-    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping','pong'));
+
   }
   queueNotification(id,event){this.sql.exec('INSERT OR IGNORE INTO notification_outbox(id,payload) VALUES(?,?)',id,JSON.stringify(event));}
-  async scheduleNotifications(){if(!configured(this.env))return;const row=this.sql.exec("SELECT MIN(retry_at) AS time FROM notification_outbox WHERE status='pending'").toArray()[0];if(row?.time==null)return;if(await this.ctx.storage.getAlarm()===null)await this.ctx.storage.setAlarm(Math.max(Date.now()+1000,row.time));}
+  async scheduleNotifications(){
+    let next=this.sockets().length?Date.now()+15000:Infinity;
+    if(configured(this.env)){const row=this.sql.exec("SELECT MIN(retry_at) AS time FROM notification_outbox WHERE status='pending'").toArray()[0];if(row?.time!=null)next=Math.min(next,Math.max(Date.now()+1000,row.time));}
+    const alarm=await this.ctx.storage.getAlarm();if(Number.isFinite(next)&&(alarm===null||alarm>next))await this.ctx.storage.setAlarm(next);
+  }
   async alarm(){
-    if(!configured(this.env))return;
+    this.pruneSockets();this.broadcast('players',this.roster());
+    if(!configured(this.env)){await this.scheduleNotifications();return;}
     const rows=this.sql.exec("SELECT * FROM notification_outbox WHERE status='pending' AND retry_at<=? ORDER BY retry_at,id LIMIT ?",Date.now(),this.env.EMAILJS_SERVICE_ID?1:5).toArray();
     for(const row of rows){try{await deliverNotification(this.env,row.id,JSON.parse(row.payload));this.sql.exec("UPDATE notification_outbox SET status='sent',error=NULL WHERE id=?",row.id);}catch(error){const attempts=error.retryAfterMs?row.attempts:row.attempts+1;this.sql.exec('UPDATE notification_outbox SET attempts=?,retry_at=?,status=?,error=? WHERE id=?',attempts,Date.now()+(error.retryAfterMs||Math.min(3600000,30000*2**attempts)),attempts>=8?'failed':'pending',error.message,row.id);}}
     await this.scheduleNotifications();
   }
+  pruneSockets(){for(const ws of this.ctx.getWebSockets()){const p=ws.deserializeAttachment();if(ws.readyState!==1||!p||p.expires<Date.now()||Date.now()-(p.lastSeen||0)>35000){this.closedSockets.add(ws);try{ws.close(1000,'Session inactive');}catch{}}}}
   sockets(){return this.ctx.getWebSockets().filter(ws=>ws.readyState===1&&!this.closedSockets.has(ws));}
+  game(){return JSON.parse(this.sql.exec('SELECT payload FROM game_state WHERE id=1').toArray()[0]?.payload||'{}');}
+  gameView(){const g=this.game();return {wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[]};}
   roster(){return this.sockets().map(ws=>{const p=ws.deserializeAttachment();return{id:p.id,character:p.character,state:p.state};});}
   broadcast(type,data){const message=JSON.stringify({type,data});for(const ws of this.sockets())try{ws.send(message);}catch{ws.close(1011,'Connection interrupted');}}
   session(request){const id=request.headers.get('Cookie')?.match(/(?:^|;\s*)reletter_session=([^;]+)/)?.[1];if(!id)return null;return this.sql.exec('SELECT * FROM sessions WHERE id=? AND expires>?',id,Date.now()).toArray()[0]||null;}
@@ -51,14 +60,22 @@ export class ReletterGarden extends DurableObject {
         const b=new Uint8Array(await crypto.subtle.digest('SHA-256',encode.encode((this.env.GAME_PASSWORD||'RAE1210').trim().toUpperCase())));
         let difference=0;for(let i=0;i<a.length;i++)difference|=a[i]^b[i];
         if(difference)return json({error:'Incorrect password'},401);
-        const id=crypto.randomUUID(),expires=Date.now()+86400000;
+        const previous=this.session(request);const id=previous?.id||crypto.randomUUID(),expires=Date.now()+86400000;
         this.sql.exec('DELETE FROM sessions WHERE expires<?',Date.now());
-        this.sql.exec('INSERT INTO sessions(id,expires) VALUES(?,?)',id,expires);
+        this.sql.exec('INSERT INTO sessions(id,expires) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires',id,expires);
         return json({ok:true},200,{'Set-Cookie':`reletter_session=${id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400${url.protocol==='https:'?'; Secure':''}`});
       }
       const session=this.session(request);if(!session)return json({error:'Please enter the password first'},401);
       if(path==='/api/notifications/status'&&request.method==='GET')return json({configured:configured(this.env),counts:this.sql.exec('SELECT status,COUNT(*) AS count FROM notification_outbox GROUP BY status').toArray()});
+      if(path==='/api/players'&&request.method==='GET'){this.pruneSockets();return json(this.roster().map(p=>({...p,self:p.id===session.id})));}
+      if(path==='/api/disconnect'&&request.method==='POST'){const body=await readBody(request);for(const ws of this.ctx.getWebSockets(session.id)){if(ws.deserializeAttachment().connectionId!==body.connectionId)continue;this.closedSockets.add(ws);ws.close(1000,'Page hidden');}this.broadcast('players',this.roster());return json({ok:true});}
+      if(path==='/api/game'&&request.method==='POST'){
+        const body=await readBody(request);this.pruneSockets();const ws=this.sockets().find(w=>w.deserializeAttachment().id===session.id);if(!ws)return json({error:'Not connected'},409);
+        const game=this.game(),result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);
+        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,game:this.gameView()});
+      }
       if(path==='/api/socket'){
+        this.pruneSockets();
         if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return json({error:'WebSocket connection required'},426);
         const character=url.searchParams.get('character');
         if(!['Ely','Rae'].includes(character))return json({error:'Choose a character'},400);
@@ -67,9 +84,9 @@ export class ReletterGarden extends DurableObject {
         if(other.length>=2)return json({error:'Both seats are occupied'},409);
         for(const ws of this.ctx.getWebSockets(session.id)){this.closedSockets.add(ws);ws.close(1000,'Joined from another tab');}
         const [client,server]=Object.values(new WebSocketPair());this.ctx.acceptWebSocket(server,[session.id]);
-        server.serializeAttachment({id:session.id,character,state:null,expires:session.expires,lastChat:0});
+        server.serializeAttachment({id:session.id,character,state:null,expires:session.expires,lastChat:0,lastSeen:Date.now(),connectionId:url.searchParams.get('connectionId')||crypto.randomUUID()});
         this.sql.exec('UPDATE sessions SET character=? WHERE id=?',character,session.id);
-        server.send(JSON.stringify({type:'welcome',data:{id:session.id,players:this.roster()}}));this.broadcast('players',this.roster());
+        server.send(JSON.stringify({type:'welcome',data:{id:session.id,players:this.roster()}}));this.broadcast('players',this.roster());server.send(JSON.stringify({type:'game',data:this.gameView()}));
         this.queueNotification('online-'+session.id,{kind:'online',name:character,time:Date.now()});this.ctx.waitUntil(this.scheduleNotifications());
         return new Response(null,{status:101,webSocket:client});
       }
@@ -77,24 +94,27 @@ export class ReletterGarden extends DurableObject {
       if(path==='/api/entries'&&request.method==='POST'){
         const body=await readBody(request),part=body.part||{};
         if(typeof body.text!=='string'||!body.text||body.text.length>4000)return json({error:'Message must contain 1–4000 characters'},400);
-        for(const kind of ['drawing','image'])if(part[kind]&&(typeof part[kind]!=='string'||part[kind].length>2200000||!imagePattern.test(part[kind])))return json({error:'Unsupported image format or size'},400);
+        for(const kind of mediaKinds)if(!validMedia(kind,part[kind]))return json({error:'Unsupported media format or size'},400);
+        if(part.parentId&&!this.sql.exec('SELECT id FROM entries WHERE id=?',part.parentId).toArray().length)return json({error:'The original plant no longer exists'},400);
         const id=typeof body.id==='string'&&/^[a-f0-9-]{36}$/.test(body.id)?body.id:crypto.randomUUID();
         const existing=this.sql.exec('SELECT payload FROM entries WHERE id=?',id).toArray()[0];if(existing)return json(JSON.parse(existing.payload),200);
-        const entry={id,text:body.text,created_at:new Date().toISOString(),part:{username:session.character||'Ely',position:vector(part.position),scale:vector(part.scale),drawing:part.drawing?`/api/media/${id}/drawing`:null,image:part.image?`/api/media/${id}/image`:null}};
+        const entry={id,text:body.text,created_at:new Date().toISOString(),part:{username:session.character||'Ely',position:vector(part.position),scale:vector(part.scale),drawing:part.drawing?`/api/media/${id}/drawing`:null,image:part.image?`/api/media/${id}/image`:null,audio:part.audio?`/api/media/${id}/audio`:null,video:part.video?`/api/media/${id}/video`:null,parentId:part.parentId||null,rotation:Number.isFinite(part.rotation)?part.rotation:0}};
         this.ctx.storage.transactionSync(()=>{
           this.sql.exec('INSERT INTO entries VALUES(?,?,?)',id,entry.created_at,JSON.stringify(entry));
           this.queueNotification('plant-'+id,{kind:'plant',name:entry.part.username,text:entry.text,time:Date.parse(entry.created_at)});
-          for(const kind of ['drawing','image'])if(part[kind])for(let offset=0;offset<part[kind].length;offset+=65536)this.sql.exec('INSERT INTO media VALUES(?,?,?,?)',id,kind,offset/65536,part[kind].slice(offset,offset+65536));
+          for(const kind of mediaKinds)if(part[kind])for(let offset=0;offset<part[kind].length;offset+=65536)this.sql.exec('INSERT INTO media VALUES(?,?,?,?)',id,kind,offset/65536,part[kind].slice(offset,offset+65536));
         });
         this.ctx.waitUntil(this.scheduleNotifications());this.broadcast('plant',{...entry,sender:session.id});return json(entry,201);
       }
-      const media=path.match(/^\/api\/media\/([a-f0-9-]{36})\/(drawing|image)$/);
+      const media=path.match(/^\/api\/media\/([a-f0-9-]{36})\/(drawing|image|audio|video)$/);
       if(media&&request.method==='GET'){
         const chunks=this.sql.exec('SELECT data FROM media WHERE entry_id=? AND kind=? ORDER BY chunk',media[1],media[2]).toArray();
         if(!chunks.length)return json({error:'Image not found'},404);
         const data=chunks.map(c=>c.data).join(''),separator=data.indexOf(','),mime=data.slice(5,data.indexOf(';'));
         const binary=atob(data.slice(separator+1)),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
-        return new Response(bytes,{headers:{'Content-Type':mime,'Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff'}});
+        const headers={'Content-Type':mime,'Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'};
+        const range=request.headers.get('Range');if(range){const m=range.match(/^bytes=(\d*)-(\d*)$/);if(!m||(!m[1]&&!m[2]))return new Response(null,{status:416,headers:{'Content-Range':`bytes */${bytes.length}`}});const start=m[1]?Number(m[1]):Math.max(0,bytes.length-Number(m[2])),end=m[1]?(m[2]?Math.min(Number(m[2]),bytes.length-1):bytes.length-1):bytes.length-1;if(start>end||start>=bytes.length)return new Response(null,{status:416,headers:{'Content-Range':`bytes */${bytes.length}`}});return new Response(bytes.slice(start,end+1),{status:206,headers:{...headers,'Content-Range':`bytes ${start}-${end}/${bytes.length}`,'Content-Length':String(end-start+1)}});}
+        return new Response(bytes,{headers:{...headers,'Content-Length':String(bytes.length)}});
       }
       const deletion=path.match(/^\/api\/entries\/([a-f0-9-]{36})$/);
       if(deletion&&request.method==='DELETE'){
@@ -114,6 +134,7 @@ export class ReletterGarden extends DurableObject {
   }
   webSocketMessage(ws,message){
     const player=ws.deserializeAttachment();
+    if(this.closedSockets.has(ws))return;player.lastSeen=Date.now();ws.serializeAttachment(player);if(message==='ping'){ws.send('pong');return;}
     if(player.expires<Date.now()){ws.close(1008,'Please sign in again');return;}
     if(typeof message!=='string'||message.length>2000)return;
     try{

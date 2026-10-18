@@ -1,3 +1,4 @@
+import {mediaKinds,validMedia,battleAction} from './game-rules.js';
 import http from 'node:http';
 import {randomUUID,timingSafeEqual} from 'node:crypto';
 import {readFile,mkdir} from 'node:fs/promises';
@@ -5,7 +6,8 @@ import {resolve,extname,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const sessions=new Map(), peers=new Map();
+const sessions=new Map(), peers=new Map(),game={};
+function prunePeers(){for(const [id,p] of peers)if(Date.now()-(p.lastSeen||0)>35000){peers.delete(id);p.res.end();}}
 const password=process.env.GAME_PASSWORD||'RAE1210';
 let db,pool;
 if(process.env.RELETTER_DATABASE_URL){
@@ -24,7 +26,7 @@ async function insert(e){if(pool)return (await pool.query('INSERT INTO reletter_
 async function remove(id){if(pool)await pool.query('DELETE FROM reletter_entries WHERE id=$1',[id]);else db.prepare('DELETE FROM reletter_entries WHERE id=?').run(id);}
 const broadcast=(type,data)=>{for(const p of peers.values())p.res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);};
 const roster=()=>[...peers].map(([id,p])=>({id,character:p.character,state:p.state}));
-function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>5_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
+function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>20_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
 function json(res,status,data,headers={}){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));}
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.mp3':'audio/mpeg','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
 const server=http.createServer(async(req,res)=>{
@@ -34,7 +36,7 @@ try{
   if(url.pathname==='/api/login'&&req.method==='POST'){
     const b=await body(req), supplied=Buffer.from(String(b.password||'').trim().toUpperCase()),expected=Buffer.from(password.trim().toUpperCase());
     if(supplied.length!==expected.length||!timingSafeEqual(supplied,expected))return json(res,401,{error:'Incorrect password'});
-    const id=randomUUID();sessions.set(id,{expires:Date.now()+86400000});
+    const prior=req.headers.cookie?.match(/(?:^|;\s*)reletter_session=([^;]+)/)?.[1];const id=sessions.get(prior)?.expires>Date.now()?prior:randomUUID();sessions.set(id,{...sessions.get(id),expires:Date.now()+86400000});
     return json(res,200,{ok:true},{'Set-Cookie':`reletter_session=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV==='production'?'; Secure':''}`});
   }
   const id=req.headers.cookie?.match(/(?:^|;\s*)reletter_session=([^;]+)/)?.[1],session=sessions.get(id);
@@ -44,26 +46,31 @@ try{
     if(url.pathname==='/api/entries'&&req.method==='POST'){
       const b=await body(req),p=b.part||{};
       if(typeof b.text!=='string'||b.text.length>4000)return json(res,400,{error:'Message too long'});
-      for(const k of ['drawing','image'])if(p[k]&&(!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(p[k])||p[k].length>2200000))return json(res,400,{error:'Unsupported image format or size'});
+      for(const k of mediaKinds)if(!validMedia(k,p[k]))return json(res,400,{error:'Unsupported media format or size'});
+      if(p.parentId&&!(await entries()).some(e=>e.id===p.parentId))return json(res,400,{error:'The original plant no longer exists'});
       const vector=v=>Array.isArray(v)&&v.length===3&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<100000)?v:null;
-      const e={id:typeof b.id==='string'&&/^[a-f0-9-]{36}$/.test(b.id)?b.id:randomUUID(),text:b.text,created_at:new Date().toISOString(),part:{username:peers.get(id)?.character||session.character||'Ely',drawing:p.drawing||null,image:p.image||null,position:vector(p.position),scale:vector(p.scale)}};
+      const e={id:typeof b.id==='string'&&/^[a-f0-9-]{36}$/.test(b.id)?b.id:randomUUID(),text:b.text,created_at:new Date().toISOString(),part:{username:peers.get(id)?.character||session.character||'Ely',drawing:p.drawing||null,image:p.image||null,audio:p.audio||null,video:p.video||null,parentId:p.parentId||null,rotation:Number.isFinite(p.rotation)?p.rotation:0,position:vector(p.position),scale:vector(p.scale)}};
       if(await insert(e))broadcast('plant',{...e,sender:id});return json(res,201,e);
     }
     if(url.pathname.startsWith('/api/entries/')&&req.method==='DELETE'){const entryId=url.pathname.split('/').pop();await remove(entryId);broadcast('deleted',{id:entryId});return json(res,200,{ok:true});}
+    if(url.pathname==='/api/players'){prunePeers();return json(res,200,roster().map(p=>({...p,self:p.id===id})));}
+    if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);broadcast('players',roster());}return json(res,200,{ok:true});}
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const result=battleAction(game,{...p,id},roster(),await body(req));if(result.error)return json(res,400,{error:result.error});broadcast('game',{wallets:game.wallets||{},hits:game.hits||{},loot:game.loot||[]});if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true});}
     if(url.pathname==='/api/events'){
+      prunePeers();
       const character=url.searchParams.get('character');
       if(!['Ely','Rae'].includes(character))return json(res,400,{error:'Choose a character'});
       if([...peers].some(([other,p])=>other!==id&&p.character===character))return json(res,409,{error:'This character is in use. Choose the other character.'});
       if(peers.size>=2&&!peers.has(id))return json(res,409,{error:'Both seats are occupied'});
       peers.get(id)?.res.end();session.character=character;
       res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});
-      const peer={res,character,state:null};peers.set(id,peer);
-      res.write(`event: welcome\ndata: ${JSON.stringify({id,players:roster()})}\n\n`);broadcast('players',roster());
+      const peer={res,character,state:null,lastSeen:Date.now(),connectionId:url.searchParams.get('connectionId')};peers.set(id,peer);
+      res.write(`event: welcome\ndata: ${JSON.stringify({id,players:roster()})}\n\n`);broadcast('players',roster());res.write(`event: game\ndata: ${JSON.stringify({wallets:game.wallets||{},hits:game.hits||{},loot:game.loot||[]})}\n\n`);
       const heartbeat=setInterval(()=>res.write(': heartbeat\n\n'),15000);
       res.on('close',()=>{clearInterval(heartbeat);if(peers.get(id)===peer){peers.delete(id);broadcast('players',roster());}});return;
     }
     if(url.pathname==='/api/state'&&req.method==='POST'){
-      const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});
+      const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});p.lastSeen=Date.now();
       if(!Array.isArray(b.position)||b.position.length!==3||!b.position.every(Number.isFinite)||!Number.isFinite(b.rotation))return json(res,400,{error:'Invalid position'});
       p.state={position:b.position,rotation:b.rotation,visible:!!b.visible,phase:b.phase};broadcast('state',{id,character:p.character,state:p.state});return json(res,200,{ok:true});
     }
