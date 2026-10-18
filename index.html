@@ -3771,7 +3771,7 @@ window.addEventListener('keydown',e=>{
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
-window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
+window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
 if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries})};
 window.reletterPlantScreenPoint=()=>{
@@ -3802,12 +3802,46 @@ function attachReply(entry,parentId){
 let gameView={wallets:{},hits:{},loot:[]},lootMeshes=new Map(),waterEffects=[],collecting=new Set(),lastPickup=0,shooting=false;
 
 function receiveGame(data){gameView=data;coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=(data.hits?.[selectedCharacter]||0)+' / 3 hits';const ids=new Set((data.loot||[]).map(c=>c.id));for(const [id,mesh] of lootMeshes)if(!ids.has(id)){scene.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();lootMeshes.delete(id);}for(const coin of data.loot||[])if(!lootMeshes.has(coin.id)){const mesh=new THREE.Mesh(new THREE.TorusGeometry(.3,.09,8,16),new THREE.MeshStandardMaterial({color:'#ffd24a',metalness:.7,roughness:.25}));mesh.position.fromArray(coin.position);mesh.position.y+=.8;scene.add(mesh);lootMeshes.set(coin.id,mesh);}}
+// A short moving jet breaks into droplets, then scatters into a splash.
+// Instancing keeps each spray to one droplet draw call on phones.
 function showWater(data){
  const origin=new THREE.Vector3(...data.origin),direction=new THREE.Vector3(...data.direction).normalize(),charge=data.charge||0,range=data.range||18,radius=data.radius||.12;
- const mesh=new THREE.Group(),stream=new THREE.Mesh(new THREE.CylinderGeometry(radius*.65,radius,range,10),new THREE.MeshBasicMaterial({color:'#61cfff',transparent:true,opacity:.65}));
- stream.position.copy(origin).addScaledVector(direction,range/2);stream.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);mesh.add(stream);
- for(let i=0;i<16;i++){const drop=new THREE.Mesh(new THREE.SphereGeometry(radius*(.6+(i%3)*.2),8,6),new THREE.MeshBasicMaterial({color:'#b6f3ff',transparent:true,opacity:.85}));drop.position.copy(origin).addScaledVector(direction,range*i/16);mesh.add(drop);}
- scene.add(mesh);waterEffects.push({mesh,left:.4+charge*.35,duration:.4+charge*.35,direction:data.direction,range,radius,charge});if(data.hit)$('water-status').textContent=(gameView.hits?.[selectedCharacter]||0)+' / 3 hits · Splash!';
+ let travel=range,impactHeight=origin.y-1;
+ if(data.hit){const target=data.hit===selectedCharacter?charRoot.position:[...remotePlayers.values()].find(p=>p.character===data.hit)?.state?.position;
+  if(target){const point=target.isVector3?target:new THREE.Vector3(...target);travel=Math.min(range,Math.max(1,point.clone().sub(origin).dot(direction)));impactHeight=point.y+.9;}}
+ const mesh=new THREE.Group(),count=180+Math.round(charge*140),geometry=new THREE.SphereGeometry(1,7,5),material=new THREE.MeshBasicMaterial({color:'#8ccfe8',transparent:true,opacity:.56,depthWrite:false});
+ const drops=new THREE.InstancedMesh(geometry,material,count);drops.instanceMatrix.setUsage(THREE.DynamicDrawUsage);drops.frustumCulled=false;mesh.add(drops);
+ mesh.name='Water spray';
+ const particles=Array.from({length:count},(_,i)=>{const seed=Math.sin(i*127.1+19.7)*43758.5453,random=seed-Math.floor(seed),angle=i*2.39996;
+  drops.setColorAt(i,new THREE.Color().setHSL(.52+random*.025,.35+random*.25,.65+random*.25));
+  return {delay:i/count*(.22+charge*.2),side:Math.cos(angle)*random,up:Math.sin(angle)*random,size:(.018+random*.024)*(1+charge*.75),core:i%4===0};});
+ const rings=[];for(let i=0;i<2;i++){const ring=new THREE.Mesh(new THREE.RingGeometry(.78,1,40),new THREE.MeshBasicMaterial({color:'#b9eff8',transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.copy(origin).addScaledVector(direction,travel);ring.position.y=impactHeight+.025+i*.008;ring.visible=!data.hit;mesh.add(ring);rings.push(ring);}
+ const flight=.65+charge*.3,emission=.22+charge*.2;
+ const fx={mesh,drops,particles,rings,origin,heading:direction,side:new THREE.Vector3(-direction.z,0,direction.x),travel,impactHeight,age:0,flight,emission,duration:flight+emission+.5,direction:data.direction,range,radius,charge};
+ scene.add(mesh);waterEffects.push(fx);animateWaterSpray(fx,0);if(data.hit)$('water-status').textContent=(gameView.hits?.[selectedCharacter]||0)+' / 3 hits · Splash!';
+}
+const waterDropTransform=new THREE.Object3D(),waterDropTangent=new THREE.Vector3(),waterUp=new THREE.Vector3(0,1,0);
+function animateWaterSpray(fx,dt){
+ fx.age+=dt;const {origin,heading,side,flight,travel,impactHeight,charge}=fx;
+ for(let i=0;i<fx.particles.length;i++){
+  const p=fx.particles[i],t=fx.age-p.delay,u=t/flight;let size=0;
+  if(t>=0&&u<=1){
+   const spread=(.05+u*u*(.6+charge*.7)),distance=travel*u;
+   waterDropTransform.position.copy(origin).addScaledVector(heading,distance).addScaledVector(side,p.side*spread);
+   waterDropTransform.position.y=THREE.MathUtils.lerp(origin.y,impactHeight,u)+Math.sin(Math.PI*u)*(1.3+charge*1.5)+p.up*spread;
+   waterDropTangent.copy(heading).multiplyScalar(travel);waterDropTangent.y=impactHeight-origin.y+Math.PI*Math.cos(Math.PI*u)*(1.3+charge*1.5);waterDropTangent.normalize();
+   waterDropTransform.quaternion.setFromUnitVectors(waterUp,waterDropTangent);size=p.size*(1-.35*u);waterDropTransform.scale.set(size,size*(p.core?2.2*(1-u)+1:1.3),size);
+  }else if(u>1&&t-flight<.42){
+   const splash=t-flight,fade=1-splash/.42;
+   waterDropTransform.position.copy(origin).addScaledVector(heading,travel+p.up*splash*3).addScaledVector(side,p.side*splash*(4+charge*3));
+   waterDropTransform.position.y=impactHeight+Math.max(0,(1.1+Math.abs(p.up)*2)*splash-7*splash*splash);
+   waterDropTransform.quaternion.identity();size=p.size*fade;waterDropTransform.scale.set(size,size*1.5,size);
+  }
+  if(!size)waterDropTransform.scale.setScalar(0);waterDropTransform.updateMatrix();fx.drops.setMatrixAt(i,waterDropTransform.matrix);
+ }
+ fx.drops.instanceMatrix.needsUpdate=true;
+ for(let i=0;i<fx.rings.length;i++){const t=fx.age-flight-i*.12;fx.rings[i].scale.setScalar(Math.max(.001,.15+t*(2.5+charge)));fx.rings[i].material.opacity=t>0&&t<.5?.24*(1-t/.5):0;}
+ return fx.age<fx.duration;
 }
 let waterChargeStart=null,waterChargeSource=null;
 const waterButton=$('water-gun');waterButton.style.touchAction='none';waterButton.setAttribute('aria-label','Hold to charge water, release to spray');
@@ -3830,7 +3864,7 @@ waterButton.onclick=e=>{e.preventDefault();e.stopPropagation();if(e.detail===0)s
 window.addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){e.preventDefault();if(!e.repeat)beginWaterCharge('keyboard');}});
 window.addEventListener('keyup',e=>{if(e.code==='KeyQ'){e.preventDefault();releaseWaterCharge('keyboard');}});
 window.addEventListener('blur',cancelWaterCharge);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelWaterCharge();});
-function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.round(waterCharge()*100);waterButton.textContent=percent+'%';waterButton.style.background='linear-gradient(to right,#70d7ff '+percent+'%,#d9f2ff '+percent+'%)';}}for(const [id,mesh] of lootMeshes){mesh.rotation.y+=dt*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+.8+Math.sin(performance.now()/400)*.12;}for(const fx of waterEffects)fx.left-=dt;waterEffects=waterEffects.filter(fx=>{fx.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.max(0,fx.left/fx.duration);});if(fx.left>0)return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
+function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.round(waterCharge()*100);waterButton.textContent=percent+'%';waterButton.style.background='linear-gradient(to right,#70d7ff '+percent+'%,#d9f2ff '+percent+'%)';}}for(const [id,mesh] of lootMeshes){mesh.rotation.y+=dt*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+.8+Math.sin(performance.now()/400)*.12;}waterEffects=waterEffects.filter(fx=>{if(animateWaterSpray(fx,dt))return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
 
 // ===== Init =====
 async function init(){await entryGate;tick();await loadSaved()}
