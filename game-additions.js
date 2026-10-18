@@ -114,7 +114,7 @@ function openCloudConnection(character){
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
   document.querySelectorAll('[data-character]').forEach(b=>b.disabled=true);$('gate-error').textContent='';
-  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;dock.hidden=false;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;document.querySelectorAll('[data-character]').forEach(b=>b.disabled=false);}
 };
 function suspendConnection(){if(!admitted)return;pageSuspended=true;clearTimeout(reconnectTimer);const socket=onlineSocket;onlineSocket=null;connected=false;socket?.close(1000,'Page hidden');fetch('/api/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({connectionId}),keepalive:true}).catch(()=>{});}
@@ -185,7 +185,7 @@ function positionPlantLabel(){
 }
 new ResizeObserver(positionPlantLabel).observe(plantLabel);
 canvas.addEventListener('pointermove',e=>{
-  if(!admitted||ptrs.size||Date.now()-hoverAt<50)return;hoverAt=Date.now();
+  if(!admitted||ptrs.size||['chat','write','search'].includes(document.body.dataset.panel)||Date.now()-hoverAt<50)return;hoverAt=Date.now();
   hoverPoint={x:e.clientX,y:e.clientY};const rect=canvas.getBoundingClientRect();
   raycaster.setFromCamera({x:(e.clientX-rect.left)/rect.width*2-1,y:-(e.clientY-rect.top)/rect.height*2+1},camera);
   const hits=raycaster.intersectObjects(plantRoot.children,true);let entry=null;
@@ -200,25 +200,33 @@ function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog
 chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
 new ResizeObserver(syncChatScroll).observe(chatLog);
 function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const time=messageTimestamp(data.time);if(time)line.append(time);const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom||data.name===selectedCharacter)latestChat();syncChatScroll();}
-const phoneLayout=matchMedia('(pointer: coarse)');
-function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').textContent=small?'HISTORY':'MINIMIZE';$('chat-minimize').setAttribute('aria-expanded',String(!small));}
-$('chat-minimize').onclick=()=>{const small=!$('online-panel').classList.contains('minimized');closeChat();if(!small&&phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');hidePlantLabel();pop.classList.remove('show');}setHistorySmall(small);if(!small)syncChatScroll();};
-$('writer-close').onclick=e=>{e.stopPropagation();ui.classList.add('mini');};
-searchBtn.addEventListener('click',()=>{if(phoneLayout.matches&&searchPanel.classList.contains('show'))ui.classList.add('mini');});
-let mobilePanel='';
-function syncPhonePanels(){if(!phoneLayout.matches)return;const next=!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':'';if(next&&next!==mobilePanel){setHistorySmall(true);closeChat();hidePlantLabel();pop.classList.remove('show');if(next==='write')searchPanel.classList.remove('show');else ui.classList.add('mini');}mobilePanel=next;}
-new MutationObserver(syncPhonePanels).observe(ui,{attributes:true,attributeFilter:['class']});new MutationObserver(syncPhonePanels).observe(searchPanel,{attributes:true,attributeFilter:['class']});
-if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);}
-phoneLayout.addEventListener('change',()=>{if(phoneLayout.matches){ui.classList.add('mini');setHistorySmall(true);closeChat();}});
-
 const chatInput=$('chat-input'),chatForm=$('chat-form');
-function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();$('online-panel').classList.remove('chatting');setHistorySmall(true);document.body.classList.remove('keyboard-open');}
-function openChat(){if(!admitted)return;if(phoneLayout.matches){ui.classList.add('mini');searchPanel.classList.remove('show');hidePlantLabel();pop.classList.remove('show');}setHistorySmall(false);$('online-panel').classList.add('chatting');keysDown.clear();chatForm.hidden=false;chatInput.hidden=false;latestChat();chatInput.focus();}
-async function sendChat(){const text=chatInput.value.trim();if(!text){closeChat();return;}try{await api('/api/chat',{text});chatInput.value='';latestChat();chatInput.focus();}catch(e){message(e.message);}}
-$('chat-open').onclick=openChat;$('chat-close').onclick=closeChat;
+const dock=document.createElement('nav');dock.id='action-dock';dock.setAttribute('aria-label','Game tools');dock.hidden=true;
+const writeOpen=document.createElement('button');writeOpen.id='write-open';writeOpen.type='button';writeOpen.textContent='WRITE';
+$('search-btn').textContent='SEARCH';$('search-btn').setAttribute('aria-label','Search plants');
+dock.append($('search-btn'),$('chat-open'),writeOpen,$('water-gun'));document.body.append(dock);
+const searchHeader=document.createElement('div');searchHeader.id='search-header';const searchClose=document.createElement('button');searchClose.id='search-close';searchClose.type='button';searchClose.textContent='×';searchClose.setAttribute('aria-label','Close search');searchInput.before(searchHeader);searchHeader.append(searchInput,searchClose);searchClose.onclick=()=>{searchInput.blur();claimPanel('none');};
+function reflectPanels(){const open=!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':$('online-panel').classList.contains('chatting')?'chat':'none';document.body.dataset.panel=open;writeOpen.textContent=ui.classList.contains('done-state')?'RETURN':'WRITE';for(const [id,name] of [['search-btn','search'],['chat-open','chat'],['write-open','write']])$(id).setAttribute('aria-expanded',String(open===name));}
+function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').setAttribute('aria-expanded',String(!small));}
+function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();$('online-panel').classList.remove('chatting');setHistorySmall(true);fitKeyboard();reflectPanels();}
+function claimPanel(name){
+ if(name!=='chat')closeChat();
+ if(name!=='write')ui.classList.add('mini');
+ if(name!=='search'){searchPanel.classList.remove('show');if(phase===PHASE.EXPLORE)showControls(true);}
+ if(name!=='plant')hidePlantLabel();pop.classList.remove('show');keysDown.clear();reflectPanels();
+}
+function openChat(){if(!admitted)return;claimPanel('chat');setHistorySmall(false);$('online-panel').classList.add('chatting');chatForm.hidden=false;chatInput.hidden=false;reflectPanels();latestChat();chatInput.focus();}
+async function sendChat(){const text=chatInput.value.trim();if(!text)return;try{await api('/api/chat',{text});chatInput.value='';latestChat();chatInput.focus();}catch(e){message(e.message);}}
+$('chat-open').onclick=()=>{if($('online-panel').classList.contains('chatting'))closeChat();else openChat();};$('chat-close').onclick=closeChat;$('chat-minimize').onclick=closeChat;
+$('writer-close').onclick=e=>{e.stopPropagation();ui.classList.add('mini');reflectPanels();};
+writeOpen.onclick=()=>{if(!admitted)return;if(!ui.classList.contains('mini')&&!ui.classList.contains('hidden')){ui.classList.add('mini');reflectPanels();return;}claimPanel('write');if(phase===PHASE.DONE){restartToIdleWithFade();}else{ui.classList.remove('mini','hidden');}reflectPanels();};
+searchBtn.addEventListener('click',()=>{if(searchPanel.classList.contains('show'))claimPanel('search');reflectPanels();});
+// Original cinematics and Reply can also change panel classes: enforce exclusivity before paint.
+const panelObserver=new MutationObserver(records=>{for(const r of records){const old=r.oldValue||'',el=r.target;if(el===ui&&!ui.classList.contains('mini')&&!ui.classList.contains('hidden')&&(old.includes('mini')||old.includes('hidden')))claimPanel('write');if(el===searchPanel&&searchPanel.classList.contains('show')&&!old.includes('show'))claimPanel('search');}reflectPanels();});for(const panel of [ui,searchPanel])panelObserver.observe(panel,{attributes:true,attributeFilter:['class'],attributeOldValue:true});
+ui.classList.add('mini');setHistorySmall(true);reflectPanels();
 chatForm.onsubmit=e=>{e.preventDefault();sendChat();};
-function fitKeyboard(){if(!window.visualViewport)return;const keyboard=phoneLayout.matches&&document.activeElement===chatInput&&innerHeight-visualViewport.height>100;document.body.classList.toggle('keyboard-open',keyboard);$('online-panel').style.maxHeight=keyboard?Math.max(100,visualViewport.height-48)+'px':'';if(keyboard)$('online-panel').style.bottom=Math.max(8,innerHeight-visualViewport.height-visualViewport.offsetTop+8)+'px';else $('online-panel').style.bottom='';latestChat();}
-visualViewport?.addEventListener('resize',fitKeyboard);chatInput.addEventListener('focus',fitKeyboard);chatInput.addEventListener('blur',fitKeyboard);
+function fitKeyboard(){const v=window.visualViewport;const active=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'');const keyboard=!!v&&active&&innerHeight-v.height>100;document.body.classList.toggle('keyboard-open',keyboard);document.documentElement.style.setProperty('--view-height',(v?.height||innerHeight)+'px');document.documentElement.style.setProperty('--view-top',(v?.offsetTop||0)+'px');if(keyboard)latestChat();}
+window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);window.addEventListener('resize',fitKeyboard);document.addEventListener('focusin',fitKeyboard);document.addEventListener('focusout',()=>requestAnimationFrame(fitKeyboard));fitKeyboard();
 
 window.addEventListener('keydown',e=>{
   const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
