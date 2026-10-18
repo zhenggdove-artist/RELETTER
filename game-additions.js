@@ -83,7 +83,7 @@ function receive(type,data){
   if(type==='state'&&data.id!==selfId&&remotePlayers.has(data.id))remotePlayers.get(data.id).state=data.state;
   if(type==='plant'&&data.sender!==selfId)addStoredPlant(data,true);
   if(type==='deleted'){const i=plantEntries.findIndex(p=>p.entryId===data.id);if(i>=0){plantRoot.remove(plantEntries[i].mesh);plantEntries.splice(i,1);hidePlantLabel();}}
-  if(type==='boss'){const old=gameView.boss;gameView.boss=data;receiveBoss(old,data);}if(type==='chat')appendChat(data);if(type==='game')receiveGame(data);if(type==='water')showWater(data);
+  if(type==='boss'){const old=gameView.boss;gameView.boss=acceptBossSnapshot(old,data);receiveBoss(old,gameView.boss);}if(type==='chat')appendChat(data);if(type==='game')receiveGame(data);if(type==='water')showWater(data);
 }
 let connectionPromise=null,reconnectTimer=null,pageSuspended=false;
 function queueReconnect(){clearTimeout(reconnectTimer);if(admitted&&!pageSuspended)reconnectTimer=setTimeout(()=>openCloudConnection(selectedCharacter).catch(e=>{message(e.message);queueReconnect();}),2000);}
@@ -125,7 +125,7 @@ let lastOnlineState='';
 setInterval(()=>{
   if(!connected||!admitted)return;
   const state={position:charRoot.position.toArray(),rotation:charModel?.rotation.y||0,visible:charRoot.visible,phase,paused:monstersPausedForGarden()||buildPanelOpen};
-  if(onlineSocket?.readyState===1){const serialized=JSON.stringify(state);if(serialized!==lastOnlineState||(gameView.redMode&&gameView.boss?.hp>0)){onlineSocket.send(JSON.stringify({type:'state',data:state}));lastOnlineState=serialized;}}
+  if(onlineSocket?.readyState===1){const serialized=JSON.stringify(state);if(serialized!==lastOnlineState||(gameView.boss?.hp>0)){onlineSocket.send(JSON.stringify({type:'state',data:state}));lastOnlineState=serialized;}}
   else api('/api/state',state).catch(()=>{});
 },100);
 const draw=$('drawing'),ctx=draw.getContext('2d');let drawing=false,hasDrawing=false;const drawingUndo=[];function saveDrawingStep(){drawingUndo.push({pixels:ctx.getImageData(0,0,draw.width,draw.height),hasDrawing});if(drawingUndo.length>30)drawingUndo.shift();$('undo-drawing').disabled=false;}
@@ -263,7 +263,7 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>keysDown.clear());
 window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,build:{open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
-if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
+if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
 window.reletterPlantScreenPoint=()=>{
   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   for(const entry of [...plantEntries].reverse()){
@@ -300,7 +300,7 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){const old=gameView.boss;gameView=data;receiveBoss(old,data.boss);syncBlocks(data.blocks||[]);coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=(data.hits?.[selectedCharacter]||0)+' / 3 hits';syncLootMeshes();}
+function receiveGame(data){const old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=old&&boss?.generation===old.generation?!!(gameView.redMode||data.redMode):!!data.redMode;gameView={...data,boss,redMode};receiveBoss(old,boss);syncBlocks(data.blocks||[]);coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=(data.hits?.[selectedCharacter]||0)+' / 3 hits';syncLootMeshes();}
 // A short moving jet breaks into droplets, then scatters into a splash.
 // Instancing keeps each spray to one droplet draw call on phones.
 function showWater(data){
@@ -371,9 +371,17 @@ function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHAS
 // ===== Cooperative encounter =====
 const bossHud=document.createElement('div');bossHud.id='boss-health';bossHud.hidden=true;bossHud.setAttribute('role','progressbar');bossHud.setAttribute('aria-label','Auntie health');bossHud.setAttribute('aria-valuemax','100');bossHud.innerHTML='<div id="boss-fill"></div><span id="boss-text">AUNTIE · 100 / 100</span>';document.body.append(bossHud);
 let bossFlash=0,bossDefeatGeneration=null;
+// Health/death is monotonic within a room generation, including late snapshots.
+function acceptBossSnapshot(old,next){
+ if(!next)return old;if(!old)return next;
+ if(next.generation<old.generation)return old;
+ if(next.generation===old.generation){if(old.hp===0||next.hp>old.hp||(next.revision||0)<(old.revision||0))return old;if((next.revision||0)===(old.revision||0)&&(next.tick||0)<(old.tick||0))return old;}
+ return next;
+}
 function receiveBoss(old,boss){
- if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.38;
+ if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;m.walkAction?.reset().play();}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.38;
  if(boss.hp===0&&old?.hp>0&&bossDefeatGeneration!==boss.generation){bossDefeatGeneration=boss.generation;const m=monsters[0];if(m){m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model),center=box.getCenter(new THREE.Vector3());center.y=Math.max(m.root.position.y+1,(box.max.y+m.root.position.y)/2);createBurst(center);}}
+ if(boss.hp===0)for(const m of monsters){m.root.visible=false;m.isChasing=false;m.mixer.stopAllAction();}
  bossHud.setAttribute('aria-valuenow',String(boss.hp));$('boss-fill').style.width=boss.hp+'%';$('boss-text').textContent='AUNTIE · '+boss.hp+' / 100'+(boss.hp===0?' · DEFEATED':'');
  $('water-gun').classList.toggle('red-water',!!gameView.redMode);
 }
@@ -395,13 +403,15 @@ function prepareBossBlood(m){
  m.drips=new THREE.Points(geo,new THREE.PointsMaterial({color:'#9e1030',size:.13,transparent:true,opacity:.8,depthWrite:false}));m.drips.frustumCulled=false;m.root.add(m.drips);
 }
 function syncBossMonster(dt){
- const boss=gameView.boss;if(!boss||!gameView.redMode)return false;
- if(!monstersLoaded)return true;
+ const boss=gameView.boss;
  for(const m of monsters){
-  if(boss.hp<=0){m.root.visible=false;continue;}m.root.visible=true;
-  if(monstersPausedForGarden())continue;
-  m.root.position.lerp(new THREE.Vector3(...boss.position),Math.min(1,dt*10));m.root.rotation.y=boss.rotation||0;m.mixer.update(dt);m.hitCooldown=Math.max(0,m.hitCooldown-dt);
-  const distance=m.root.position.distanceTo(charRoot.position);if(phase===PHASE.EXPLORE&&charRoot.position.y<5&&distance<MONSTER_HIT_DIST&&m.hitCooldown<=0){m.hitCooldown=MONSTER_HIT_COOLDOWN;triggerPlayerHit();}
+  if(!connected||!boss||boss.hp<=0){m.root.visible=false;continue;}
+  // Only the server can move the shared monster. Local frame rates never choose a target.
+  m.root.position.fromArray(boss.position);m.root.rotation.y=boss.rotation||0;m.root.visible=true;
+  if(boss.paused||monstersPausedForGarden())continue;
+  if(!!boss.chasing!==m.isChasing){m.isChasing=!!boss.chasing;if(m.isChasing&&m.chaseAction){m.walkAction?.fadeOut(.2);m.chaseAction.reset().fadeIn(.2).play();}else if(m.walkAction){m.chaseAction?.fadeOut(.2);m.walkAction.reset().fadeIn(.2).play();}}
+  m.mixer.update(dt);m.hitCooldown=Math.max(0,m.hitCooldown-dt);
+  const distance=Math.hypot(boss.position[0]-charRoot.position.x,boss.position[2]-charRoot.position.z);if(phase===PHASE.EXPLORE&&charRoot.position.y<5&&distance<MONSTER_HIT_DIST&&m.hitCooldown<=0){m.hitCooldown=MONSTER_HIT_COOLDOWN;triggerPlayerHit();}
  }
  return true;
 }
@@ -409,7 +419,7 @@ function updateGardenWorld(dt){
  const canGoDown=phase===PHASE.IDLE||phase===PHASE.DONE||(phase===PHASE.EXPLORE&&charRoot.position.y>3);goDownButton.hidden=!canGoDown;buildButton.hidden=canGoDown;buildButton.disabled=phase!==PHASE.EXPLORE;
  bossHud.hidden=!admitted;bossFlash=Math.max(0,bossFlash-dt);
  const boss=gameView.boss;
- for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}if(!gameView.redMode){m.root.visible=true;bossDefeatGeneration=null;if(m.bloodUniform){m.bloodUniform.amount.value=0;m.bloodUniform.flash.value=0;m.drips.geometry.setDrawRange(0,0);}continue;}
+ for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}if(!gameView.redMode){bossDefeatGeneration=null;if(m.bloodUniform){m.bloodUniform.amount.value=0;m.bloodUniform.flash.value=0;m.drips.geometry.setDrawRange(0,0);}continue;}
   prepareBossBlood(m);const damage=(100-boss.hp)/100;m.bloodUniform.amount.value=damage;m.bloodUniform.flash.value=bossFlash>0&&Math.floor(bossFlash*35)%2?1:0;
   const count=damage>0?Math.max(1,Math.floor(damage*60)):0;m.drips.geometry.setDrawRange(0,count);const attr=m.drips.geometry.attributes.position,{min,size}=m.bloodBounds;
   for(let i=0;i<count;i++){const a=i*2.39996,t=(performance.now()/1100+i*.137)%1;attr.setXYZ(i,min.x+size.x*(.5+Math.cos(a)*.3),min.y+size.y*(.85-t*.8),min.z+size.z*(.5+Math.sin(a)*.3));}attr.needsUpdate=true;

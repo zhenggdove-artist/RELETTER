@@ -1,16 +1,16 @@
 // Shared, server-owned encounter and persistent construction rules.
 export const blockSize=b=>b.shape==='bar'?(b.rotation===1?[2,2,6]:[6,2,2]):[2,2,2];
-export function ensureWorld(g){g.blocks??=[];g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.redMode??=false;return g;}
+export function ensureWorld(g){g.blocks??=[];g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.redMode??=false;g.boss.tick??=0;return g;}
 export function resetEncounter(g,now=Date.now()){ensureWorld(g);g.redMode=false;g.boss={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
 export function activateEncounter(g,text){ensureWorld(g);if(text.trim()!=='一起打阿姨')return false;g.redMode=true;return true;}
 export function worldView(g){ensureWorld(g);return {wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,boss:g.boss,blocks:g.blocks};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<1+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
- ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;
- if(!g.redMode||g.boss.hp<=0||players.some(p=>p.state?.paused))return;
+ ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;g.boss.paused=players.some(p=>p.state?.paused);
+ if(g.boss.hp<=0||g.boss.paused)return;
  const pos=g.boss.position,targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&p.state.position[1]<5);
  targets.sort((a,b)=>Math.hypot(a.state.position[0]-pos[0],a.state.position[2]-pos[2])-Math.hypot(b.state.position[0]-pos[0],b.state.position[2]-pos[2]));
- if(!targets.length)return;const t=targets[0].state.position,dx=t[0]-pos[0],dz=t[2]-pos[2],distance=Math.hypot(dx,dz);if(distance<1.3)return;
+ g.boss.target=targets[0]?.character||null;if(!targets.length){g.boss.chasing=false;return;}const t=targets[0].state.position,dx=t[0]-pos[0],dz=t[2]-pos[2],distance=Math.hypot(dx,dz);g.boss.chasing=distance<8;if(distance<1.3)return;
  const step=Math.min(distance-1.3,(distance<8?4.5:1.25)*dt),nx=pos[0]+dx/distance*step,nz=pos[2]+dz/distance*step;
  const free=(x,z)=>!g.blocks.some(b=>b.position[1]<12&&containsBlock(b,x,b.position[1]+.5,z,1.1));
  if(free(nx,nz)){pos[0]=nx;pos[2]=nz;}else if(free(nx,pos[2]))pos[0]=nx;else if(free(pos[0],nz))pos[2]=nz;
