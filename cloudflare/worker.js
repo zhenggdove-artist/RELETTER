@@ -73,10 +73,11 @@ export class ReletterGarden extends DurableObject {
       if(path==='/api/notifications/status'&&request.method==='GET')return json({configured:configured(this.env),counts:this.sql.exec('SELECT status,COUNT(*) AS count FROM notification_outbox GROUP BY status').toArray()});
       if(path==='/api/players'&&request.method==='GET'){this.pruneSockets();return json(this.roster().map(p=>({...p,self:p.id===session.id})));}
       if(path==='/api/disconnect'&&request.method==='POST'){const body=await readBody(request);for(const ws of this.ctx.getWebSockets(session.id)){if(ws.deserializeAttachment().connectionId!==body.connectionId)continue;this.closedSockets.add(ws);ws.close(1000,'Page hidden');}this.resetIfEmpty();this.broadcast('players',this.roster());return json({ok:true});}
+      if(path==='/api/world'&&request.method==='GET')return json(this.gameView());
       if(path==='/api/game'&&request.method==='POST'){
         const body=await readBody(request);this.pruneSockets();const ws=this.sockets().find(w=>w.deserializeAttachment().id===session.id);if(!ws)return json({error:'Not connected'},409);
-        const game=this.game();advanceBoss(game,this.roster());const result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);
-        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,game:this.gameView()});
+        const game=this.game();advanceBoss(game,this.roster());const result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);game.worldRevision++;
+        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,game:this.gameView()});
       }
       if(path==='/api/socket'){
         this.pruneSockets();

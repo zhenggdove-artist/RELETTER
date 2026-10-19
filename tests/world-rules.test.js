@@ -10,7 +10,7 @@ test('co-op trigger, 100 health, 1/5 damage, no friendly fire, defeat and reset 
 });
 test('normal water takes exactly 100 successful hits to defeat the monster',()=>{const g={};activateEncounter(g,'一起打阿姨');for(let i=0;i<100;i++){battleAction(g,a,[a,b],{action:'shoot',direction:[1,0,0],charge:0},10000+i*700);assert.equal(g.boss.hp,99-i);}});
 test('building validation, rotation, stacking, safe placement, destruction, ray and monster cover',()=>{
- const g={},actor={...a,state:{...a.state,position:[0,0,0]}};const build=(shape,position,rotation=0)=>buildAction(g,actor,[actor],{action:'build',shape,position,rotation});
+ const g={},actor={...a,state:{...a.state,position:[0,0,0]}};const build=(shape,position,rotation=0)=>buildAction(g,actor,[actor],{action:'build',shape,position,rotation,size:shape==='bar'?[6,2,2]:[2,2,2]});
  assert.ok(build('cube',[0,0,0]).error);assert.ok(build('cube',[0,2,4]).error);assert.ok(build('bad',[0,0,4]).error);assert.ok(build('cube',[0,0,4.1]).error);assert.ok(build('cube',[100,0,0]).error);
  const base=build('cube',[0,0,4]).block;assert.ok(base);assert.ok(build('bar',[0,2,4],1).block);assert.ok(build('cube',[0,0,4]).error);assert.ok(build('cylinder',[4,0,4]).block);
  assert.equal(rayBlock(base,[0,1,0],[0,0,1]),3);assert.equal(rayBlock({shape:'cylinder',position:[4,0,4]},[4,1,0],[0,0,1]),3);

@@ -61,7 +61,8 @@ try{
     if(url.pathname.startsWith('/api/entries/')&&req.method==='DELETE'){const entryId=url.pathname.split('/').pop();await remove(entryId);broadcast('deleted',{id:entryId});return json(res,200,{ok:true});}
     if(url.pathname==='/api/players'){prunePeers();return json(res,200,roster().map(p=>({...p,self:p.id===id})));}
     if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);resetIfEmpty();broadcast('players',roster());}return json(res,200,{ok:true});}
-    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true});}
+    if(url.pathname==='/api/world'&&req.method==='GET')return json(res,200,worldView(game));
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,game:worldView(game)});}
     if(url.pathname==='/api/events'){
       prunePeers();
       const character=url.searchParams.get('character');
