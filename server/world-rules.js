@@ -3,7 +3,12 @@ import {blockSize,validBlockSize} from '../build-shapes.js';
 export {blockSize};
 export function ensureWorld(g){g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.redMode??=false;g.boss.tick??=0;return g;}
 export function resetEncounter(g,now=Date.now()){ensureWorld(g);g.redMode=false;g.boss={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
-export function activateEncounter(g,text){ensureWorld(g);if(text.trim()!=='一起打阿姨')return false;g.redMode=true;return true;}
+export function activateEncounter(g,text,name){
+ ensureWorld(g);const command=text.trim().toLowerCase();
+ if(command==='show me the money'&&['Ely','Rae'].includes(name)){g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+100;g.worldRevision++;return true;}
+ if(command==='auntie back'){const red=g.redMode;resetEncounter(g);g.redMode=red;g.worldRevision++;return true;}
+ if(command!=='一起打阿姨')return false;g.redMode=true;g.worldRevision++;return true;
+}
 export function worldView(g){ensureWorld(g);return {worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
@@ -45,11 +50,11 @@ export function rayBlock(b,origin,direction){
  if(a<1e-8)return c<=0?near:Infinity;const disc=bb*bb-4*a*c;if(disc<0)return Infinity;
  near=Math.max(near,(-bb-Math.sqrt(disc))/(2*a));far=Math.min(far,(-bb+Math.sqrt(disc))/(2*a));return far>=near?near:Infinity;
 }
-export function coverDistance(g,origin,direction){return Math.min(Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)));}
+export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)));}
 export function shootBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;
- const p=g.boss.position,delta=[p[0]-shot.origin[0],0,p[2]-shot.origin[2]],along=delta.reduce((s,v,i)=>s+v*shot.direction[i],0),side=Math.hypot(...delta.map((v,i)=>v-shot.direction[i]*along));
- if(along<0||along>shot.range||side>4.5+shot.radius||shot.origin[1]<p[1]||shot.origin[1]>p[1]+12||coverDistance(g,shot.origin,shot.direction)<Math.max(0,along-3))return;
+ const p=g.boss.position,along=rayBlock({shape:'cube',position:p,size:[5.6,12,5.6]},shot.origin,shot.direction);
+ if(!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<along)return;
  const damage=shot.damage??(1+Math.floor(4*shot.charge));g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;
- shot.hit='Auntie';shot.damage=damage;shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*Math.max(0,along-2));
+ shot.hit='Auntie';shot.damage=damage;shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);
 }

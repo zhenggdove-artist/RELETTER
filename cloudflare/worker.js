@@ -132,7 +132,7 @@ export class ReletterGarden extends DurableObject {
         const body=await readBody(request),p=ws.deserializeAttachment();
         if(typeof body.text!=='string'||!body.text.trim()||body.text.length>500)return json({error:'Message must contain 1–500 characters'},400);
         if(Date.now()-p.lastChat<400)return json({error:'Please wait before sending again'},429);
-        const chat={id:crypto.randomUUID(),name:p.character,text:body.text.trim(),time:Date.now()};this.ctx.storage.transactionSync(()=>{this.sql.exec('INSERT INTO chat_messages VALUES(?,?,?,?)',chat.id,chat.name,chat.text,chat.time);this.queueNotification('chat-'+chat.id,{kind:'chat',name:chat.name,text:chat.text,time:chat.time});});this.ctx.waitUntil(this.scheduleNotifications());p.lastChat=chat.time;ws.serializeAttachment(p);this.broadcast('chat',chat);const g=this.game();if(activateEncounter(g,chat.text)){this.saveGame(g);this.broadcast('game',worldView(g));}return json({ok:true});
+        const chat={id:crypto.randomUUID(),name:p.character,text:body.text.trim(),time:Date.now()};this.ctx.storage.transactionSync(()=>{this.sql.exec('INSERT INTO chat_messages VALUES(?,?,?,?)',chat.id,chat.name,chat.text,chat.time);this.queueNotification('chat-'+chat.id,{kind:'chat',name:chat.name,text:chat.text,time:chat.time});});this.ctx.waitUntil(this.scheduleNotifications());p.lastChat=chat.time;ws.serializeAttachment(p);this.broadcast('chat',chat);const g=this.game();if(activateEncounter(g,chat.text,chat.name)){this.saveGame(g);this.broadcast('game',worldView(g));}return json({ok:true});
       }
       return json({error:'API not found'},404);
     }catch(error){console.error('RELETTER request failed',error.message);return json({error:'Server request failed. Please try again later.'},500);}

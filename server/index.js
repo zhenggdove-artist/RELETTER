@@ -86,7 +86,7 @@ try{
       const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});
       if(typeof b.text!=='string'||!b.text.trim()||b.text.length>500)return json(res,400,{error:'Message must contain 1–500 characters'});
       if(p.lastChat&&Date.now()-p.lastChat<400)return json(res,429,{error:'Please wait before sending again'});
-      const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);if(activateEncounter(game,chat.text)){await saveWorld();broadcast('game',worldView(game));}return json(res,200,{ok:true});
+      const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);if(activateEncounter(game,chat.text,chat.name)){await saveWorld();broadcast('game',worldView(game));}return json(res,200,{ok:true});
     }
     return json(res,404,{error:'API not found'});
   }
