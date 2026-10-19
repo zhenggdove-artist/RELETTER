@@ -4022,13 +4022,19 @@ function updateEquipmentEffects(dt){
 
 // ===== Screen-centred 3D aiming, including the camera-to-muzzle parallax =====
 const aimReticle=document.createElement('div');aimReticle.id='aim-reticle';aimReticle.hidden=true;aimReticle.setAttribute('aria-hidden','true');aimReticle.innerHTML='<i></i><b></b>';document.body.append(aimReticle);
+// Aim against gameplay volumes, never deform and scan every skinned triangle.
+const aimRay=new THREE.Raycaster(),aimCenter=new THREE.Vector2(),aimBox=new THREE.Box3(),aimSphere=new THREE.Sphere(),aimHit=new THREE.Vector3(),aimGround=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 function rangedAim(){
- const origin=charRoot.position.clone().add(new THREE.Vector3(0,1,0)),ray=new THREE.Raycaster();camera.updateMatrixWorld();ray.setFromCamera(new THREE.Vector2(0,0),camera);ray.far=250;
- const targets=[...buildMeshes.values(),...monsters.filter(m=>m.root.visible).map(m=>m.root),...[...remotePlayers.values()].filter(p=>p.root.visible).map(p=>p.root)];
- scene.updateMatrixWorld(true);const hit=ray.intersectObjects(targets,true).find(h=>h.distance>camera.position.distanceTo(origin)*.3);
- const ground=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());let point=hit?.point||ray.ray.at(150,new THREE.Vector3());
- if(ground&&ground.distanceTo(camera.position)<point.distanceTo(camera.position))point=ground;
- let direction=point.clone().sub(origin).normalize();if(direction.dot(ray.ray.direction)<.1)direction=ray.ray.direction.clone();
+ const origin=charRoot.position.clone().add(new THREE.Vector3(0,1,0));camera.updateMatrixWorld();aimRay.setFromCamera(aimCenter,camera);aimRay.far=250;
+ const ray=aimRay.ray,minDistance=camera.position.distanceTo(origin)*.3;
+ let point=ray.at(150,new THREE.Vector3()),nearest=150;
+ const accept=hit=>{if(!hit)return;const distance=hit.distanceTo(ray.origin);if(distance>minDistance&&distance<nearest){nearest=distance;point.copy(hit);}};
+ // Built meshes are simple primitives; only their transforms need updating.
+ for(const mesh of buildMeshes.values()){mesh.updateMatrixWorld();const hits=aimRay.intersectObject(mesh,false);for(const hit of hits)accept(hit.point);}
+ for(const monster of monsters){if(!monster.root.visible)continue;const p=monster.root.position;aimBox.min.set(p.x-2.8,p.y,p.z-2.8);aimBox.max.set(p.x+2.8,p.y+12,p.z+2.8);accept(ray.intersectBox(aimBox,aimHit));}
+ for(const player of remotePlayers.values()){if(!player.root.visible)continue;aimSphere.center.copy(player.root.position);aimSphere.center.y+=1;aimSphere.radius=1.25;accept(ray.intersectSphere(aimSphere,aimHit));}
+ const ground=ray.intersectPlane(aimGround,aimHit);if(ground&&ground.distanceTo(ray.origin)<nearest)point.copy(ground);
+ let direction=point.clone().sub(origin).normalize();if(direction.dot(ray.direction)<.1)direction=ray.direction.clone();
  return {direction,point,inRange:origin.distanceTo(point)<=currentWeapon().range+currentWeapon().chargeRange*waterCharge()};
 }
 let aimUpdatedAt=0;
