@@ -1,3 +1,4 @@
+import {dropWeapon,fishingView} from './fishing-rules.js';
 // Shared, server-owned encounter and persistent construction rules.
 import {blockSize,validBlockSize} from '../build-shapes.js';
 export {blockSize};
@@ -5,11 +6,11 @@ export function ensureWorld(g){g.blocks??=[];g.buildRevision??=0;g.worldRevision
 export function resetEncounter(g,now=Date.now()){ensureWorld(g);g.redMode=false;g.boss={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
 export function activateEncounter(g,text,name){
  ensureWorld(g);const command=text.trim().toLowerCase();
- if(command==='show me the money'&&['Ely','Rae'].includes(name)){g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+100;g.worldRevision++;return true;}
- if(command==='auntie back'){const red=g.redMode;resetEncounter(g);g.redMode=red;g.worldRevision++;return true;}
- if(command!=='一起打阿姨')return false;g.redMode=true;g.worldRevision++;return true;
+ if(command==='/show me the money'&&['Ely','Rae'].includes(name)){g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+100;g.worldRevision++;return true;}
+ if(command==='/auntie back'){const red=g.redMode;resetEncounter(g);g.redMode=red;g.worldRevision++;return true;}
+ if(command!=='/一起打阿姨')return false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
  ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;g.boss.paused=players.some(p=>p.state?.paused);
@@ -36,6 +37,7 @@ export function buildAction(g,actor,players,body,now=Date.now()){
  const block={size:[...size],id:crypto.randomUUID(),shape:body.shape,rotation:body.rotation===1?1:0,position:[...p],color:/^#[0-9a-f]{6}$/i.test(body.color||'')?body.color:'#c6a5dc',createdAt:now};
  const [w,h,d]=blockSize(block),overlap=(b,vertical=true)=>{const [bw,bh,bd]=blockSize(b);return Math.abs(p[0]-b.position[0])<(w+bw)/2-.01&&Math.abs(p[2]-b.position[2])<(d+bd)/2-.01&&(!vertical||(p[1]<b.position[1]+bh-.01&&p[1]+h>b.position[1]+.01));};
  if(g.blocks.some(b=>overlap(b)))return {error:'This space is occupied'};
+ if([...(g.fishing?.holes||[]),...(g.fishing?.ponds||[])].some(f=>p[1]<1&&Math.abs(p[0]-f.position[0])<w/2+f.radius&&Math.abs(p[2]-f.position[2])<d/2+f.radius))return {error:'Leave the water feature clear'};
  if(p[1]>0&&!g.blocks.some(b=>Math.abs(b.position[1]+blockSize(b)[1]-p[1])<.01&&overlap(b,false)))return {error:'Stack on the ground or an existing block'};
  if(players.some(player=>player.state?.visible&&player.state.position[1]<p[1]+h&&player.state.position[1]+1.5>p[1]&&containsBlock(block,player.state.position[0],p[1]+h/2,player.state.position[2],.5)))return {error:'A player is standing here'};
  if(g.blocks.length>=2000)return {error:'The garden has reached its block limit'};
@@ -53,8 +55,9 @@ export function rayBlock(b,origin,direction){
 export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)));}
 export function shootBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;
- const p=g.boss.position,along=rayBlock({shape:'cube',position:p,size:[5.6,12,5.6]},shot.origin,shot.direction);
+ const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
  if(!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<along)return;
  const damage=shot.damage??(1+Math.floor(4*shot.charge));g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;
+ if(g.boss.hp===0)dropWeapon(g,now);
  shot.hit='Auntie';shot.damage=damage;shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);
 }

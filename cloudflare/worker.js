@@ -77,7 +77,7 @@ export class ReletterGarden extends DurableObject {
       if(path==='/api/game'&&request.method==='POST'){
         const body=await readBody(request);this.pruneSockets();const ws=this.sockets().find(w=>w.deserializeAttachment().id===session.id);if(!ws)return json({error:'Not connected'},409);
         const game=this.game();advanceBoss(game,this.roster());const result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);game.worldRevision++;
-        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,game:this.gameView()});
+        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,notice:result.notice,game:this.gameView()});
       }
       if(path==='/api/socket'){
         this.pruneSockets();
@@ -132,6 +132,7 @@ export class ReletterGarden extends DurableObject {
         const body=await readBody(request),p=ws.deserializeAttachment();
         if(typeof body.text!=='string'||!body.text.trim()||body.text.length>500)return json({error:'Message must contain 1–500 characters'},400);
         if(Date.now()-p.lastChat<400)return json({error:'Please wait before sending again'},429);
+        if(body.text.trim().startsWith('/')){const g=this.game();if(!activateEncounter(g,body.text,p.character))return json({error:'Unknown command'},400);p.lastChat=Date.now();ws.serializeAttachment(p);this.saveGame(g);this.broadcast('game',worldView(g));return json({ok:true,command:true});}
         const chat={id:crypto.randomUUID(),name:p.character,text:body.text.trim(),time:Date.now()};this.ctx.storage.transactionSync(()=>{this.sql.exec('INSERT INTO chat_messages VALUES(?,?,?,?)',chat.id,chat.name,chat.text,chat.time);this.queueNotification('chat-'+chat.id,{kind:'chat',name:chat.name,text:chat.text,time:chat.time});});this.ctx.waitUntil(this.scheduleNotifications());p.lastChat=chat.time;ws.serializeAttachment(p);this.broadcast('chat',chat);const g=this.game();if(activateEncounter(g,chat.text,chat.name)){this.saveGame(g);this.broadcast('game',worldView(g));}return json({ok:true});
       }
       return json({error:'API not found'},404);

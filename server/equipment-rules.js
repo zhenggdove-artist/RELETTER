@@ -12,7 +12,7 @@ export function equipmentAction(g,name,body){
   const item=equipmentById(body.item);if(!item||item.id!=='water'&&!owned.includes(item.id))return {error:'Purchase this item first'};
   slots[item.slot]=item.id;
  }else if(body.action==='unequip'){
-  if(!['weapon','shield'].includes(body.slot))return {error:'Invalid equipment slot'};
+  if(!['weapon','shield','rod','tool','pond'].includes(body.slot))return {error:'Invalid equipment slot'};
   slots[body.slot]=body.slot==='weapon'?'water':null;
  }else return {error:'Unknown equipment action'};
  g.equipmentRevision++;return {};

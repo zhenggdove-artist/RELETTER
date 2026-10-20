@@ -62,7 +62,7 @@ try{
     if(url.pathname==='/api/players'){prunePeers();return json(res,200,roster().map(p=>({...p,self:p.id===id})));}
     if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);resetIfEmpty();broadcast('players',roster());}return json(res,200,{ok:true});}
     if(url.pathname==='/api/world'&&req.method==='GET')return json(res,200,worldView(game));
-    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,game:worldView(game)});}
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,notice:result.notice,game:worldView(game)});}
     if(url.pathname==='/api/events'){
       prunePeers();
       const character=url.searchParams.get('character');
@@ -86,6 +86,7 @@ try{
       const p=peers.get(id),b=await body(req);if(!p)return json(res,409,{error:'Not connected'});
       if(typeof b.text!=='string'||!b.text.trim()||b.text.length>500)return json(res,400,{error:'Message must contain 1–500 characters'});
       if(p.lastChat&&Date.now()-p.lastChat<400)return json(res,429,{error:'Please wait before sending again'});
+      if(b.text.trim().startsWith('/')){if(!activateEncounter(game,b.text,p.character))return json(res,400,{error:'Unknown command'});p.lastChat=Date.now();await saveWorld();broadcast('game',worldView(game));return json(res,200,{ok:true,command:true});}
       const chat={id:randomUUID(),name:p.character,text:b.text.trim(),time:Date.now()};if(pool)await pool.query('INSERT INTO reletter_chat VALUES($1,$2)',[chat.id,JSON.stringify(chat)]);else db.prepare('INSERT INTO reletter_chat VALUES(?,?)').run(chat.id,JSON.stringify(chat));p.lastChat=chat.time;broadcast('chat',chat);if(activateEncounter(game,chat.text,chat.name)){await saveWorld();broadcast('game',worldView(game));}return json(res,200,{ok:true});
     }
     return json(res,404,{error:'API not found'});
