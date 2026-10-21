@@ -1,6 +1,7 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
 import {blockSize as footprint} from './build-shapes.js';
-import {sampleMeleePose,meleeDuration,meleeFamilies} from './melee-motion.js';
+import {sampleMeleePose,meleeDuration,meleeFamilies,meleeTrailPattern,meleeMoveNames} from './melee-motion.js';
+import {createWeaponSignature,updateWeaponSignature,disposeWeaponSignature} from './weapon-effects.js';
 import {EQUIPMENT,DEFAULT_WEAPON,equipmentById} from './equipment-catalog.js';
 let pondBuildMode=false,fishingPanelOpen=false, imageViewerOpen=false,catchViewerOpen=false;
 let selectedCharacter='Ely', admitted=false, selfId=null, connected=false, onlineSocket=null;
@@ -322,6 +323,7 @@ window.addEventListener('focus',refreshWorld);
 // A short moving jet breaks into droplets, then scatters into a splash.
 // Instancing keeps each spray to one droplet draw call on phones.
 function showWater(data){
+ if((data.charge||0)>=.65&&!meleeFamilies.includes(data.family))showSignatureBurst(data);
  if(data.family&&(data.family!=='water'||data.weapon!=='water')){showEquipmentAttack(data);if(!data.red&&data.hit&&(!data.blocked||data.blocked<Math.min(2,data.damage)))flashPlayerHit(data.hit);return;}
  if(!data.red&&!data.blocked&&['Ely','Rae'].includes(data.hit))flashPlayerHit(data.hit);
  const origin=new THREE.Vector3(...data.origin),direction=new THREE.Vector3(...data.direction).normalize(),charge=data.charge||0,range=data.range||18,radius=data.radius||.12;
@@ -616,7 +618,7 @@ function showEquipmentAttack(data){
  scene.add(group);equipmentFX.push({group,points,accents,impact,data,travel,age:0,duration:data.family==='saber'?.55:1.05});
 }
 function updateEquipmentEffects(dt){
- updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);
+ updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);
  const chargeLabel=$('shield-charge'),guard=equipmentById(gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
  if(chargeLabel&&guard){const left=guardState?Math.max(0,Math.ceil(guard.recharge-(Date.now()-guardState.lastHit)/1000)):0;chargeLabel.textContent=left?Math.max(0,guard.capacity-guardState.used).toFixed(1)+' / '+guard.capacity+' · '+left+'s':guard.capacity+' / '+guard.capacity+' · Ready';}
 
@@ -683,15 +685,16 @@ function slashRibbon(color,opacity){
  const mesh=new THREE.Mesh(geo,material);mesh.frustumCulled=false;return mesh;
 }
 function showMeleeAttack(data){
- const combo=Math.max(0,Math.min(6,data.combo||0)),charged=combo===6,group=new THREE.Group(),color=data.color||'#a77bff';group.position.fromArray(data.origin);group.rotation.y=Math.atan2(data.direction[0],data.direction[2]);group.name=(data.family==='whip'?'Whip ':'Saber ')+slashNames[combo];
+ const combo=Math.max(0,Math.min(6,data.combo||0)),charged=combo===6,group=new THREE.Group(),color=data.color||'#a77bff';group.position.fromArray(data.origin);group.rotation.y=Math.atan2(data.direction[0],data.direction[2]);group.name=data.family+' '+(meleeMoveNames[data.family]||slashNames)[combo];
  const patterns=[[[.7,-1.25,1.25,0]], [[-.7,1.25,-1.25,0]], [[.08,-1.45,1.45,0]], [[1.45,-1.3,1.3,0]], [[.8,-1.3,1.3,0],[-.8,1.3,-1.3,.22]], [[.18,-1.5,1.5,0],[-.25,1.5,-1.5,.2]], [[.75,-1.5,1.5,0],[-.75,1.5,-1.5,.18],[.02,-1.6,1.6,.36]]];
- const strokes=patterns[combo].map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay*.35+meleeDuration(data.family,combo)*(['pan','planter','palm'].includes(data.family)?.33:.24),lift:0,ribbon,filament};});
+ const strokes=meleeTrailPattern(data.family,combo).map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay+meleeDuration(data.family,combo)*(['pan','planter','palm'].includes(data.family)?.33:.24),lift:0,ribbon,filament};});
  const tier=equipmentById(data.weapon)?.tier||1;const count=(charged?150:80)+tier*45,geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*3),3));const sparks=new THREE.Points(geometry,new THREE.PointsMaterial({map:equipmentGlow,color,size:charged?.11:.07,transparent:true,opacity:.6,depthWrite:false,blending:THREE.AdditiveBlending}));sparks.frustumCulled=false;group.add(sparks);
  const sigil=new THREE.Group();sigil.position.y=-.92;const radius=data.range*.8;for(let j=0;j<3;j++){const ring=new THREE.Mesh(new THREE.RingGeometry(radius*(.45+j*.16),radius*(.45+j*.16)+.018+tier*.009,96),glowMaterial(color,.28));ring.rotation.x=-Math.PI/2;sigil.add(ring);}
  const vertices=[];for(let i=0;i<12;i++){const a=i*Math.PI/6,r=radius*.8;vertices.push(Math.cos(a)*r,0,Math.sin(a)*r,Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.21)*r,0,Math.sin(a+.21)*r);}
  const runeGeo=new THREE.BufferGeometry();runeGeo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));sigil.add(new THREE.LineSegments(runeGeo,new THREE.LineBasicMaterial({color,transparent:true,opacity:.45,depthWrite:false,blending:THREE.AdditiveBlending})));group.add(sigil);
  const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:equipmentGlow,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));flash.position.set(0,0,Math.min(radius,2.5));group.add(flash);scene.add(group);
- const waves=[];for(let i=0;i<Math.ceil(tier/2);i++){const wave=new THREE.Mesh(new THREE.RingGeometry(.84,1,48,1,.15,Math.PI*1.65),glowMaterial(i%2?'#fff0d2':color,.5));wave.rotation.z=combo*.65+i*.9;group.add(wave);waves.push(wave);}
+ sigil.visible=data.family==='saber';const waves=[];for(let i=0;i<(data.family==='saber'?Math.ceil(tier/2):0);i++){const wave=new THREE.Mesh(new THREE.RingGeometry(.84,1,48,1,.15,Math.PI*1.65),glowMaterial(i%2?'#fff0d2':color,.5));wave.rotation.z=combo*.65+i*.9;group.add(wave);waves.push(wave);}
+ showSignatureBurst(data);
  meleeEffects.push({group,strokes,sparks,sigil,flash,waves,combo,data,age:0,radius:data.range,duration:meleeDuration(data.family,combo)+.35});
 }
 function updateMeleeEffects(dt){
@@ -723,4 +726,15 @@ function applyMeleePoses(){
 function supportOffhand(model,target,strength){
  const bones=fishingBones(model),hand=bones.LeftHand;if(!hand)return;model.updateMatrixWorld(true);
  for(let i=0;i<3;i++)for(const bone of [bones.LeftForeArm,bones.LeftArm]){if(!bone)continue;const origin=bone.getWorldPosition(new THREE.Vector3()),actual=hand.getWorldPosition(new THREE.Vector3()).sub(origin),desired=target.clone().sub(origin);if(actual.lengthSq()<1e-8||desired.lengthSq()<1e-8)continue;const delta=new THREE.Quaternion().setFromUnitVectors(actual.normalize(),desired.normalize());delta.slerp(new THREE.Quaternion(),1-strength);const world=bone.getWorldQuaternion(new THREE.Quaternion()),parent=bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert();bone.quaternion.copy(parent.multiply(delta).multiply(world));bone.updateMatrixWorld(true);}
+}
+
+let heldSignature=null;const signatureBursts=[];
+function showSignatureBurst(data){
+ const item=equipmentById(data.weapon)||{...DEFAULT_WEAPON,family:data.family||'water'},fx=createWeaponSignature(THREE,item,'burst');fx.root.position.fromArray(data.origin);fx.root.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...data.direction).normalize());fx.root.position.addScaledVector(new THREE.Vector3(...data.direction),Math.min(data.range*.3,3));fx.duration=(data.charge||0)>=.65?1.05:.55;fx.power=(data.charge||0)>=.65?1.5:.8;scene.add(fx.root);signatureBursts.push(fx);while(signatureBursts.length>6)disposeWeaponSignature(signatureBursts.shift());
+}
+function updateSignatureEffects(dt){
+ const item=currentWeapon(),charging=waterChargeStart!==null&&waterCharge()>.06;
+ if(heldSignature&&(!charging||heldSignature.weapon!==item.id)){disposeWeaponSignature(heldSignature);heldSignature=null;}
+ if(charging){if(!heldSignature){heldSignature=createWeaponSignature(THREE,item);heldSignature.weapon=item.id;scene.add(heldSignature.root);}heldSignature.root.position.copy(charRoot.position).add(new THREE.Vector3(0,1.1,0));heldSignature.root.rotation.y=gameplayHeading(charModel);updateWeaponSignature(THREE,heldSignature,globalTime,waterCharge());}
+ for(let i=signatureBursts.length-1;i>=0;i--){const fx=signatureBursts[i];fx.age+=dt;if(fx.age>=fx.duration){disposeWeaponSignature(fx);signatureBursts.splice(i,1);continue;}updateWeaponSignature(THREE,fx,fx.age,fx.age/fx.duration);fx.root.scale.multiplyScalar(fx.power);}
 }

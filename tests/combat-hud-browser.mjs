@@ -13,7 +13,7 @@ try{
  assert.ok(Math.abs(states.at(-1).rotation-2.5)<.001,'network heading must ignore spin');
  for(let i=0;i<8;i++){await p.locator('#water-gun').dispatchEvent('pointerdown',{button:0,pointerId:1});await p.locator('#water-gun').dispatchEvent('pointerup',{button:0,pointerId:1});await p.waitForTimeout(60);}
  await p.waitForTimeout(500);assert.ok(shots.length>=3&&shots.length<=4,'bounded buffer chains instead of dropping rapid taps');
- assert.ok(shots.slice(1).every((s,i)=>s.time-shots[i].time>=250&&s.time-shots[i].time<400),'cadence excludes extra network latency');
+ assert.ok(shots.slice(1).every((s,i)=>s.time-shots[i].time>=250&&s.time-shots[i].time<400),'cadence excludes extra network latency: '+JSON.stringify(shots.slice(1).map((s,i)=>s.time-shots[i].time)));
  await p.evaluate(()=>reletter_test.step(1500));await p.keyboard.down('ArrowUp');await p.evaluate(()=>reletter_test.step(300));await p.keyboard.up('ArrowUp');
  const rotation=await p.evaluate(()=>reletter_test.model().rotation.toArray());assert.ok(Math.abs(rotation[0])<.001&&Math.abs(rotation[2])<.001,'movement resets Euler flip');
  await p.locator('#fishing-open').tap();assert.equal(await p.locator('#fishing-panel').isVisible(),false);

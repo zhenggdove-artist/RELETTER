@@ -51,8 +51,8 @@ function updateFishingPresentation(dt){
   if(!species||!hole){p.presented=true;continue;}
   const player=name===selectedCharacter?{model:charModel,root:charRoot}:[...remotePlayers.values()].find(r=>r.character===name);
   if(!player?.model)continue;
-  if(!p.landingFish){p.landingFish=createFishModel(THREE,species);p.landingFish.scale.setScalar(.24);scene.add(p.landingFish);}
-  const end=player.root.position.clone().add(new THREE.Vector3(0,1.7,0)),start=new THREE.Vector3(...hole.position);start.y=-.24;
+  if(!p.landingFish){p.landingFish=species.eldritch?createWorldFishModel(THREE,species):createFishModel(THREE,species);if(!species.eldritch)p.landingFish.scale.setScalar(.24);scene.add(p.landingFish);}
+  const end=player.root.position.clone().add(new THREE.Vector3(0,1.7,0)),start=new THREE.Vector3(...hole.position);start.y=species.eldritch?fishDimensions(species)[1]*.5:-.24;if(species.eldritch){end.copy(start);end.y+=2;}
   const t=Math.min(1,p.age/1.3);p.landingFish.position.lerpVectors(start,end,t);p.landingFish.position.y+=Math.sin(t*Math.PI)*1.5;
   p.landingFish.rotation.set(.15,globalTime*3,.25*Math.sin(globalTime*10));animateFishModel(p.landingFish,globalTime);
   if(p.age>=1.65){scene.remove(p.landingFish);disposeFishModel(p.landingFish);delete p.landingFish;p.presented=true;
@@ -90,7 +90,7 @@ function openCatchViewer(fish){
  const species=fishById(fish?.species);if(!species||catchViewerOpen)return;
  catchFocus=document.activeElement;keysDown.clear();reelHeld=false;catchViewerOpen=true;catchViewState.closing=false;catchDialog.classList.remove('closing');
  $('catch-name').textContent=species.name;$('catch-rarity').textContent=['','COMMON','UNCOMMON','RARE','EPIC','MYTHIC','RELIC · CRIMSON SPRING','ELDRITCH · CRIMSON SPRING'][species.rarity];
- $('catch-weight').textContent=fish.kg+' kg · '+fishPrice(fish)+' coins';catchDialog.showModal();$('catch-stage').focus();
+ $('catch-weight').textContent=fish.kg+' kg · '+fishPrice(fish)+' coins'+(species.eldritch?' · '+fishDimensions(species).join(' × ')+' m':'');catchDialog.showModal();$('catch-stage').focus();
  const stage=$('catch-stage'),viewScene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,40);
  const viewRenderer=new THREE.WebGLRenderer({alpha:true,antialias:true});viewRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));viewRenderer.outputColorSpace=THREE.SRGBColorSpace;viewRenderer.toneMapping=THREE.ACESFilmicToneMapping;viewRenderer.toneMappingExposure=1.05;stage.replaceChildren(viewRenderer.domElement);
  const model=createFishModel(THREE,species);viewScene.add(model);viewScene.add(new THREE.HemisphereLight('#e4e5ff','#274b50',1.8));

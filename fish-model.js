@@ -1,3 +1,4 @@
+import {fishDimensions} from './fishing-catalog.js';
 // Volumetric catch specimens. Shared geometry uses owned materials/textures and explicit disposal.
 export function createFishModel(T,species){
  const root=new T.Group(),swimmers=[],tentacles=[],[base,light,dark]=species.colors;
@@ -72,10 +73,27 @@ export function createFishModel(T,species){
  return root;
 }
 export function animateFishModel(model,time){
+ if(model.userData.specimen){animateFishModel(model.userData.specimen,time);return;}
  for(const s of model.userData.swimmers||[])s.part.rotation[s.axis]=Math.sin(time*2.5+s.phase)*s.amount;
  for(const t of model.userData.tentacles||[]){const attr=t.mesh.geometry.attributes.position;for(let i=0;i<attr.count;i++){const x=t.base[i*3],y=t.base[i*3+1],z=t.base[i*3+2],w=Math.max(0,-y)*.055;attr.setXYZ(i,x+Math.sin(time*3+y*5+t.phase)*w,y,z+Math.cos(time*2.5+y*4+t.phase)*w);}attr.needsUpdate=true;}
 }
 export function disposeFishModel(model){
  const geometries=new Set(),materials=new Set();model.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);});
- geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());model.userData.ownedTexture?.dispose();
+ geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());const textures=new Set();model.traverse(o=>{if(o.userData.ownedTexture)textures.add(o.userData.ownedTexture);});textures.forEach(t=>t.dispose());
+}
+
+export function createWorldFishModel(T,species){
+ const root=new T.Group(),model=createFishModel(T,species);batchSpecimen(T,model);const box=new T.Box3().setFromObject(model),size=box.getSize(new T.Vector3()),center=box.getCenter(new T.Vector3()),d=fishDimensions(species);
+ model.position.sub(center);const fit=new T.Group();fit.add(model);fit.scale.set(d[0]/size.x,d[1]/size.y,d[2]/size.z);root.add(fit);root.userData.specimen=model;root.userData.dimensions=d;return root;
+}
+
+function batchSpecimen(T,model){
+ // Tiny decorative beads stay static; the mantle, wings and articulated tentacles remain animated.
+ model.userData.swimmers=model.userData.swimmers.filter(s=>!s.part.isMesh);
+ const moving=new Set([...model.userData.swimmers.map(s=>s.part),...model.userData.tentacles.map(t=>t.mesh)]),groups=new Map();model.updateMatrixWorld(true);
+ model.traverse(o=>{if(!o.isMesh)return;for(let p=o;p&&p!==model;p=p.parent)if(moving.has(p))return;let group=groups.get(o.material);if(!group)groups.set(o.material,group=[]);group.push(o);});
+ for(const [material,meshes] of groups){if(meshes.length<2)continue;const parts=meshes.map(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();g.applyMatrix4(m.matrixWorld);return g;}),total=parts.reduce((sum,g)=>sum+g.attributes.position.count,0),geometry=new T.BufferGeometry();
+  for(const [name,width] of [['position',3],['normal',3],['uv',2]]){const data=new Float32Array(total*width);let offset=0;for(const g of parts){if(g.attributes[name])data.set(g.attributes[name].array,offset);offset+=g.attributes.position.count*width;}geometry.setAttribute(name,new T.BufferAttribute(data,width));}
+  for(const m of meshes){m.removeFromParent();m.geometry.dispose();}parts.forEach(g=>g.dispose());model.add(new T.Mesh(geometry,material));
+ }
 }

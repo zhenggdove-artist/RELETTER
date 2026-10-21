@@ -36,4 +36,18 @@ export const FISHING_TOOLS=[...CHISELS,{id:'pond-kit',name:'Glass Aquarium',slot
 export const fishingById=id=>FISHING_TOOLS.find(x=>x.id===id);
 export const fishPrice=fish=>Math.max(1,Math.round((fishById(fish.species)?.value||1)*(1+fish.kg*.24)));
 
-export const AQUARIUM_SIZES={small:{label:'Small',size:[3,1.4,2],price:15,capacity:30},medium:{label:'Medium',size:[5,2.1,3],price:45,capacity:60},large:{label:'Large',size:[7,2.8,4],price:100,capacity:100}};
+export const AQUARIUM_SIZES={small:{label:'Small',size:[3,1.4,2],price:15,capacity:30},medium:{label:'Medium',size:[5,2.1,3],price:45,capacity:60},large:{label:'Large',size:[7,2.8,4],price:100,capacity:100},abyssal:{label:'Abyssal',size:[20,12,16],price:600,capacity:6},titan:{label:'Titan',size:[30,18,24],price:1500,capacity:12}};
+
+const abyssDimensions=[[7,6,6],[9,8,8],[8,7,7],[12,9,8],[14,11,9],[15,12,11]];
+export function fishDimensions(fish){const s=fishById(fish.species||fish.id);return s?.eldritch?[...abyssDimensions[s.index-54]]:[1.3,1,.5];}
+export function aquariumFit(pond,fish){
+ const size=pond.size||[6,2.1,4],d=fishDimensions(fish);
+ if(d.some((v,i)=>(i!==1&&fishById(fish.species||fish.id)?.eldritch?Math.hypot(d[0],d[2]):v)>(i===1?size[i]*.78:size[i]-1.2)))return 'Needs a larger aquarium · '+d.join(' × ')+' m';
+ if(fishById(fish.species)?.eldritch){const used=(pond.fish||[]).filter(f=>fishById(f.species)?.eldritch).reduce((sum,f)=>sum+fishDimensions(f).reduce((a,b)=>a*b,1),0),volume=d.reduce((a,b)=>a*b,1);if(used+volume>size[0]*size[1]*size[2]*.35)return 'Not enough swimming space for another giant';}
+ return null;
+}
+export function chooseFishingHole(holes,position,preferred=null){
+ const distance=h=>Math.hypot(h.position[0]-position[0],h.position[2]-position[2]);
+ const reachable=holes.filter(h=>distance(h)<=6&&Math.abs(h.position[1]-position[1])<3);
+ return reachable.find(h=>h.id===preferred)||reachable.sort((a,b)=>distance(a)-distance(b))[0]||null;
+}
