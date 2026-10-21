@@ -1,6 +1,8 @@
 // Original vector illustrations: layered scales, pigment masks, translucent fin rays and iridescent highlights.
 // Pure SVG keeps the collection sharp on high-DPI displays and is reused as a cached pond texture.
+import {abyssSVG} from './abyss-art.js';
 export function fishSVG(f){
+ if(f.eldritch||f.shape==='manta')return abyssSVG(f);
  const i=f.index,[base,light,dark]=f.colors,deep=['discus','angel','tang','emperor','butterfly','ryukin','pearlscale'].includes(f.shape),slim=['gar','pike','loach','ribbon','arowana','sailfish'].includes(f.shape),fancy=['betta','guppy','butterfly','oranda','ryukin','moor','ranchu','lionfish'].includes(f.shape),h=({discus:88,angel:72,ryukin:82,pearlscale:77,moor:64,ranchu:66,betta:44,guppy:39,loach:24,gar:24,pike:31,arowana:35,ribbon:18,tang:75,emperor:68,anthias:42,mandarin:43,lionfish:48}[f.shape]|| (deep?75:slim?30:43+(i%4)*5));
  const body=f.shape==='seahorse'?'M190 70 Q225 35 250 85 L287 96 279 110 247 105 Q270 145 227 190 Q206 220 239 222 Q257 211 241 204 Q275 203 263 230 Q228 256 207 225 Q191 204 208 174 Q224 139 196 130 Q174 103 190 70Z':`M105 140 C155 ${140-h-24} 265 ${140-h-14} 307 130 Q333 140 305 151 C259 ${140+h} 160 ${140+h+25} 105 140Z`;
  let scales='',marks='',rays='',tailRays='';

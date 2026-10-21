@@ -1,3 +1,4 @@
+import {validSurfaceId} from './surface-rules.js';
 import {dropWeapon,fishingView} from './fishing-rules.js';
 // Shared, server-owned encounter and persistent construction rules.
 import {blockSize,validBlockSize} from '../build-shapes.js';
@@ -34,7 +35,8 @@ export function buildAction(g,actor,players,body,now=Date.now()){
  const p=body.position;if(!Array.isArray(p)||p.length!==3||!p.every(n=>Number.isFinite(n)&&Math.abs(n)<=500&&Math.abs(n*2-Math.round(n*2))<.001)||p[1]<0||p[1]>40)return {error:'Choose a valid grid position'};
  if(Math.hypot(...p.map((v,i)=>v-pos[i]))>14)return {error:'Build within 14 metres'};
  const size=body.size??(body.shape==='bar'?[6,1,2]:[2,1,2]);if(!validBlockSize(size)||(body.shape==='cylinder'&&size[0]!==size[2]))return {error:'Invalid block dimensions'};
- const block={size:[...size],id:crypto.randomUUID(),shape:body.shape,rotation:body.rotation===1?1:0,position:[...p],color:/^#[0-9a-f]{6}$/i.test(body.color||'')?body.color:'#c6a5dc',createdAt:now};
+ if(body.surface&&!validSurfaceId(body.surface))return {error:'Invalid skin'};
+ const block={surface:body.surface||null,surfaceRevision:0,size:[...size],id:crypto.randomUUID(),shape:body.shape,rotation:body.rotation===1?1:0,position:[...p],color:/^#[0-9a-f]{6}$/i.test(body.color||'')?body.color:'#c6a5dc',createdAt:now};
  const [w,h,d]=blockSize(block),overlap=(b,vertical=true)=>{const [bw,bh,bd]=blockSize(b);return Math.abs(p[0]-b.position[0])<(w+bw)/2-.01&&Math.abs(p[2]-b.position[2])<(d+bd)/2-.01&&(!vertical||(p[1]<b.position[1]+bh-.01&&p[1]+h>b.position[1]+.01));};
  if(g.blocks.some(b=>overlap(b)))return {error:'This space is occupied'};
  if([...(g.fishing?.holes||[]),...(g.fishing?.ponds||[])].some(f=>p[1]<1&&Math.abs(p[0]-f.position[0])<w/2+f.radius&&Math.abs(p[2]-f.position[2])<d/2+f.radius))return {error:'Leave the water feature clear'};

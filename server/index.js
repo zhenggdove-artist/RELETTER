@@ -1,3 +1,5 @@
+import {surfaceHash,validSurfaceId} from './surface-rules.js';
+import {expireHoles} from './fishing-rules.js';
 import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,worldView} from './world-rules.js';
 import {mediaKinds,validMedia,battleAction} from './game-rules.js';
 import http from 'node:http';
@@ -22,6 +24,8 @@ if(process.env.RELETTER_DATABASE_URL){
   db.exec('CREATE TABLE IF NOT EXISTS reletter_chat (id TEXT PRIMARY KEY, payload TEXT NOT NULL)');
   db.exec('CREATE TABLE IF NOT EXISTS reletter_entries (id TEXT PRIMARY KEY, payload TEXT NOT NULL)');
 }
+if(pool)await pool.query('CREATE TABLE IF NOT EXISTS reletter_surfaces (id TEXT PRIMARY KEY,data TEXT NOT NULL)');else db.exec('CREATE TABLE IF NOT EXISTS reletter_surfaces (id TEXT PRIMARY KEY,data TEXT NOT NULL)');
+async function surfaceRow(id){return pool?(await pool.query('SELECT data FROM reletter_surfaces WHERE id=$1',[id])).rows[0]:db.prepare('SELECT data FROM reletter_surfaces WHERE id=?').get(id);}
 async function entries(){const rows=pool?(await pool.query('SELECT payload FROM reletter_entries')).rows.map(x=>x.payload):db.prepare('SELECT payload FROM reletter_entries').all().map(x=>JSON.parse(x.payload));return rows.sort((a,b)=>a.created_at.localeCompare(b.created_at));}
 async function insert(e){if(pool)return (await pool.query('INSERT INTO reletter_entries VALUES ($1,$2) ON CONFLICT (id) DO NOTHING',[e.id,JSON.stringify(e)])).rowCount;return db.prepare('INSERT OR IGNORE INTO reletter_entries VALUES (?,?)').run(e.id,JSON.stringify(e)).changes;}
 async function remove(id){if(pool)await pool.query('DELETE FROM reletter_entries WHERE id=$1',[id]);else db.prepare('DELETE FROM reletter_entries WHERE id=?').run(id);}
@@ -29,7 +33,7 @@ if(pool){await pool.query('CREATE TABLE IF NOT EXISTS reletter_world (id INTEGER
 resetEncounter(game);
 let worldWrite=Promise.resolve();
 function saveWorld(){const payload=JSON.stringify(game);worldWrite=worldWrite.catch(()=>{}).then(async()=>{if(pool)await pool.query('INSERT INTO reletter_world VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',[payload]);else db.prepare('INSERT OR REPLACE INTO reletter_world VALUES(1,?)').run(payload);});return worldWrite;}
-function resetIfEmpty(){if(peers.size){delete game.offlineSince;return;}if(!game.offlineSince){game.offlineSince=Date.now();setTimeout(resetIfEmpty,5100).unref();}else if(Date.now()-game.offlineSince>=5000){resetEncounter(game);delete game.offlineSince;saveWorld().catch(console.error);}}
+function resetIfEmpty(){if(peers.size){delete game.offlineSince;return;}if(!game.offlineSince){game.offlineSince=Date.now();setTimeout(resetIfEmpty,5100).unref();}else if(Date.now()-game.offlineSince>=5000){expireHoles(game,Date.now(),true);resetEncounter(game);delete game.offlineSince;saveWorld().catch(console.error);}}
 const broadcast=(type,data)=>{for(const p of peers.values())p.res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);};
 const roster=()=>[...peers].map(([id,p])=>({id,character:p.character,state:p.state}));
 function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>20_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
@@ -62,7 +66,9 @@ try{
     if(url.pathname==='/api/players'){prunePeers();return json(res,200,roster().map(p=>({...p,self:p.id===id})));}
     if(url.pathname==='/api/disconnect'&&req.method==='POST'){const b=await body(req),p=peers.get(id);if(p?.connectionId===b.connectionId){p.res.end();peers.delete(id);resetIfEmpty();broadcast('players',roster());}return json(res,200,{ok:true});}
     if(url.pathname==='/api/world'&&req.method==='GET')return json(res,200,worldView(game));
-    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,notice:result.notice,game:worldView(game)});}
+    if(url.pathname==='/api/surfaces'&&req.method==='POST'){const b=await body(req),key=await surfaceHash(b.image);if(pool)await pool.query('INSERT INTO reletter_surfaces VALUES($1,$2) ON CONFLICT(id) DO NOTHING',[key,b.image]);else db.prepare('INSERT OR IGNORE INTO reletter_surfaces VALUES(?,?)').run(key,b.image);return json(res,200,{id:key});}
+    if(url.pathname.startsWith('/api/surfaces/')&&req.method==='GET'){const key=url.pathname.split('/').pop();if(!validSurfaceId(key))return json(res,400,{error:'Invalid skin'});const row=await surfaceRow(key);return json(res,row?200:404,row?{image:row.data}:{error:'Skin missing'});}
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);if(input.surface&&!await surfaceRow(input.surface))return json(res,400,{error:'Upload the skin first'});advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,notice:result.notice,game:worldView(game)});}
     if(url.pathname==='/api/events'){
       prunePeers();
       const character=url.searchParams.get('character');
@@ -100,3 +106,5 @@ try{
 });
 setInterval(()=>{if(!peers.size||game.boss.hp<=0)return;prunePeers();advanceBoss(game,roster());broadcast('boss',game.boss);},100).unref();
 server.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('RELETTER http://localhost:'+(process.env.PORT||3000)));
+
+setInterval(()=>{prunePeers();if(expireHoles(game)){saveWorld().catch(console.error);broadcast('game',worldView(game));}},15000).unref();

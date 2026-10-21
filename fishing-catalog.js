@@ -8,8 +8,32 @@ const speciesPalettes=[
 ['#6a9e96','#e6e6c8','#c17f9b'],['#568b72','#e1d596','#304747'],['#a8933d','#efd78e','#575a34'],['#749155','#dfc575','#273d38'],['#5e8773','#cdd5aa','#324d42'],['#a8bdbb','#f3eed3','#5c8188'],['#829a7a','#ded6a9','#354e44'],['#b4b8b0','#faf2cf','#607b7c'],['#88baba','#d8efe4','#4c6289'],['#7f9c67','#dedc9b','#3d5a45'],
 ['#1a9cbd','#f8ac35','#e65a35'],['#275eac','#f8d74a','#142d60'],['#388ab1','#ffe185','#233452'],['#eee3c2','#fff6df','#d48b42'],['#e9868e','#fbb873','#944c82'],['#b68578','#f9e0bb','#553e51'],['#76b7b0','#e5ead0','#638897'],['#7e95bd','#ead9f6','#5b588a'],['#587aaf','#a4ebeb','#353d69'],['#6e5c9f','#e4c8f0','#253b68']];
 export const FISH=FISH_NAMES.map((name,i)=>({id:'fish-'+(i+1),name,shape:shapes[i],index:i,rarity:Math.floor(i/10)+1,colors:speciesPalettes[i],minKg:+(.04+(i%10)*.025+Math.floor(i/10)*.32).toFixed(2),maxKg:+(.3+(i%10)*.16+Math.floor(i/10)**2*.6).toFixed(2),value:4+Math.floor(i/10)**2*9+(i%10)*2,pattern:i%7,temper:.8+(i%5)*.12}));
+// Crimson springs have their own pool; these species never roll in ordinary water.
+export const ABYSSAL_FISH=[
+ ['crimson-koi','Crimson Crown Koi','koi',6,['#b6234b','#ffd7a1','#311c4f'],4,18,380],
+ ['ruby-arowana','Ruby Veil Arowana','arowana',6,['#901f52','#ffbbcb','#202350'],6,25,420],
+ ['bloodmoon-ray','Bloodmoon Manta','manta',6,['#563076','#f5b6d3','#111f40'],8,32,510],
+ ['reliquary-sturgeon','Reliquary Sturgeon','sturgeon',6,['#43657d','#f8e3b1','#291c48'],12,40,580],
+ ['abyss-oracle','Abyssal Oracle','oracle',7,['#325f70','#9ffff0','#322242'],9,30,850],
+ ['veil-empress','Veil Empress','jelly',7,['#6c3884','#ffb9e0','#1d2858'],5,22,920],
+ ['cathedral-nautilus','Cathedral Nautilus','nautilus',7,['#3d747c','#ffe3ab','#3d1b50'],12,36,1050],
+ ['thorn-seraph','Thorn Seraph','seraph',7,['#5c3f84','#b4ffed','#30153b'],8,28,1150],
+ ['elder-leviathan','Elder Leviathan','leviathan',7,['#216a72','#a0fbe5','#291b46'],18,55,1400],
+ ['dream-devourer','Dream Devourer','cthulhu',7,['#385b69','#dcc6ff','#311d4b'],25,65,1800]
+].map(([id,name,shape,rarity,colors,minKg,maxKg,value],i)=>({id,name,shape,rarity,colors,minKg,maxKg,value,index:50+i,pattern:i%7,temper:1.15+i*.035,redOnly:true,eldritch:i>=4}));
+FISH.push(...ABYSSAL_FISH);
+export const CHISELS=[
+ {id:'chisel',name:'Garden Chisel',tier:1,depth:1,price:10,color:'#c9c4b9'},
+ {id:'chisel-2',name:'Steel Chisel',tier:2,depth:3,price:40,color:'#9fc7d7'},
+ {id:'chisel-3',name:'Moonstone Chisel',tier:3,depth:7,price:100,color:'#a9b6ee'},
+ {id:'chisel-4',name:'Obsidian Chisel',tier:4,depth:14,price:220,color:'#655a97'},
+ {id:'chisel-5',name:'Eclipse Chisel',tier:5,depth:28,price:450,color:'#c65582',redChance:.25}
+].map(c=>({...c,slot:'tool',family:'chisel',redChance:c.redChance||0}));
+export function selectedChisel(owned=[],equipped){const selected=CHISELS.find(c=>c.id===equipped&&owned.includes(c.id));return selected||[...CHISELS].reverse().find(c=>owned.includes(c.id));}
 export const fishById=id=>FISH.find(f=>f.id===id);
 export const RODS=Array.from({length:20},(_,i)=>({id:'rod-'+(i+1),name:['Willow','Reed','Cedar','Silk','Pearl','Jade','Coral','Opal','Moon','Aurora','Sapphire','Lotus','Obsidian','Starlit','Celestial','Prismatic','Abyssal','Seraph','Eclipse','Eternal'][i]+' Rod',slot:'rod',family:'rod',tier:i+1,color:['#91cbb4','#b7bbf3','#f1c084','#ea9dbb'][i%4],price:8+i*7+Math.floor(i*i*.7),power:1.2+i*.55,control:.18+i*.022,luck:i/19,hookWindow:1900+i*80,biteDelay:Math.max(2200,6500-i*180)}));
-export const FISHING_TOOLS=[{id:'chisel',name:'鑿子 · Garden Chisel',slot:'tool',family:'chisel',tier:1,color:'#d4b98a',price:10},{id:'pond-kit',name:'Moonstone Fish Pond',slot:'pond',family:'pond',tier:1,color:'#8bd1cb',price:35},...RODS];
+export const FISHING_TOOLS=[...CHISELS,{id:'pond-kit',name:'Glass Aquarium',slot:'pond',family:'pond',tier:1,color:'#8bd1cb',price:35},...RODS];
 export const fishingById=id=>FISHING_TOOLS.find(x=>x.id===id);
 export const fishPrice=fish=>Math.max(1,Math.round((fishById(fish.species)?.value||1)*(1+fish.kg*.24)));
+
+export const AQUARIUM_SIZES={small:{label:'Small',size:[3,1.4,2],price:15,capacity:30},medium:{label:'Medium',size:[5,2.1,3],price:45,capacity:60},large:{label:'Large',size:[7,2.8,4],price:100,capacity:100}};

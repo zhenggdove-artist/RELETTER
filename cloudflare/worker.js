@@ -1,3 +1,5 @@
+import {surfaceHash,validSurfaceId} from '../server/surface-rules.js';
+import {expireHoles} from '../server/fishing-rules.js';
 import {DurableObject} from 'cloudflare:workers';
 import {mediaKinds,validMedia,battleAction} from '../server/game-rules.js';
 import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,worldView} from '../server/world-rules.js';
@@ -22,7 +24,8 @@ export default {
 export class ReletterGarden extends DurableObject {
   constructor(ctx,env){
     super(ctx,env);ctx.setWebSocketAutoResponse();this.sql=ctx.storage.sql;this.closedSockets=new Set();
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, expires INTEGER NOT NULL, character TEXT);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS surfaces (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, expires INTEGER NOT NULL, character TEXT);
       CREATE TABLE IF NOT EXISTS entries (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS chat_messages (id TEXT PRIMARY KEY, name TEXT NOT NULL, text TEXT NOT NULL, time INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS notification_outbox (id TEXT PRIMARY KEY, payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, retry_at INTEGER NOT NULL DEFAULT 0, error TEXT);
@@ -38,7 +41,7 @@ export class ReletterGarden extends DurableObject {
     const alarm=await this.ctx.storage.getAlarm();if(Number.isFinite(next)&&(alarm===null||alarm>next))await this.ctx.storage.setAlarm(next);
   }
   async alarm(){
-    this.pruneSockets();this.broadcast('players',this.roster());
+    this.pruneSockets();this.broadcast('players',this.roster());const g=this.game();if(expireHoles(g)){this.saveGame(g);this.broadcast('game',worldView(g));}
     if(!configured(this.env)){await this.scheduleNotifications();return;}
     const rows=this.sql.exec("SELECT * FROM notification_outbox WHERE status='pending' AND retry_at<=? ORDER BY retry_at,id LIMIT ?",Date.now(),this.env.EMAILJS_SERVICE_ID?1:5).toArray();
     for(const row of rows){try{await deliverNotification(this.env,row.id,JSON.parse(row.payload));this.sql.exec("UPDATE notification_outbox SET status='sent',error=NULL WHERE id=?",row.id);}catch(error){const attempts=error.retryAfterMs?row.attempts:row.attempts+1;this.sql.exec('UPDATE notification_outbox SET attempts=?,retry_at=?,status=?,error=? WHERE id=?',attempts,Date.now()+(error.retryAfterMs||Math.min(3600000,30000*2**attempts)),attempts>=8?'failed':'pending',error.message,row.id);}}
@@ -49,7 +52,7 @@ export class ReletterGarden extends DurableObject {
   game(){return JSON.parse(this.sql.exec('SELECT payload FROM game_state WHERE id=1').toArray()[0]?.payload||'{}');}
   saveGame(g){this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(g));}
   gameView(){return worldView(this.game());}
-  resetIfEmpty(){const g=this.game();if(this.sockets().length){if(g.offlineSince){delete g.offlineSince;this.saveGame(g);}return;}if(!g.offlineSince){g.offlineSince=Date.now();this.saveGame(g);this.ctx.waitUntil(this.scheduleNotifications());}else if(Date.now()-g.offlineSince>=5000){resetEncounter(g);delete g.offlineSince;this.saveGame(g);}}
+  resetIfEmpty(){const g=this.game();if(this.sockets().length){if(g.offlineSince){delete g.offlineSince;this.saveGame(g);}return;}if(!g.offlineSince){g.offlineSince=Date.now();this.saveGame(g);this.ctx.waitUntil(this.scheduleNotifications());}else if(Date.now()-g.offlineSince>=5000){expireHoles(g,Date.now(),true);resetEncounter(g);delete g.offlineSince;this.saveGame(g);}}
   tickBoss(){if(Date.now()-(this.lastBossTick||0)<100)return;this.lastBossTick=Date.now();const g=this.game();ensureWorld(g);if(g.boss.hp<=0)return;advanceBoss(g,this.roster());this.saveGame(g);this.broadcast('boss',g.boss);}
   roster(){return this.sockets().map(ws=>{const p=ws.deserializeAttachment();return{id:p.id,character:p.character,state:p.state};});}
   broadcast(type,data){const message=JSON.stringify({type,data});for(const ws of this.sockets())try{ws.send(message);}catch{ws.close(1011,'Connection interrupted');}}
@@ -70,12 +73,15 @@ export class ReletterGarden extends DurableObject {
         return json({ok:true},200,{'Set-Cookie':`reletter_session=${id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400${url.protocol==='https:'?'; Secure':''}`});
       }
       const session=this.session(request);if(!session)return json({error:'Please enter the password first'},401);
+      if(path==='/api/surfaces'&&request.method==='POST'){const b=await readBody(request),id=await surfaceHash(b.image);this.sql.exec('INSERT OR IGNORE INTO surfaces VALUES(?,?)',id,b.image);return json({id});}
+      if(path.startsWith('/api/surfaces/')&&request.method==='GET'){const id=path.split('/').pop();if(!validSurfaceId(id))return json({error:'Invalid skin'},400);const row=this.sql.exec('SELECT data FROM surfaces WHERE id=?',id).toArray()[0];return row?json({image:row.data},200,{'Cache-Control':'private, max-age=86400, immutable'}):json({error:'Skin missing'},404);}
       if(path==='/api/notifications/status'&&request.method==='GET')return json({configured:configured(this.env),counts:this.sql.exec('SELECT status,COUNT(*) AS count FROM notification_outbox GROUP BY status').toArray()});
       if(path==='/api/players'&&request.method==='GET'){this.pruneSockets();return json(this.roster().map(p=>({...p,self:p.id===session.id})));}
       if(path==='/api/disconnect'&&request.method==='POST'){const body=await readBody(request);for(const ws of this.ctx.getWebSockets(session.id)){if(ws.deserializeAttachment().connectionId!==body.connectionId)continue;this.closedSockets.add(ws);ws.close(1000,'Page hidden');}this.resetIfEmpty();this.broadcast('players',this.roster());return json({ok:true});}
       if(path==='/api/world'&&request.method==='GET')return json(this.gameView());
       if(path==='/api/game'&&request.method==='POST'){
         const body=await readBody(request);this.pruneSockets();const ws=this.sockets().find(w=>w.deserializeAttachment().id===session.id);if(!ws)return json({error:'Not connected'},409);
+        if(body.surface&&!this.sql.exec('SELECT id FROM surfaces WHERE id=?',body.surface).toArray().length)return json({error:'Upload the skin first'},400);
         const game=this.game();advanceBoss(game,this.roster());const result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);game.worldRevision++;
         this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,notice:result.notice,game:this.gameView()});
       }

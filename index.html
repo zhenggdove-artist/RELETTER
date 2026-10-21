@@ -277,7 +277,7 @@
 
 #action-dock{grid-template-columns:repeat(7,minmax(0,1fr))}
 #command-notice{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%) scale(.97);max-width:80vw;padding:16px 25px;background:#252039e8;color:#fff6ec;border:1px solid #ddc6a9;border-radius:18px;z-index:900;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s;font:16px/1.5 sans-serif;text-align:center}#command-notice.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#fishing-panel{position:fixed;left:var(--edge);top:calc(var(--view-top) + var(--panel-top));width:var(--panel-width);height:calc(var(--view-height) - var(--panel-top) - var(--reserved-bottom) - env(safe-area-inset-bottom));z-index:202;box-sizing:border-box;padding:14px;background:linear-gradient(150deg,#f9fcf8f8,#e4f0eef8);border:1px solid #a7bfb7;border-radius:22px;color:#304b49;font:12px/1.5 sans-serif;display:flex;flex-direction:column;gap:8px;overflow:hidden;touch-action:pan-y}#fishing-panel[hidden]{display:none}#fishing-panel header{display:flex;align-items:center;justify-content:space-between}#fishing-panel h2{font:26px Georgia;margin:0}#fishing-panel small{font:9px sans-serif;letter-spacing:1.4px}#fishing-panel nav,.fish-controls,.fish-actions{display:flex;gap:5px;flex-wrap:wrap}#fishing-panel button{min-height:44px;padding:7px 10px;border:1px solid #b3c7be;border-radius:10px;background:#ffffffb8;color:#365956;cursor:pointer}#fishing-panel button[aria-pressed=true]{background:#365956;color:#fff}#fishing-panel button:disabled{opacity:.4}#fishing-content{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:0 4px 12px 0}#fishing-feedback{margin:0;font-size:11px}#fishing-panel select{max-width:100%;min-height:44px;background:#fff;border:1px solid #b3c7be;border-radius:9px;padding:4px}#fight-meters label{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center}#fight-meters meter,#fight-meters progress{width:100%;height:18px;accent-color:#4b9b8c}.float-scene{height:96px;margin:12px 0;border-radius:16px;background:repeating-radial-gradient(ellipse at center,#396d70 0 4px,#306165 10px 12px);display:grid;place-items:center;color:#eaf4e8}#fishing-float{font-size:25px;color:#ffcf9c;animation:float-bob 2s ease-in-out infinite}.biting{animation:float-bob .18s ease-in-out infinite!important;color:#ff846f!important}@keyframes float-bob{50%{transform:translateY(5px)}}.fish-card{display:grid;grid-template-columns:minmax(95px,42%) 1fr;align-items:center;border:1px solid #ceded5;border-radius:16px;background:linear-gradient(135deg,#fff,#edf4ef);margin:8px 0;padding:10px;gap:10px;overflow:hidden}.fish-card img{width:100%;filter:drop-shadow(0 7px 5px #284b3f22)}.fish-card h3{font:19px/1.15 Georgia;margin:6px 0;color:#294a47}.fish-card p{font-size:11px}.fish-card time{font-size:10px;color:#7c9287}.fish-actions{margin-top:8px;align-items:center}.fish-actions span{font-size:10px;color:#7c9287}.fishing-guide{border-left:2px solid #95b7a8;padding-left:10px}.fishing-guide p{color:#6c827c}.pond-collection{border-bottom:1px solid #baccc1;padding-bottom:14px}#weapon-pickup{position:fixed;left:50%;bottom:calc(var(--reserved-bottom) + 14px);transform:translateX(-50%);z-index:180;min-height:44px;padding:10px 16px;border:1px solid #d6bbf3;border-radius:14px;background:#f5ecff;color:#634777;font:12px sans-serif}#weapon-pickup[hidden]{display:none}#equipment-slots{grid-template-columns:repeat(3,minmax(0,1fr))}.shop-tabs{flex-wrap:wrap}.build-shapes{grid-template-columns:repeat(4,minmax(0,1fr))}
+#fishing-panel{position:fixed;left:var(--edge);top:calc(var(--view-top) + var(--panel-top));width:var(--panel-width);height:calc(var(--view-height) - var(--panel-top) - var(--reserved-bottom) - env(safe-area-inset-bottom));z-index:202;box-sizing:border-box;padding:14px;background:linear-gradient(150deg,#f9fcf8f8,#e4f0eef8);border:1px solid #a7bfb7;border-radius:22px;color:#304b49;font:12px/1.5 sans-serif;display:flex;flex-direction:column;gap:8px;overflow:hidden;touch-action:pan-y}#fishing-panel[hidden]{display:none}#fishing-panel header{display:flex;align-items:center;justify-content:space-between}#fishing-panel h2{font:26px Georgia;margin:0}#fishing-panel small{font:9px sans-serif;letter-spacing:1.4px}#fishing-panel nav,.fish-controls,.fish-actions{display:flex;gap:5px;flex-wrap:wrap}#fishing-panel button{min-height:44px;padding:7px 10px;border:1px solid #b3c7be;border-radius:10px;background:#ffffffb8;color:#365956;cursor:pointer}#fishing-panel button[aria-pressed=true]{background:#365956;color:#fff}#fishing-panel button:disabled{opacity:.4}#fishing-content{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:0 4px 12px 0}#fishing-feedback{margin:0;font-size:11px}#fishing-panel select{max-width:100%;min-height:44px;background:#fff;border:1px solid #b3c7be;border-radius:9px;padding:4px}#fight-meters label{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center}#fight-meters meter,#fight-meters progress{width:100%;height:18px;accent-color:#4b9b8c}.float-scene{height:96px;margin:12px 0;border-radius:16px;background:repeating-radial-gradient(ellipse at center,#396d70 0 4px,#306165 10px 12px);display:grid;place-items:center;color:#eaf4e8}#fishing-float{font-size:25px;color:#ffcf9c;animation:float-bob 2s ease-in-out infinite}.biting{animation:float-bob .18s ease-in-out infinite!important;color:#ff846f!important}@keyframes float-bob{50%{transform:translateY(5px)}}.fish-card{display:grid;grid-template-columns:minmax(95px,42%) 1fr;align-items:center;border:1px solid #ceded5;border-radius:16px;background:linear-gradient(135deg,#fff,#edf4ef);margin:8px 0;padding:10px;gap:10px;overflow:hidden}.fish-card img{width:100%;filter:drop-shadow(0 7px 5px #284b3f22)}.fish-card h3{font:19px/1.15 Georgia;margin:6px 0;color:#294a47}.fish-card p{font-size:11px}.fish-card time{font-size:10px;color:#7c9287}.fish-actions{margin-top:8px;align-items:center}.fish-actions span{font-size:10px;color:#7c9287}.fishing-guide{border-left:2px solid #95b7a8;padding-left:10px}.fishing-guide p{color:#6c827c}.pond-collection{border-bottom:1px solid #baccc1;padding-bottom:14px}#weapon-pickup{position:fixed;left:50%;bottom:calc(var(--reserved-bottom) + 14px);transform:translateX(-50%);z-index:180;min-height:44px;padding:10px 16px;border:1px solid #d6bbf3;border-radius:14px;background:#f5ecff;color:#634777;font:12px sans-serif}#weapon-pickup[hidden]{display:none}#equipment-slots{grid-template-columns:repeat(2,minmax(0,1fr))}.shop-tabs{flex-wrap:wrap}.build-shapes{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-height:650px){#fishing-panel{display:block;overflow:auto}#fishing-content{overflow:visible}#fishing-panel header{position:sticky;top:-14px;background:#f1f8f3;z-index:2;padding:7px 0}}@media(max-height:400px){body[data-panel="fishing"]{--panel-top:8px}body[data-panel="fishing"] :is(#title,#coin-counter,#water-status,#boss-health){visibility:hidden}}@media(max-width:420px){#action-dock button{font-size:9px!important;padding:3px!important}.fish-card h3{font-size:16px}}
 
 </style>
@@ -2099,7 +2099,7 @@ function getTerrainHeight(x,z,curY){
       if(Math.abs(curY-stairH)<4) return stairH;
     }
   }
-  return 0; // ground
+  return holeAt(x,z)?-100:0; // Holes have no ground collision at water level.
 }
 
 function showControls(v){
@@ -2148,6 +2148,8 @@ function animateChar(dt){
     }
   }
   else if(phase===PHASE.EXPLORE){
+    recoverFromHole();
+    if(holeAt(charRoot.position.x,charRoot.position.z)&&charRoot.position.y<=.05&&!isJumping){isJumping=true;charVelY=0;}
     const moving=Math.abs(joyX)>0.15||Math.abs(joyY)>0.15;
 
     // Switch run/idle animation (prefer clipRun over clipWalk)
@@ -2251,7 +2253,7 @@ function animateChar(dt){
         updateSky(fallProgress);
       }
 
-      if(charRoot.position.y<=0){
+      if(charRoot.position.y<=0&&!holeAt(charRoot.position.x,charRoot.position.z)){
         // Landed on ground
         charRoot.position.y=0;
         isJumping=false;
@@ -3189,6 +3191,7 @@ let globalTime=0;
 
 function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),0.05);if(!window.__reletterTestPause)gameStep(dt);}
 function gameStep(dt,renderFrame=true){
+  restoreFishingPoses();
   restoreMeleePoses();
   updateOnline(dt);
   globalTime+=dt;
@@ -3340,6 +3343,7 @@ function gameStep(dt,renderFrame=true){
 
   // Apply held equipment after movement, platform carry and all character transforms.
   applyMeleePoses();
+  applyFishingPoses();
   updateFishingRods(fstate());
   // Update VHS uniforms + render
   vhsPass.uniforms.time.value=globalTime;
@@ -3424,8 +3428,9 @@ spawnBugsAt(0,0,30);
 
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
 import {blockSize as footprint} from './build-shapes.js';
+import {sampleMeleePose,meleeDuration} from './melee-motion.js';
 import {EQUIPMENT,DEFAULT_WEAPON,equipmentById} from './equipment-catalog.js';
-let fishingPanelOpen=false, imageViewerOpen=false;
+let pondBuildMode=false,fishingPanelOpen=false, imageViewerOpen=false,catchViewerOpen=false;
 let selectedCharacter='Ely', admitted=false, selfId=null, connected=false, onlineSocket=null;
 let draftMedia={drawing:null,image:null,audio:null,video:null}, plantingMedia=null,replyParentId=null;
 const connectionId=crypto.randomUUID();
@@ -3600,7 +3605,7 @@ let imageReturnFocus;
 function openImageViewer(img){imageReturnFocus=img;fullImage.src=img.src;fullImage.alt=img.alt;imageViewerOpen=true;clearTimeout(labelHideTimer);keysDown.clear();imageViewer.showModal();}
 function closeImageViewer(){imageViewer.close();imageViewerOpen=false;imageReturnFocus?.focus({preventScroll:true});}
 imageViewer.onclick=e=>{e.stopPropagation();closeImageViewer();};imageViewer.oncancel=e=>{e.preventDefault();closeImageViewer();};
-window.addEventListener('keydown',e=>{if(!imageViewerOpen&&e.target.matches?.('#plant-label img')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopImmediatePropagation();openImageViewer(e.target);return;}if(imageViewerOpen){e.stopImmediatePropagation();if(e.key==='Escape'){e.preventDefault();closeImageViewer();}}},true);
+window.addEventListener('keydown',e=>{if(catchViewerOpen){e.stopImmediatePropagation();if(['Escape','Enter',' '].includes(e.key)){e.preventDefault();closeCatchViewer();}return;}if(!imageViewerOpen&&e.target.matches?.('#plant-label img')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopImmediatePropagation();openImageViewer(e.target);return;}if(imageViewerOpen){e.stopImmediatePropagation();if(e.key==='Escape'){e.preventDefault();closeImageViewer();}}},true);
 function showMedia(entry){
   plantLabel.replaceChildren();const text=document.createElement('div');text.textContent=entry.text+(entry.username?' — '+entry.username:'');plantLabel.append(text);
   for(const key of ['drawing','image'])if(entry.media?.[key]){const img=document.createElement('img');img.src=entry.media[key];img.alt=key==='drawing'?'Drawing':'Uploaded image';img.tabIndex=0;img.style.cursor="zoom-in";img.setAttribute("role","button");img.setAttribute("aria-label","View full screen");img.onclick=e=>{e.stopPropagation();openImageViewer(img);};img.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();openImageViewer(img);}};plantLabel.append(img);}
@@ -3620,7 +3625,7 @@ function beginPlantReply(entry){
 }
 let monsterInteractionWasPaused=false,monsterResumeGraceUntil=0;
 function monstersPausedForGarden(){
- const paused=admitted&&(imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
+ const paused=admitted&&(catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
  if(paused){monsterInteractionWasPaused=true;return true;}
  if(monsterInteractionWasPaused){monsterInteractionWasPaused=false;monsterResumeGraceUntil=performance.now()+1200;}
  return performance.now()<monsterResumeGraceUntil;
@@ -3666,7 +3671,7 @@ function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur()
 function claimPanel(name){
  if(name!=='fishing'&&typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen){fishingPanelOpen=false;fishingPanel.hidden=true;reelHeld=false;}
  if(name!=='shop'&&shopPanelOpen){shopPanelOpen=false;shopPanel.hidden=true;}
- if(name!=='build'&&buildPanelOpen){buildPanelOpen=false;buildPanel.hidden=true;buildGhost.visible=false;}
+ if(name!=='build'&&buildPanelOpen){stopPaint();buildPanelOpen=false;buildPanel.hidden=true;buildGhost.visible=false;}
  if(name!=='chat')closeChat();
  if(name!=='write')ui.classList.add('mini');
  if(name!=='search'){searchPanel.classList.remove('show');if(phase===PHASE.EXPLORE)showControls(true);}
@@ -3697,9 +3702,9 @@ window.addEventListener('keydown',e=>{
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
-window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,fishing:gameView.fishing,weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
+window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
-if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
+if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,showCatch:fish=>openCatchViewer(fish),receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;if(charModel)charModel.visible=true;isJumping=false;charVelY=0;autoWalkPhase=false;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods,fishPoseStates,catchView:catchViewState}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
 window.reletterPlantScreenPoint=()=>{
   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   for(const entry of [...plantEntries].reverse()){
@@ -3796,8 +3801,8 @@ async function shootWater(charge=0){
  if(!admitted||!connected||phase!==PHASE.EXPLORE||shooting)return;
  shooting=true;waterButton.disabled=true;
  // The model faces local +Z. Camera orientation and other players never alter aim.
- const direction=['saber','whip'].includes(currentWeapon().family)?new THREE.Vector3(0,0,1).applyQuaternion(charModel.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize():rangedAim().direction;
- if(!['saber','whip'].includes(currentWeapon().family))charModel.rotation.y=Math.atan2(direction.x,direction.z);
+ const direction=['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family)?new THREE.Vector3(0,0,1).applyQuaternion(charModel.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize():rangedAim().direction;
+ if(!['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family))charModel.rotation.y=Math.atan2(direction.x,direction.z);
  try{await api('/api/game',{action:'shoot',direction:direction.toArray(),charge});}catch(e){message(e.message);}finally{setTimeout(()=>{shooting=false;waterButton.disabled=false;},currentWeapon().cooldown+40);}
 }
 waterButton.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();waterButton.setPointerCapture(e.pointerId);beginWaterCharge('pointer');});
@@ -3867,7 +3872,7 @@ function updateGardenWorld(dt){
   const count=damage>0?Math.max(1,Math.floor(damage*60)):0;m.drips.geometry.setDrawRange(0,count);const attr=m.drips.geometry.attributes.position,{min,size}=m.bloodBounds;
   for(let i=0;i<count;i++){const a=i*2.39996,t=(performance.now()/1100+i*.137)%1;attr.setXYZ(i,min.x+size.x*(.5+Math.cos(a)*.3),min.y+size.y*(.85-t*.8),min.z+size.z*(.5+Math.sin(a)*.3));}attr.needsUpdate=true;
  }
- if(buildPanelOpen)buildGhost.visible=phase===PHASE.EXPLORE;
+ if(buildPanelOpen)buildGhost.visible=phase===PHASE.EXPLORE&&!paintTarget&&!paintSelecting;
 }
 
 // ===== Persistent snap-to-grid building =====
@@ -3885,26 +3890,27 @@ goDownButton.onclick=()=>{
  charRoot.position.copy(landing);jumpVelX=0;jumpVelZ=0;camTarget.copy(landing).add(new THREE.Vector3(0,1.5,0));camera.position.copy(landing).add(new THREE.Vector3(0,4,6));camera.lookAt(camTarget);
  $('title').classList.remove('fade-out');monsterResumeGraceUntil=performance.now()+2000;reflectPanels();updateGardenWorld(0);
 };
-const buildPanel=document.createElement('section');buildPanel.id='build-panel';buildPanel.hidden=true;buildPanel.innerHTML='<header><b>BUILD</b><button id="build-close" type="button" aria-label="Close build">×</button></header><div class="build-shapes"><button data-shape="cube">Cube</button><button data-shape="bar">Bar</button><button data-shape="cylinder">Cylinder</button><button id="build-pond">Fish pond</button></div><div class="build-options"><label>Color <input id="build-color" type="color" value="#c6a5dc"></label><label>Width <select id="build-width"><option>1</option><option selected>2</option><option>4</option><option>6</option></select></label><label>Height <select id="build-height"><option>0.5</option><option selected>1</option><option>1.5</option><option>2</option></select></label><label>Depth <select id="build-depth"><option>1</option><option selected>2</option><option>4</option><option>6</option></select></label></div><p>Tap ground or blocks to aim. PLACE saves for both players.</p><div class="build-actions"><button id="build-front">In front</button><button id="build-rotate">Rotate ↻</button><button id="build-place">PLACE</button><button id="build-destroy" disabled>DESTROY</button></div><div id="build-status" role="status"></div>';document.body.append(buildPanel);
+const buildPanel=document.createElement('section');buildPanel.id='build-panel';buildPanel.hidden=true;buildPanel.innerHTML='<header><b>BUILD</b><button id="build-close" type="button" aria-label="Close build">×</button></header><div class="build-shapes"><button data-shape="cube">Cube</button><button data-shape="bar">Bar</button><button data-shape="cylinder">Cylinder</button><button id="build-pond">Aquarium</button></div><div class="build-options"><label>Color <input id="build-color" type="color" value="#c6a5dc"></label><label>Width <select id="build-width"><option>1</option><option selected>2</option><option>4</option><option>6</option></select></label><label>Height <select id="build-height"><option>0.5</option><option selected>1</option><option>1.5</option><option>2</option></select></label><label>Depth <select id="build-depth"><option>1</option><option selected>2</option><option>4</option><option>6</option></select></label></div><p>Tap ground or blocks to aim. PLACE saves for both players.</p><div class="build-actions"><button id="build-front">In front</button><button id="build-rotate">Rotate ↻</button><button id="build-place">PLACE</button><button id="build-destroy" disabled>DESTROY</button></div><div id="build-status" role="status"></div>';document.body.append(buildPanel);
 
 function blockGeometry(b){return b.shape==='cylinder'?new THREE.CylinderGeometry(footprint(b)[0]/2,footprint(b)[0]/2,footprint(b)[1],32):new THREE.BoxGeometry(...footprint(b));}
-function updateBuildGhost(){const block={shape:buildShape,rotation:buildRotation,size:buildSize};buildGhost.material.color.set(buildColor);buildGhost.geometry.dispose();buildGhost.geometry=blockGeometry(block);buildGhost.position.set(buildPosition[0],buildPosition[1]+buildSize[1]/2,buildPosition[2]);for(const btn of buildPanel.querySelectorAll('[data-shape]'))btn.setAttribute('aria-pressed',String(btn.dataset.shape===buildShape));$('build-status').textContent=buildShape+' · '+buildPosition.join(', ');}
+function updateBuildGhost(){if(pondBuildMode){previewAquarium();buildGhost.position.set(buildPosition[0],0,buildPosition[2]);return;}const block={shape:buildShape,rotation:buildRotation,size:buildSize};buildGhost.material.color.set(buildColor);buildGhost.geometry.dispose();buildGhost.geometry=blockGeometry(block);buildGhost.position.set(buildPosition[0],buildPosition[1]+buildSize[1]/2,buildPosition[2]);for(const btn of buildPanel.querySelectorAll('[data-shape]'))btn.setAttribute('aria-pressed',String(btn.dataset.shape===buildShape));$('build-status').textContent=buildShape+' · '+buildPosition.join(', ');}
 function buildInFront(){const d=new THREE.Vector3(0,0,1).applyAxisAngle(new THREE.Vector3(0,1,0),charModel?.rotation.y||0);buildPosition=[Math.round((charRoot.position.x+d.x*5)/2)*2,Math.max(0,Math.floor(charRoot.position.y/2)*2),Math.round((charRoot.position.z+d.z*5)/2)*2];updateBuildGhost();}
 function openBuild(){if(!admitted)return;if(phase!==PHASE.EXPLORE){message('Return to the garden to build');return;}claimPanel('build');buildPanelOpen=true;buildPanel.hidden=false;buildGhost.visible=true;buildInFront();reflectPanels();}
 buildButton.onclick=()=>{if(buildPanelOpen){claimPanel('none');reflectPanels();}else openBuild();};$('build-close').onclick=()=>{claimPanel('none');reflectPanels();};$('build-front').onclick=buildInFront;
 $('build-rotate').onclick=()=>{buildRotation=1-buildRotation;updateBuildGhost();};for(const b of buildPanel.querySelectorAll('[data-shape]'))b.onclick=()=>{buildShape=b.dataset.shape;buildSize[0]=buildShape==='bar'?6:2;buildSize[2]=2;$('build-width').value=buildSize[0];$('build-depth').value=2;updateBuildGhost();};
 for(const id of ['build-width','build-height','build-depth','build-color'])$(id).oninput=()=>{buildSize=[+$('build-width').value,+$('build-height').value,+$('build-depth').value];if(buildShape==='cylinder'){buildSize[2]=buildSize[0];$('build-depth').value=buildSize[0];}buildColor=$('build-color').value;updateBuildGhost();};
-async function submitBuild(action){if(buildBusy)return;buildBusy=true;try{const result=await api('/api/game',action==='build'?{action,shape:buildShape,rotation:buildRotation,position:buildPosition,size:buildSize,color:buildColor}:{action,id:selectedBlock});if(result.game)receiveGame(result.game);else await refreshWorld();$('build-status').textContent=action==='build'?'Saved for both players':'Removed';if(action==='destroy'){selectedBlock=null;$('build-destroy').disabled=true;}}catch(e){$('build-status').textContent=e.message;}finally{buildBusy=false;}}
+async function submitBuild(action){if(buildBusy)return;buildBusy=true;try{const result=await api('/api/game',action==='build'?{action,shape:buildShape,rotation:buildRotation,position:buildPosition,size:buildSize,color:buildColor,surface:pendingBuildSurface}:{action,id:selectedBlock});if(result.game)receiveGame(result.game);else await refreshWorld();$('build-status').textContent=action==='build'?'Saved for both players':'Removed';if(action==='destroy'){selectedBlock=null;$('build-destroy').disabled=true;}}catch(e){$('build-status').textContent=e.message;}finally{buildBusy=false;}}
 $('build-place').onclick=()=>submitBuild('build');$('build-destroy').onclick=()=>submitBuild('destroy');
 function syncBlocks(blocks){const ids=new Set(blocks.map(b=>b.id));for(const [id,mesh] of buildMeshes)if(!ids.has(id)){scene.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();buildMeshes.delete(id);if(selectedBlock===id){selectedBlock=null;$('build-destroy').disabled=true;}}
  for(const b of blocks){if(buildMeshes.has(b.id)){const old=buildMeshes.get(b.id);if(JSON.stringify(old.userData.block)===JSON.stringify(b))continue;scene.remove(old);old.geometry.dispose();old.material.dispose();buildMeshes.delete(b.id);}const mesh=new THREE.Mesh(blockGeometry(b),new THREE.MeshStandardMaterial({color:b.color||'#c6a5dc',roughness:.72,metalness:.03}));mesh.position.set(b.position[0],b.position[1]+footprint(b)[1]/2,b.position[2]);mesh.userData.block=b;mesh.name='Built '+b.shape;scene.add(mesh);buildMeshes.set(b.id,mesh);}}
 function insideBuild(b,x,z,pad=0){const [w,,d]=footprint(b);return b.shape==='cylinder'?Math.hypot(x-b.position[0],z-b.position[2])<w/2+pad:Math.abs(x-b.position[0])<w/2+pad&&Math.abs(z-b.position[2])<d/2+pad;}
 function monsterBuildBlocked(x,z){return (gameView.blocks||[]).some(b=>b.position[1]<12&&insideBuild(b,x,z,1.1));}
-function blockedByBuild(x,z,y){return (gameView.blocks||[]).some(b=>y<b.position[1]+footprint(b)[1]-.12&&y+1.5>b.position[1]&&insideBuild(b,x,z,.35));}
+function blockedByBuild(x,z,y){if((gameView.fishing?.ponds||[]).some(p=>{const [w,h,d]=p.size||[6,2.1,4];return y<h-.12&&Math.abs(x-p.position[0])<w/2+.35&&Math.abs(z-p.position[2])<d/2+.35;}))return true;return (gameView.blocks||[]).some(b=>y<b.position[1]+footprint(b)[1]-.12&&y+1.5>b.position[1]&&insideBuild(b,x,z,.35));}
 function buildCeiling(x,z,oldY,nextY){let ceiling=Infinity;for(const b of gameView.blocks||[])if(b.position[1]>=oldY+1.45&&nextY+1.5>=b.position[1]&&insideBuild(b,x,z))ceiling=Math.min(ceiling,b.position[1]);return ceiling;}
 function buildTerrainHeight(x,z,y){let best=null;for(const b of gameView.blocks||[]){const top=b.position[1]+footprint(b)[1];if(y>=top-.8&&insideBuild(b,x,z)&&top>(best??-Infinity))best=top;}return best;}
 let buildTap=null;canvas.addEventListener('pointerdown',e=>{buildTap={x:e.clientX,y:e.clientY};},true);
 canvas.addEventListener('pointerup',e=>{
+ if(paintTarget||paintSelecting)return;
  if(!admitted||phase!==PHASE.EXPLORE||!buildTap||Math.hypot(e.clientX-buildTap.x,e.clientY-buildTap.y)>8)return;
  const rect=canvas.getBoundingClientRect(),pointer=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(pointer,camera);
  const hit=ray.intersectObjects([...buildMeshes.values()],false)[0];if(!buildPanelOpen&&!hit)return;
@@ -3963,7 +3969,7 @@ function openShop(){if(!admitted)return;claimPanel('shop');shopPanelOpen=true;sh
 shopButton.onclick=()=>shopPanelOpen?(claimPanel('none'),reflectPanels()):openShop();$('shop-close').onclick=()=>{claimPanel('none');reflectPanels();};
 for(const btn of shopPanel.querySelectorAll('[data-tab]'))btn.onclick=()=>{shopTab=btn.dataset.tab;refreshEquipmentUI(true);};
 window.addEventListener('keydown',e=>{if(e.code==='KeyI'&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){e.preventDefault();shopButton.click();}if(e.key==='Escape'&&shopPanelOpen){claimPanel('none');reflectPanels();}});
-const armoryPaths={water:'M32 7C24 20 16 28 16 39a16 16 0 0 0 32 0C48 28 40 20 32 7Z',ice:'M32 6 48 23 43 48 32 58 21 48 16 23Z M16 23h32M32 6v52M21 48l11-25 11 25',fire:'M33 5C44 24 20 24 34 36 45 30 44 18 44 18c24 32 4 43-12 41C9 57 7 34 21 24c-2 14 5 14 8 11C19 22 32 15 33 5Z',lightning:'M37 5 12 37h17l-3 23 26-35H35Z',beam:'M10 54 53 11M25 13l7-9 7 9-7 10ZM49 35l8 7-8 7-7-7Z',petal:'M32 31C4-5 3 39 31 33 1 52 42 66 33 34 60 63 65 22 34 31 59 5 17-3 32 31Z',wave:'M7 33a25 25 0 0 1 50 0M14 39a18 18 0 0 1 36 0M23 45a9 9 0 0 1 18 0',saber:'M18 47 48 7l8 7-31 39ZM10 47l16 12M10 55l6 5',shield:'M32 5 53 14v19c0 13-13 23-21 27-8-4-21-14-21-27V14ZM32 16v31M21 29h22'};
+const armoryPaths={swatter:'M30 59V31M15 4h34v28H15ZM22 4v28M30 4v28M38 4v28M15 13h34M15 22h34',pan:'M32 60V40M32 4a18 18 0 1 0 0 36 18 18 0 0 0 0-36Z',planter:'M14 34h36l-6 24H20ZM32 34V8M32 23Q7 1 12 22l20 9M32 17Q55 0 53 18l-21 8',palm:'M30 60 35 18M35 18Q6 1 5 32M35 18Q53 0 61 29M35 18Q30 1 14 6M35 18Q46 9 50 4',water:'M32 7C24 20 16 28 16 39a16 16 0 0 0 32 0C48 28 40 20 32 7Z',ice:'M32 6 48 23 43 48 32 58 21 48 16 23Z M16 23h32M32 6v52M21 48l11-25 11 25',fire:'M33 5C44 24 20 24 34 36 45 30 44 18 44 18c24 32 4 43-12 41C9 57 7 34 21 24c-2 14 5 14 8 11C19 22 32 15 33 5Z',lightning:'M37 5 12 37h17l-3 23 26-35H35Z',beam:'M10 54 53 11M25 13l7-9 7 9-7 10ZM49 35l8 7-8 7-7-7Z',petal:'M32 31C4-5 3 39 31 33 1 52 42 66 33 34 60 63 65 22 34 31 59 5 17-3 32 31Z',wave:'M7 33a25 25 0 0 1 50 0M14 39a18 18 0 0 1 36 0M23 45a9 9 0 0 1 18 0',saber:'M18 47 48 7l8 7-31 39ZM10 47l16 12M10 55l6 5',shield:'M32 5 53 14v19c0 13-13 23-21 27-8-4-21-14-21-27V14ZM32 16v31M21 29h22'};
 function itemArt(item){return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${(armoryPaths[item.family]||'M12 52 48 12M22 18l22 22M12 50q26-5 38-35')}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
 function refreshEquipmentUI(force=false){
  const owned=gameView.inventories?.[selectedCharacter]||[],slots=gameView.equipment?.[selectedCharacter]||{},balance=gameView.wallets?.[selectedCharacter]||0;
@@ -3971,13 +3977,13 @@ function refreshEquipmentUI(force=false){
  const signature=JSON.stringify([owned,slots,balance,shopTab,shopBusy,shopTab==='fish-market'?gameView.fishing?.revision:0]);if(!force&&signature===shopSignature)return;shopSignature=signature;
  if(!shopPanelOpen)return;
  $('shop-coins').textContent=balance+' coins';
- $('equipment-slots').innerHTML=['weapon','shield','rod'].map(slot=>{const item=equipmentById(slots[slot]||(slot==='weapon'?'water':null));return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
+ $('equipment-slots').innerHTML=['weapon','shield','rod','tool'].map(slot=>{const item=equipmentById(slots[slot]||(slot==='weapon'?'water':null));return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
  for(const btn of shopPanel.querySelectorAll('[data-tab]'))btn.setAttribute('aria-pressed',String(btn.dataset.tab===shopTab));
  if(shopTab==='fish-market'){const fish=gameView.fishing?.bags?.[selectedCharacter]||[];$('shop-items').innerHTML=fish.length?fish.map(f=>fishCard(f,`<button data-sell-fish="${f.id}">Sell · ${fishPrice(f)}</button>`)).join(''):'<p class="shop-empty">Your catches appear here. Keep favourites in FISH → Collection, or sell them for coins.</p>';return;}
  const items=EQUIPMENT.filter(i=>shopTab==='all'||shopTab==='owned'&&owned.includes(i.id)||i.slot===shopTab||shopTab==='fishing'&&['rod','tool','pond'].includes(i.slot));
  $('shop-items').innerHTML=items.length?items.map(item=>{
   const has=owned.includes(item.id),equipped=slots[item.slot]===item.id;
-  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?'<span>Creates fishing holes on empty ground.</span>':item.family==='pond'?'<span>Unlocks BUILD ponds · 15 coins per pond · 30 fish.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${item.damage} → ${item.chargeDamage}</b> damage</span><span><b>${item.range} → ${item.range+item.chargeRange}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
+  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?`<span><b>${item.depth} m</b> water depth</span><span><b>${Math.round(item.redChance*100)}%</b> crimson spring chance</span>`:item.family==='pond'?'<span>Unlocks glass aquariums · choose size in BUILD · 15 / 45 / 100 coins.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${item.damage} → ${item.chargeDamage}</b> damage</span><span><b>${item.range} → ${item.range+item.chargeRange}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
   return `<article class="item-card" style="--item-color:${item.color}" data-item="${item.id}"><div class="item-art ${item.family}">${itemArt(item)}<i></i></div><div class="item-info"><small>${item.family.toUpperCase()} · TIER ${item.tier}</small><h3>${item.name}</h3><div class="item-stats">${stats}</div><div class="item-bottom"><span>${has?'OWNED':item.price+' coins'}</span><button data-${has?'equip':'buy'}="${item.id}" ${equipped||shopBusy||!has&&balance<item.price?'disabled':''}>${equipped?'Equipped':has?'Equip':'Buy'}</button></div></div></article>`;
  }).join(''):'<p class="shop-empty">Your collection starts here. Earn coins in the garden, then choose your first piece.</p>';
 }
@@ -3991,7 +3997,7 @@ const equipmentFX=[],equipmentAuras=new Map();
 const glowCanvas=document.createElement('canvas');glowCanvas.width=glowCanvas.height=64;const glowCtx=glowCanvas.getContext('2d'),glowGradient=glowCtx.createRadialGradient(32,32,0,32,32,32);glowGradient.addColorStop(0,'#fff');glowGradient.addColorStop(.2,'#fffc');glowGradient.addColorStop(.55,'#fff4');glowGradient.addColorStop(1,'#fff0');glowCtx.fillStyle=glowGradient;glowCtx.fillRect(0,0,64,64);const equipmentGlow=new THREE.CanvasTexture(glowCanvas);
 function glowMaterial(color,opacity=1){return new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});}
 function showEquipmentAttack(data){
- if(['saber','whip'].includes(data.family)){showMeleeAttack(data);return;}
+ if(['saber','whip','swatter','pan','planter','palm'].includes(data.family)){showMeleeAttack(data);return;}
  const origin=new THREE.Vector3(...data.origin),direction=new THREE.Vector3(...data.direction).normalize(),group=new THREE.Group(),color=data.red?'#ff3355':data.color||'#cbbaff';group.position.copy(origin);group.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),direction);group.name='Equipment '+data.family;
  let travel=data.range;if(data.impact)travel=Math.min(travel,new THREE.Vector3(...data.impact).distanceTo(origin));else if(data.hit){const target=data.hit==='Auntie'?gameView.boss?.position:data.hit===selectedCharacter?charRoot.position.toArray():[...remotePlayers.values()].find(p=>p.character===data.hit)?.state?.position;if(target)travel=Math.min(travel,Math.max(.5,new THREE.Vector3(...target).distanceTo(origin)-1));}
  const tier=equipmentById(data.weapon)?.tier||1;const count=100+tier*60,positions=new Float32Array(count*3),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(positions,3));const points=new THREE.Points(geo,new THREE.PointsMaterial({color,map:equipmentGlow,size:(data.family==='fire'?.28:.1)*(1+(tier-1)*.65),transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));points.frustumCulled=false;group.add(points);
@@ -4034,12 +4040,12 @@ function updateEquipmentEffects(dt){
   if(u>=1){scene.remove(fx.group);fx.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});equipmentFX.splice(j,1);}
  }
  const players=[{character:selectedCharacter,root:charRoot,model:charModel},...[...remotePlayers.values()]],active=new Set();
- for(const p of players){if(!admitted||!p.root?.visible)continue;const slots=gameView.equipment?.[p.character]||{},shield=equipmentById(slots.shield),weapon=equipmentById(slots.weapon);const key=p.character;active.add(key);let aura=equipmentAuras.get(key),signature=(shield?.id||'')+':'+(['saber','whip'].includes(weapon?.family)?weapon.id:'');
+ for(const p of players){if(!admitted||!p.root?.visible)continue;const slots=gameView.equipment?.[p.character]||{},shield=equipmentById(slots.shield),weapon=equipmentById(slots.weapon);const key=p.character;active.add(key);let aura=equipmentAuras.get(key),signature=(shield?.id||'')+':'+(['saber','whip','swatter','pan','planter','palm'].includes(weapon?.family)?weapon.id:'');
   if(aura&&aura.userData.signature!==signature){scene.remove(aura);aura.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});equipmentAuras.delete(key);aura=null;}
   if(!aura&&signature!==':'){
    aura=new THREE.Group();aura.userData.signature=signature;aura.name='Equipment aura '+key;
    if(shield){const bubble=new THREE.Mesh(new THREE.SphereGeometry(1.35,32,20),new THREE.ShaderMaterial({uniforms:{tint:{value:new THREE.Color(shield.color)},pulse:{value:0}},vertexShader:'varying vec3 n;varying vec3 v;void main(){vec4 p=modelViewMatrix*vec4(position,1.0);n=normalize(normalMatrix*normal);v=normalize(-p.xyz);gl_Position=projectionMatrix*p;}',fragmentShader:'uniform vec3 tint;uniform float pulse;varying vec3 n;varying vec3 v;void main(){float rim=pow(1.0-abs(dot(normalize(n),normalize(v))),2.5);gl_FragColor=vec4(tint,(.04+rim*.55)*pulse);}',transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));bubble.position.y=1;aura.add(bubble);aura.userData.bubble=bubble;const ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,.015,6,64),glowMaterial(shield.color,.5));ring.rotation.x=Math.PI/2;ring.position.y=.08;aura.add(ring);aura.userData.ring=ring;}
-   if(['saber','whip'].includes(weapon?.family)){const blade=makeHeldWeapon(weapon);aura.add(blade);aura.userData.blade=blade;}
+   if(['saber','whip','swatter','pan','planter','palm'].includes(weapon?.family)){const blade=makeHeldWeapon(weapon);aura.add(blade);aura.userData.blade=blade;}
    scene.add(aura);equipmentAuras.set(key,aura);
   }
   if(aura){aura.position.copy(p.root.position);aura.rotation.y=p.model?.rotation.y||0;if(shield){const state=gameView.shields?.[key],ready=!state||Date.now()-state.lastHit>=shield.recharge*1000,remaining=ready?1:Math.max(0,1-state.used/shield.capacity);aura.userData.bubble.material.uniforms.pulse.value=remaining*(.8+Math.sin(globalTime*2)*.2);aura.userData.ring.material.opacity=remaining*.5;}}
@@ -4065,7 +4071,7 @@ function rangedAim(){
  return {direction,point,inRange:origin.distanceTo(point)<=currentWeapon().range+currentWeapon().chargeRange*waterCharge()};
 }
 let aimUpdatedAt=0;
-function updateCrosshair(){aimReticle.hidden=!admitted||!connected||phase!==PHASE.EXPLORE||['saber','whip'].includes(currentWeapon().family)||document.body.dataset.panel!=='none'||monsterDeathActive;if(!aimReticle.hidden&&performance.now()-aimUpdatedAt>100){aimUpdatedAt=performance.now();aimReticle.classList.toggle('in-range',rangedAim().inRange);aimReticle.style.setProperty('--charge',String(waterCharge()));}}
+function updateCrosshair(){aimReticle.hidden=!admitted||!connected||phase!==PHASE.EXPLORE||['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family)||document.body.dataset.panel!=='none'||monsterDeathActive;if(!aimReticle.hidden&&performance.now()-aimUpdatedAt>100){aimUpdatedAt=performance.now();aimReticle.classList.toggle('in-range',rangedAim().inRange);aimReticle.style.setProperty('--charge',String(waterCharge()));}}
 // Suppress browser gestures, while keeping one-finger panel scrolling and editable inputs usable.
 for(const event of ['gesturestart','gesturechange','gestureend'])document.addEventListener(event,e=>e.preventDefault(),{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
@@ -4086,13 +4092,13 @@ function slashRibbon(color,opacity){
 function showMeleeAttack(data){
  const combo=Math.max(0,Math.min(6,data.combo||0)),charged=combo===6,group=new THREE.Group(),color=data.red?'#f62e59':data.color||'#a77bff';group.position.fromArray(data.origin);group.rotation.y=Math.atan2(data.direction[0],data.direction[2]);group.name=(data.family==='whip'?'Whip ':'Saber ')+slashNames[combo];
  const patterns=[[[.7,-1.25,1.25,0]], [[-.7,1.25,-1.25,0]], [[.08,-1.45,1.45,0]], [[1.45,-1.3,1.3,0]], [[.8,-1.3,1.3,0],[-.8,1.3,-1.3,.22]], [[.18,-1.5,1.5,0],[-.25,1.5,-1.5,.2]], [[.75,-1.5,1.5,0],[-.75,1.5,-1.5,.18],[.02,-1.6,1.6,.36]]];
- const strokes=patterns[combo].map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay+.07,lift:0,ribbon,filament};});
+ const strokes=patterns[combo].map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay+meleeDuration(data.family,combo)*(['pan','planter','palm'].includes(data.family)?.33:.24),lift:0,ribbon,filament};});
  const tier=equipmentById(data.weapon)?.tier||1;const count=(charged?150:80)+tier*45,geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*3),3));const sparks=new THREE.Points(geometry,new THREE.PointsMaterial({map:equipmentGlow,color,size:charged?.11:.07,transparent:true,opacity:.6,depthWrite:false,blending:THREE.AdditiveBlending}));sparks.frustumCulled=false;group.add(sparks);
  const sigil=new THREE.Group();sigil.position.y=-.92;const radius=data.range*.8;for(let j=0;j<3;j++){const ring=new THREE.Mesh(new THREE.RingGeometry(radius*(.45+j*.16),radius*(.45+j*.16)+.014,96),glowMaterial(color,.28));ring.rotation.x=-Math.PI/2;sigil.add(ring);}
  const vertices=[];for(let i=0;i<12;i++){const a=i*Math.PI/6,r=radius*.8;vertices.push(Math.cos(a)*r,0,Math.sin(a)*r,Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.21)*r,0,Math.sin(a+.21)*r);}
  const runeGeo=new THREE.BufferGeometry();runeGeo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));sigil.add(new THREE.LineSegments(runeGeo,new THREE.LineBasicMaterial({color,transparent:true,opacity:.45,depthWrite:false,blending:THREE.AdditiveBlending})));group.add(sigil);
  const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:equipmentGlow,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));flash.position.set(0,0,Math.min(radius,2.5));group.add(flash);scene.add(group);
- meleeEffects.push({group,strokes,sparks,sigil,flash,combo,data,age:0,radius:data.range,duration:charged?1.45:1.05});
+ meleeEffects.push({group,strokes,sparks,sigil,flash,combo,data,age:0,radius:data.range,duration:meleeDuration(data.family,combo)+.35});
 }
 function updateMeleeEffects(dt){
  for(let j=meleeEffects.length-1;j>=0;j--){const fx=meleeEffects[j];fx.age+=dt;const life=fx.age/fx.duration;
@@ -4101,37 +4107,40 @@ function updateMeleeEffects(dt){
   }
   const attr=fx.sparks.geometry.attributes.position;for(let i=0;i<attr.count;i++){const stroke=fx.strokes[i%fx.strokes.length],t=i/attr.count,age=Math.max(0,fx.age-stroke.delay-t*.25),point=slashPoint(stroke,t,fx.radius*(.8+.2*Math.sin(i*7)));point.x+=Math.sin(i*12.1)*age*.8;point.z+=Math.cos(i*4.7)*age*.8;point.y+=Math.sin(i*2.3)*age-1.4*age*age;attr.setXYZ(i,...point.toArray());}attr.needsUpdate=true;fx.sparks.material.opacity=Math.max(0,Math.sin(Math.min(1,life)*Math.PI)*.55);
   fx.sigil.rotation.y=fx.age*(fx.combo%2?-.5:.5);fx.sigil.scale.setScalar(.85+Math.sin(Math.min(1,life)*Math.PI)*.18);fx.sigil.traverse(o=>{if(o.material)o.material.opacity=Math.sin(Math.min(1,life)*Math.PI)*(fx.combo===6?.42:.12);});
-  const impact=Math.max(0,1-Math.abs(fx.age-.35)*8);fx.flash.material.opacity=impact*(fx.data.hit?.5:.16);fx.flash.scale.setScalar(.3+impact*(fx.combo===6?2:1));
+  const impact=Math.max(0,1-Math.abs(fx.age-meleeDuration(fx.data.family,fx.combo)*.5)*8);fx.flash.material.opacity=impact*(fx.data.hit?.5:.16);fx.flash.scale.setScalar(.3+impact*(fx.combo===6?2:1));
   if(life>=1){scene.remove(fx.group);fx.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});meleeEffects.splice(j,1);}
  }
 }
-function restoreMeleePoses(){for(const [bone,quaternion] of meleePoseRestore)bone.quaternion.copy(quaternion);meleePoseRestore.length=0;}
+const meleePositionRestore=[];
+function restoreMeleePoses(){for(const [object,position] of meleePositionRestore)object.position.copy(position);meleePositionRestore.length=0;for(const [bone,quaternion] of meleePoseRestore)bone.quaternion.copy(quaternion);meleePoseRestore.length=0;}
 function applyMeleePoses(){
  const players=[{character:selectedCharacter,model:charModel},...[...remotePlayers.values()]];
  for(const player of players){if(!player.model)continue;const fx=[...meleeEffects].reverse().find(f=>f.data.shooter===player.character),aura=equipmentAuras.get(player.character),blade=aura?.userData.blade;
-  if(blade&&!fx)attachHeldWeapon(player,aura,blade,fx);
-  if(!fx)continue;const t=Math.min(1,fx.age/.85),weight=Math.sin(t*Math.PI),swing=Math.sin(t*Math.PI*2*fx.strokes.length)*(fx.combo%2?-1:1),vertical=[0,1,3,4,6].includes(fx.combo);
-  player.model.traverse(bone=>{if(!bone.isBone)return;const name=bone.name.replace(/[^a-z]/gi,'');let rotation;
-   if(name.endsWith('RightArm'))rotation=new THREE.Euler(-weight*(vertical?1.5:.6),swing*.9,-weight*.7);
-   else if(name.endsWith('RightForeArm'))rotation=new THREE.Euler(-weight*.8,0,weight*.3);
-   else if(name.endsWith('LeftArm'))rotation=new THREE.Euler(-weight*.35,-swing*.3,weight*.3);
-   else if(name.endsWith('Spine2'))rotation=new THREE.Euler(weight*(fx.combo===3?-.25:.12),swing*.35,vertical?swing*.1:0);
-   else if(name.endsWith('Hips')&&fx.combo===5)rotation=new THREE.Euler(0,t*t*(3-2*t)*Math.PI*2,0);
-   if(rotation){meleePoseRestore.push([bone,bone.quaternion.clone()]);bone.quaternion.multiply(new THREE.Quaternion().setFromEuler(rotation));}
-  });
-  if(blade)attachHeldWeapon(player,aura,blade,fx);
+  if(fishingPoseFor(player.character)){if(blade)blade.visible=false;continue;}
+  if(fx){const pose=sampleMeleePose(fx.data.family,fx.combo,fx.age),model=player.model;
+   meleePositionRestore.push([model,model.position.clone()]);const offset=new THREE.Vector3(...pose.offset).applyAxisAngle(new THREE.Vector3(0,1,0),model.rotation.y);model.position.add(offset);
+   meleePoseRestore.push([model,model.quaternion.clone()]);model.rotateY(pose.turn);model.rotateX(pose.bones.Spine2[0]*.35);model.rotateZ(pose.bones.Spine2[2]*.3);
+   model.traverse(bone=>{if(!bone.isBone)return;const name=bone.name.replace(/[^a-z0-9]/gi,'').replace(/^mixamorig\d*/,''),angles=pose.bones[name];if(!angles)return;meleePoseRestore.push([bone,bone.quaternion.clone()]);bone.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...angles)));});
+  }
+  if(blade){attachHeldWeapon(player,aura,blade,fx);if(fx&&(['planter','palm'].includes(fx.data.family)||fx.combo===6&&fx.data.family==='saber')){const target=blade.localToWorld(new THREE.Vector3(0,fx.data.family==='planter'?.25:.18,.02));supportOffhand(player.model,target,Math.sin(Math.min(1,fx.age/meleeDuration(fx.data.family,fx.combo))*Math.PI)*.8);}}
  }
+}
+function supportOffhand(model,target,strength){
+ const bones=fishingBones(model),hand=bones.LeftHand;if(!hand)return;model.updateMatrixWorld(true);
+ for(let i=0;i<3;i++)for(const bone of [bones.LeftForeArm,bones.LeftArm]){if(!bone)continue;const origin=bone.getWorldPosition(new THREE.Vector3()),actual=hand.getWorldPosition(new THREE.Vector3()).sub(origin),desired=target.clone().sub(origin);if(actual.lengthSq()<1e-8||desired.lengthSq()<1e-8)continue;const delta=new THREE.Quaternion().setFromUnitVectors(actual.normalize(),desired.normalize());delta.slerp(new THREE.Quaternion(),1-strength);const world=bone.getWorldQuaternion(new THREE.Quaternion()),parent=bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert();bone.quaternion.copy(parent.multiply(delta).multiply(world));bone.updateMatrixWorld(true);}
 }
 
 // Garden adventures: hand-held equipment, water features and a server-authoritative fishing loop.
-import {FISH,fishById,fishPrice,fishingById} from './fishing-catalog.js';
+import {FISH,fishById,fishPrice,fishingById,selectedChisel,AQUARIUM_SIZES} from './fishing-catalog.js';
 import {fishSVG,fishDataURL} from './fish-art.js';
+import {createFishModel,animateFishModel,disposeFishModel} from './fish-model.js';
 const notice=document.createElement('div');notice.id='command-notice';notice.setAttribute('role','status');document.body.append(notice);let noticeTimer;
 function centerNotice(text){notice.textContent=text;notice.classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>notice.classList.remove('show'),2200);}
 const boneCache=new WeakMap(),handPosition=new THREE.Vector3(),handRotation=new THREE.Quaternion(),auraRotation=new THREE.Quaternion();
 function rightHand(model){if(!boneCache.has(model)){let hand;model.traverse(b=>{if(b.isBone&&b.name.replace(/[^a-z]/gi,'').endsWith('RightHand'))hand=b;});boneCache.set(model,hand);}return boneCache.get(model);}
 function makeHeldWeapon(item){
- const tier=item.tier||1,length=1.6+(tier-1)*1.05,width=1+(tier-1)*.8;const group=new THREE.Group();group.userData.tier=tier;group.name='Hand-held '+item.family;group.userData.family=item.family;
+ if(['swatter','pan','planter','palm'].includes(item.family))return makeNovelWeapon(item);
+ const tier=item.tier||1,length=1.6+(tier-1)*1.05,width=1+(tier-1)*.8;const group=new THREE.Group();group.userData.tier=tier;group.name='Hand-held '+item.family;group.userData.family=item.family;group.userData.reach=length+.35;
  const metal=new THREE.MeshStandardMaterial({color:'#bcb6c9',metalness:.88,roughness:.22}),gold=new THREE.MeshStandardMaterial({color:'#dabd7e',metalness:.85,roughness:.27}),grip=new THREE.MeshStandardMaterial({color:'#33253f',roughness:.7});
  const cylinder=(r,h,y,mat)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,16),mat);m.position.y=y;group.add(m);return m;};
  cylinder(.055,.28,0,grip);for(let i=0;i<7;i++)cylinder(.06,.012,-.12+i*.04,metal);cylinder(.075,.055,-.17,gold);cylinder(.09,.07,.18,gold);
@@ -4150,8 +4159,10 @@ function makeHeldWeapon(item){
  }return group;
 }
 function attachHeldWeapon(player,aura,blade,fx){
- const activeCast=fstate().sessions?.[player.character];if(activeCast&&['waiting','fight'].includes(activeCast.stage)){blade.visible=false;return;}const hand=rightHand(player.model);if(!hand){blade.visible=false;return;}blade.visible=true;
- player.model.updateMatrixWorld(true);aura.updateMatrixWorld(true);hand.getWorldPosition(handPosition);blade.position.copy(aura.worldToLocal(handPosition));hand.getWorldQuaternion(handRotation);aura.getWorldQuaternion(auraRotation);blade.quaternion.copy(auraRotation.invert().multiply(handRotation)).normalize();
+ const activeCast=fstate().sessions?.[player.character];if(activeCast&&fishingPoseFor(player.character)){blade.visible=false;return;}const hand=rightHand(player.model);if(!hand){blade.visible=false;return;}blade.visible=true;
+ player.model.updateMatrixWorld(true);aura.updateMatrixWorld(true);hand.getWorldPosition(handPosition);blade.position.copy(aura.worldToLocal(handPosition));hand.getWorldQuaternion(handRotation);aura.getWorldQuaternion(auraRotation);blade.quaternion.copy(auraRotation.invert().multiply(handRotation)).normalize();if(['swatter','pan'].includes(blade.userData.family))blade.rotateY(.55);
+ // Stop large rigid weapons at the ground rather than burying their visible head.
+ if(!blade.userData.lash){const worldQ=blade.getWorldQuaternion(new THREE.Quaternion()),up=new THREE.Vector3(0,1,0).applyQuaternion(worldQ),gripY=hand.getWorldPosition(new THREE.Vector3()).y,minY=THREE.MathUtils.clamp((.2-gripY)/(blade.userData.reach||2),-.95,.95);if(up.y<minY){const desired=up.clone();desired.y=0;if(desired.lengthSq()<.001)desired.set(0,0,1);desired.normalize().multiplyScalar(Math.sqrt(1-minY*minY));desired.y=minY;const correction=new THREE.Quaternion().setFromUnitVectors(up,desired),parent=aura.getWorldQuaternion(new THREE.Quaternion()).invert();blade.quaternion.copy(parent.multiply(correction).multiply(worldQ));}}
  // Grip origin remains at the hand in idle, running and all attack poses.
  if(blade.userData.lash){const attr=blade.userData.lash.geometry.attributes.position,age=fx?.age||0,energy=fx?Math.sin(Math.min(1,age/fx.duration)*Math.PI):0,combo=fx?.combo||0;let tip;
   for(let n=0;n<=48;n++){const t=n/48,length=1.3+energy*(3.4+(blade.userData.tier-1)*1.5),a=t*Math.PI*(2+(combo%3))+globalTime*3,x=Math.sin(a-age*10)*t*(.2+energy*.8),y=.23+t*(.7+energy*2.4)-(1-energy)*t*t*1.8,z=t*length*energy+Math.cos(a)*t*.18;for(let j=0;j<8;j++){const q=j*Math.PI/4,r=.03*(1-t)+.006;attr.setXYZ(n*8+j,x+Math.cos(q)*r,y+Math.sin(q)*r,z);}const braid=blade.userData.braid.geometry.attributes.position,twist=t*55;braid.setXYZ(n,x+Math.cos(twist)*.035,y+Math.sin(twist)*.035,z);tip=[x,y,z];}blade.userData.braid.geometry.attributes.position.needsUpdate=true;attr.needsUpdate=true;blade.userData.tip.position.fromArray(tip);
@@ -4160,7 +4171,7 @@ function attachHeldWeapon(player,aura,blade,fx){
 
 let reelHeld=false,fishBusy=false,fishPollBusy=false,fishTab='cast',fishSignature='',selectedHole=null;
 const fishingButton=document.createElement('button');fishingButton.id='fishing-open';fishingButton.textContent='FISH';dock.append(fishingButton);
-const fishingPanel=document.createElement('section');fishingPanel.id='fishing-panel';fishingPanel.hidden=true;fishingPanel.innerHTML=`<header><div><small>THE WATER GARDEN</small><h2>Stillwater</h2></div><button id="fishing-close" aria-label="Close fishing">×</button></header><nav><button data-fish-tab="cast">Fish</button><button data-fish-tab="collection">Collection</button><button data-fish-tab="pond">Ponds</button><button data-fish-tab="atlas">50 species</button></nav><p id="fishing-feedback" role="status">Equip a rod in SHOP. Use a chisel to open a fishing hole.</p><div id="fishing-content"></div>`;document.body.append(fishingPanel);
+const fishingPanel=document.createElement('section');fishingPanel.id='fishing-panel';fishingPanel.hidden=true;fishingPanel.innerHTML=`<header><div><small>THE WATER GARDEN</small><h2>Stillwater</h2></div><button id="fishing-close" aria-label="Close fishing">×</button></header><nav><button data-fish-tab="cast">Fish</button><button data-fish-tab="collection">Collection</button><button data-fish-tab="pond">Aquariums</button><button data-fish-tab="atlas">${FISH.length} species</button></nav><p id="fishing-feedback" role="status">Equip a rod in SHOP. Use a chisel to open a fishing hole.</p><div id="fishing-content"></div>`;document.body.append(fishingPanel);
 const fstate=()=>gameView.fishing||{holes:[],ponds:[],bags:{},sessions:{}};
 const distanceTo=p=>Math.hypot(charRoot.position.x-p[0],charRoot.position.z-p[2]);
 function openFishing(tab='cast'){if(!admitted)return;claimPanel('fishing');fishingPanelOpen=true;fishingPanel.hidden=false;fishTab=tab;fishSignature='';renderFishing(true);reflectPanels();}
@@ -4170,7 +4181,7 @@ window.addEventListener('blur',()=>reelHeld=false);window.addEventListener('poin
 async function adventureAction(body){if(fishBusy)return;fishBusy=true;try{const r=await api('/api/game',body);if(r.game)receiveGame(r.game);if(r.notice)centerNotice(r.notice);$('fishing-feedback').textContent=r.notice||'Saved for both players.';return r;}catch(e){$('fishing-feedback').textContent=e.message;centerNotice(e.message);}finally{fishBusy=false;}}
 const fishIllustrations=new Map();function cachedFishArt(species){if(!fishIllustrations.has(species.id))fishIllustrations.set(species.id,fishDataURL(species));return fishIllustrations.get(species.id);}
 shopPanel.addEventListener('click',e=>{const b=e.target.closest('[data-sell-fish]');if(b)adventureAction({action:'sell-fish',id:b.dataset.sellFish});});
-const fishCard=(fish,buttons='')=>{const species=fishById(fish.species)||fish;return `<article class="fish-card"><img loading="lazy" src="${cachedFishArt(species)}" alt="${species.name}"><div><small>${['','COMMON','UNCOMMON','RARE','EPIC','MYTHIC'][species.rarity]}</small><h3>${species.name}</h3><p>${fish.kg?fish.kg+' kg · '+fishPrice(fish)+' coins':species.minKg+'–'+species.maxKg+' kg'}</p>${fish.caughtAt?'<time>'+new Date(fish.caughtAt).toLocaleDateString()+'</time>':''}<div class="fish-actions">${buttons}</div></div></article>`;};
+const fishCard=(fish,buttons='')=>{const species=fishById(fish.species)||fish;return `<article class="fish-card"><img loading="lazy" src="${cachedFishArt(species)}" alt="${species.name}"><div><small>${['','COMMON','UNCOMMON','RARE','EPIC','MYTHIC','RELIC','ELDRITCH'][species.rarity]}</small><h3>${species.name}</h3><p>${fish.kg?fish.kg+' kg · '+fishPrice(fish)+' coins':species.minKg+'–'+species.maxKg+' kg'}</p>${fish.caughtAt?'<time>'+new Date(fish.caughtAt).toLocaleDateString()+'</time>':''}<div class="fish-actions">${buttons}</div></div></article>`;};
 function renderFishing(force=false){
  if(!fishingPanelOpen)return;const f=fstate(),session=f.sessions?.[selectedCharacter],bag=f.bags?.[selectedCharacter]||[],rod=fishingById(gameView.equipment?.[selectedCharacter]?.rod);
  const signature=JSON.stringify([fishTab,fishTab==='cast'?[session?.id,session?.stage,rod?.id,f.holes.length]:[f.revision,gameView.wallets?.[selectedCharacter]]]);if(!force&&signature===fishSignature)return;fishSignature=signature;
@@ -4178,35 +4189,41 @@ function renderFishing(force=false){
  const content=$('fishing-content');
  if(fishTab==='cast'){
   const near=[...f.holes].sort((a,b)=>distanceTo(a.position)-distanceTo(b.position));if(!near.some(h=>h.id===selectedHole))selectedHole=near[0]?.id;
-  content.innerHTML=`<div class="fishing-guide"><strong>${rod?.name||'No rod equipped'}</strong><p>1 · Dig on empty ground<br>2 · Cast beside a hole<br>3 · HOOK when the float dips<br>4 · Hold REEL, release before the line turns red</p><button id="dig-hole">CHISEL · dig in front</button></div><label>Fishing hole <select id="hole-select">${near.map((h,i)=>'<option value="'+h.id+'" '+(selectedHole===h.id?'selected':'')+'>Hole '+(i+1)+' · '+Math.round(distanceTo(h.position))+' m</option>').join('')}</select></label><div class="float-scene"><div id="fishing-float">◉</div><span id="bite-status"></span></div><div id="fight-meters"><label>Line tension <meter id="line-tension" min="0" max="1" low=".13" high=".88" optimum=".5"></meter></label><label>Landing progress <progress id="catch-progress" max="100" value="0"></progress></label></div><div class="fish-controls"><button id="cast-line">CAST</button><button id="hook-fish">HOOK</button><button id="reel-fish">HOLD TO REEL</button><button id="cancel-fish">CANCEL</button></div>${session?.stage==='caught'?fishCard(session.result):''}`;
+  content.innerHTML=`<div class="fishing-guide"><strong>${rod?.name||'No rod equipped'}</strong><p>1 · Dig on empty ground<br>2 · Cast beside a hole<br>3 · HOOK when the float dips<br>4 · Hold REEL, release before the line turns red</p><button id="dig-hole">CHISEL · dig in front</button></div><label>Fishing hole <select id="hole-select">${near.map((h,i)=>'<option value="'+h.id+'" '+(selectedHole===h.id?'selected':'')+'>Hole '+(i+1)+' · '+Math.round(distanceTo(h.position))+' m away · '+(h.depth||1)+' m deep'+(h.water==='crimson'?' · CRIMSON':'')+'</option>').join('')}</select></label><div class="float-scene"><div id="fishing-float">◉</div><span id="bite-status"></span></div><div id="fight-meters"><label>Line tension <meter id="line-tension" min="0" max="1" low=".13" high=".88" optimum=".5"></meter></label><label>Landing progress <progress id="catch-progress" max="100" value="0"></progress></label></div><div class="fish-controls"><button id="cast-line">CAST</button><button id="hook-fish">HOOK</button><button id="reel-fish">HOLD TO REEL</button><button id="cancel-fish">CANCEL</button></div>${session?.stage==='caught'?fishCard(session.result,'<button id="inspect-catch">View catch · 3D</button>'):''}`;
+  if($('inspect-catch'))$('inspect-catch').onclick=()=>openCatchViewer(session.result);
+  const chisel=selectedChisel(gameView.inventories?.[selectedCharacter],gameView.equipment?.[selectedCharacter]?.tool);$('dig-hole').textContent=chisel?chisel.name+' · '+chisel.depth+' m · DIG':'Buy a chisel in SHOP';
   $('dig-hole').onclick=()=>{const d=new THREE.Vector3(0,0,4).applyAxisAngle(new THREE.Vector3(0,1,0),charModel?.rotation.y||0);adventureAction({action:'dig',position:[Math.round(charRoot.position.x+d.x),0,Math.round(charRoot.position.z+d.z)]});};
   $('hole-select').onchange=e=>selectedHole=e.target.value;$('cast-line').onclick=()=>adventureAction({action:'cast',hole:selectedHole});$('hook-fish').onclick=()=>adventureAction({action:'hook',id:fstate().sessions?.[selectedCharacter]?.id});$('cancel-fish').onclick=()=>adventureAction({action:'cancel-fishing'});
   $('reel-fish').onpointerdown=e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);reelHeld=true;};$('reel-fish').onpointerup=$('reel-fish').onpointercancel=$('reel-fish').onlostpointercapture=()=>reelHeld=false;
  }else if(fishTab==='atlas')content.innerHTML=FISH.map(s=>fishCard(s)).join('');
  else if(fishTab==='collection')content.innerHTML=bag.length?bag.map(fish=>fishCard(fish,`<button data-sell-fish="${fish.id}">Sell · ${fishPrice(fish)}</button><span>Kept in collection</span>`)).join(''):'<p>Your catches are kept here automatically. Sell them or release them into a pond.</p>';
- else {const ponds=f.ponds.filter(p=>distanceTo(p.position)<7&&charRoot.position.y<3);content.innerHTML=ponds.length?ponds.map(p=>`<section class="pond-collection"><h3>Moonstone pond · ${p.fish.length}/30</h3><button data-pond-destroy="${p.id}" ${p.fish.length?'disabled':''}>Remove empty pond</button><h4>Your collection · release into this pond</h4>${bag.map(f=>fishCard(f,`<button data-release="${f.id}" data-pond="${p.id}">Release into pond</button>`)).join('')}<h4>Swimming here</h4>${p.fish.map(f=>fishCard(f,f.owner===selectedCharacter?`<button data-retrieve="${f.id}" data-pond="${p.id}">Return to collection</button>`:'')).join('')}</section>`).join(''):'<p>Stand beside a pond to release or retrieve your fish. Purchase a pond in SHOP, then place it in BUILD.</p>';}
+ else {const ponds=f.ponds.filter(p=>distanceTo(p.position)<Math.max(7,(p.radius||3)+4)&&charRoot.position.y<3);content.innerHTML=ponds.length?ponds.map(p=>`<section class="pond-collection"><h3>Glass aquarium · ${p.fish.length}/${p.capacity||30}</h3><button data-pond-destroy="${p.id}" ${p.fish.length?'disabled':''}>Remove empty pond</button><h4>Your collection · release into this pond</h4>${bag.map(f=>fishCard(f,`<button data-release="${f.id}" data-pond="${p.id}">Release into pond</button>`)).join('')}<h4>Swimming here</h4>${p.fish.map(f=>fishCard(f,f.owner===selectedCharacter?`<button data-retrieve="${f.id}" data-pond="${p.id}">Return to collection</button>`:'')).join('')}</section>`).join(''):'<p>Stand beside a pond to release or retrieve your fish. Purchase a pond in SHOP, then place it in BUILD.</p>';}
 }
 fishingPanel.addEventListener('click',e=>{const b=e.target.closest('[data-sell-fish],[data-release],[data-retrieve],[data-pond-destroy]');if(!b)return;adventureAction(b.dataset.sellFish?{action:'sell-fish',id:b.dataset.sellFish}:b.dataset.pondDestroy?{action:'pond-destroy',pond:b.dataset.pondDestroy}:{action:b.dataset.release?'pond-release':'pond-retrieve',id:b.dataset.release||b.dataset.retrieve,pond:b.dataset.pond});});
 setInterval(async()=>{const s=fstate().sessions?.[selectedCharacter];if(!connected||!s||!['waiting','fight'].includes(s.stage)||fishPollBusy||fishBusy)return;fishPollBusy=true;try{const r=await api('/api/game',{action:'reel',id:s.id,reeling:reelHeld&&fishingPanelOpen&&fishTab==='cast'});if(r.game)receiveGame(r.game);if(r.notice)centerNotice(r.notice);}catch{}finally{fishPollBusy=false;}},250);
 
-let pondBuildMode=false;const oldBuildPlace=$('build-place').onclick;
-$('build-pond').onclick=()=>{pondBuildMode=true;buildGhost.geometry.dispose();buildGhost.geometry=new THREE.CylinderGeometry(3,3,.5,48);buildGhost.material.color.set('#7acbc7');$('build-status').textContent='Fish pond · PLACE · 15 coins construction';};
-for(const b of buildPanel.querySelectorAll('[data-shape]'))b.addEventListener('click',()=>pondBuildMode=false);
-$('build-place').onclick=()=>pondBuildMode?adventureAction({action:'pond-build',position:[buildPosition[0],0,buildPosition[2]]}):oldBuildPlace();
+const oldBuildPlace=$('build-place').onclick;
+const aquariumOptions=document.createElement('label');aquariumOptions.id='aquarium-options';aquariumOptions.hidden=true;aquariumOptions.textContent='Aquarium size ';const aquariumSelect=document.createElement('select');aquariumSelect.id='aquarium-size';for(const [id,tank] of Object.entries(AQUARIUM_SIZES)){const option=document.createElement('option');option.value=id;option.textContent=tank.label+' · '+tank.size.join(' × ')+' m · '+tank.price+' coins';aquariumSelect.append(option);}aquariumOptions.append(aquariumSelect);$('build-status').before(aquariumOptions);
+function previewAquarium(){const tank=AQUARIUM_SIZES[aquariumSelect.value];buildGhost.geometry.dispose();buildGhost.geometry=new THREE.BoxGeometry(...tank.size);buildGhost.geometry.translate(0,tank.size[1]/2,0);buildGhost.material.color.set('#7acbc7');buildGhost.position.set(buildPosition[0],0,buildPosition[2]);$('build-status').textContent=tank.label+' glass aquarium · '+tank.price+' coins · '+tank.capacity+' fish';}
+$('build-pond').onclick=()=>{pondBuildMode=true;aquariumOptions.hidden=false;previewAquarium();};aquariumSelect.onchange=previewAquarium;
+for(const b of buildPanel.querySelectorAll('[data-shape]'))b.addEventListener('click',()=>{pondBuildMode=false;aquariumOptions.hidden=true;});
+$('build-place').onclick=()=>pondBuildMode?adventureAction({action:'pond-build',surface:pendingBuildSurface,size:aquariumSelect.value,position:[buildPosition[0],0,buildPosition[2]]}):oldBuildPlace();
 
 const waterFeatures=new Map(),pondFish=new Map(),weaponDropMeshes=new Map(),fishTextures=new Map(),fishingRods=new Map();let adventureRevision=-1;
 function disposeAdventure(group){scene.remove(group);group.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});}
 function waterFeature(data,pond){
+ if(pond)return aquariumFeature(data);
  const group=new THREE.Group();group.position.fromArray(data.position);group.name=pond?'Moonstone pond':'Excavated fishing hole';
- const radius=data.radius,ring=new THREE.Mesh(new THREE.TorusGeometry(radius,.16,8,64),new THREE.MeshStandardMaterial({color:pond?'#d0cdc9':'#867557',roughness:.8}));ring.rotation.x=-Math.PI/2;ring.position.y=pond?.22:.04;group.add(ring);
- const basin=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.75,pond?.5:.8,48,1,true),new THREE.MeshStandardMaterial({color:'#263b45',roughness:.85,side:THREE.DoubleSide}));basin.position.y=pond?0:-.4;group.add(basin);
- const water=new THREE.Mesh(new THREE.CircleGeometry(radius-.06,64),new THREE.ShaderMaterial({uniforms:{time:{value:0}},vertexShader:'varying vec2 uvp;void main(){uvp=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 uvp;uniform float time;void main(){vec2 p=uvp*2.-1.;float r=length(p);float waves=sin(r*36.-time*2.)*.5+.5;float caustic=pow(.5+.5*sin(p.x*27.+sin(p.y*19.+time)),10.);vec3 c=mix(vec3(.035,.16,.21),vec3(.15,.49,.49),1.-r*.6);c+=vec3(.12,.2,.18)*(waves*.12+caustic*.25);gl_FragColor=vec4(c,.92);}',transparent:true,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.position.y=pond?.2:-.24;group.add(water);group.userData.water=water;
- for(let i=0;i<(pond?12:6);i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(pond?.19:.1,0),new THREE.MeshStandardMaterial({color:i%2?'#b8b9ae':'#839a8e',roughness:.9}));const a=i*Math.PI*2/(pond?12:6);rock.position.set(Math.cos(a)*radius,pond?.28:.1,Math.sin(a)*radius);rock.scale.set(1.5,.7,1);group.add(rock);}scene.add(group);return group;
+ const radius=data.radius,depth=pond?.5:(data.depth||1),darkness=Math.min(1,Math.log2(depth+1)/Math.log2(29)),crimson=data.water==='crimson';group.userData.depth=depth;group.userData.crimson=crimson;
+ if(pond){const ring=new THREE.Mesh(new THREE.TorusGeometry(radius,.16,8,64),new THREE.MeshStandardMaterial({color:'#d0cdc9',roughness:.8}));ring.rotation.x=-Math.PI/2;ring.position.y=.22;group.add(ring);}
+ const basin=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.72,depth,48,1,true),new THREE.MeshStandardMaterial({color:crimson?'#251522':'#172c31',roughness:.92,side:THREE.DoubleSide}));basin.position.y=pond?0:-depth/2;group.add(basin);
+ const water=new THREE.Mesh(new THREE.CircleGeometry(radius-.025,64),new THREE.ShaderMaterial({uniforms:{time:{value:0},depthShade:{value:pond?.15:darkness},crimson:{value:crimson?1:0}},vertexShader:'varying vec2 uvp;void main(){uvp=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:`varying vec2 uvp;uniform float time;uniform float depthShade;uniform float crimson;void main(){vec2 p=uvp*2.-1.;float r=length(p);float waves=sin(r*36.-time*2.)*.5+.5;float caustic=pow(.5+.5*sin(p.x*27.+sin(p.y*19.+time)),10.);vec3 shallow=mix(vec3(.055,.29,.3),vec3(.22,.65,.57),1.-r*.6);vec3 deep=mix(vec3(.006,.012,.028),vec3(.022,.052,.1),1.-r*.6);vec3 red=mix(vec3(.065,.003,.026),vec3(.43,.018,.09),1.-r*.7);vec3 c=mix(mix(shallow,deep,depthShade),red,crimson);c+=mix(vec3(.12,.2,.18),vec3(.5,.06,.13),crimson)*(waves*.06+caustic*.13)*(1.-depthShade*.65);gl_FragColor=vec4(c,1.);}`,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.position.y=pond?.2:-.24;group.add(water);group.userData.water=water;
+ if(pond)for(let i=0;i<12;i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.19,0),new THREE.MeshStandardMaterial({color:i%2?'#b8b9ae':'#839a8e',roughness:.9}));const a=i*Math.PI*2/12;rock.position.set(Math.cos(a)*radius,.28,Math.sin(a)*radius);rock.scale.set(1.5,.7,1);group.add(rock);}scene.add(group);return group;
 }
 function fishTexture(species){if(!fishTextures.has(species.id)){const texture=new THREE.TextureLoader().load(fishDataURL(species));texture.colorSpace=THREE.SRGBColorSpace;fishTextures.set(species.id,texture);}return fishTextures.get(species.id);}
-function swimmingFish(fish){const spec=fishById(fish.species),group=new THREE.Group(),geo=new THREE.PlaneGeometry(1.3,1,16,4);const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:fishTexture(spec),transparent:true,alphaTest:.03,side:THREE.DoubleSide,depthWrite:false}));mesh.rotation.x=-Math.PI/2;group.add(mesh);group.userData.mesh=mesh;group.userData.seed=spec.index*.61;group.userData.base=geo.attributes.position.array.slice();scene.add(group);return group;}
+function swimmingFish(fish){const spec=fishById(fish.species),group=new THREE.Group(),geo=new THREE.PlaneGeometry(1.3,1,16,4);const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:fishTexture(spec),transparent:true,alphaTest:.03,side:THREE.DoubleSide,depthWrite:false}));group.add(mesh);group.userData.mesh=mesh;group.userData.seed=spec.index*.61;group.userData.base=geo.attributes.position.array.slice();scene.add(group);return group;}
 function syncAdventure(){
- const f=fstate();if(f.revision!==adventureRevision){adventureRevision=f.revision;const ids=new Set([...f.holes,...f.ponds].map(x=>x.id));for(const [id,m] of waterFeatures)if(!ids.has(id)){disposeAdventure(m);waterFeatures.delete(id);}for(const x of [...f.holes,...f.ponds])if(!waterFeatures.has(x.id))waterFeatures.set(x.id,waterFeature(x,!!x.fish));
+ const f=fstate();syncFishingPoses(f);if(f.revision!==adventureRevision){adventureRevision=f.revision;const ids=new Set([...f.holes,...f.ponds].map(x=>x.id));for(const [id,m] of waterFeatures)if(!ids.has(id)){disposeAdventure(m);waterFeatures.delete(id);}for(const x of [...f.holes,...f.ponds])if(!waterFeatures.has(x.id))waterFeatures.set(x.id,waterFeature(x,!!x.fish));
   const fishIds=new Set();for(const p of f.ponds)for(const fish of p.fish){fishIds.add(fish.id);let m=pondFish.get(fish.id);if(!m){m=swimmingFish(fish);const owner=fish.owner===selectedCharacter?charRoot:[...remotePlayers.values()].find(r=>r.character===fish.owner)?.root;if(owner&&owner.position.distanceTo(new THREE.Vector3(...p.position))<9){m.userData.throwStart=owner.position.clone().add(new THREE.Vector3(0,1.1,0));m.userData.throwAge=0;}pondFish.set(fish.id,m);}m.userData.pond=p;}for(const [id,m] of pondFish)if(!fishIds.has(id)){disposeAdventure(m);pondFish.delete(id);}updateGroundHoles(f.holes);
  }
  const drops=gameView.weaponDrops||[],ids=new Set(drops.map(d=>d.id));for(const [id,m] of weaponDropMeshes)if(!ids.has(id)){disposeAdventure(m);weaponDropMeshes.delete(id);}for(const d of drops)if(!weaponDropMeshes.has(d.id)){const g=new THREE.Group(),gem=new THREE.Mesh(new THREE.OctahedronGeometry(.28),new THREE.MeshStandardMaterial({color:'#d1b2ff',emissive:'#946bd9',emissiveIntensity:.65,metalness:.6,roughness:.2}));g.add(gem);const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.025,8,48),glowMaterial('#efccff',.7));ring.rotation.x=-Math.PI/2;g.add(ring);g.position.fromArray(d.position);g.position.y+=1;scene.add(g);weaponDropMeshes.set(d.id,g);}renderFishing();
@@ -4215,22 +4232,265 @@ const pickupButton=document.createElement('button');pickupButton.id='weapon-pick
 const holeUniform={value:Array.from({length:40},()=>new THREE.Vector3(10000,10000,0))},holeCount={value:0};let groundPatched=false;
 function updateGroundHoles(holes){if(!groundPatched){const ground=scene.children.find(o=>o.isMesh&&o.geometry?.type==='CircleGeometry'&&o.geometry.parameters.radius===500);if(ground){groundPatched=true;ground.material.onBeforeCompile=shader=>{shader.uniforms.gardenHoles=holeUniform;shader.uniforms.gardenHoleCount=holeCount;shader.vertexShader='varying vec3 gardenWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ngardenWorld=(modelMatrix*vec4(position,1.0)).xyz;');shader.fragmentShader='varying vec3 gardenWorld;uniform vec3 gardenHoles[40];uniform int gardenHoleCount;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfor(int h=0;h<40;h++){if(h>=gardenHoleCount)break;vec2 delta=gardenWorld.xz-gardenHoles[h].xy;if(dot(delta,delta)<gardenHoles[h].z*gardenHoles[h].z)discard;}');};ground.material.needsUpdate=true;}}holeCount.value=Math.min(40,holes.length);holes.slice(0,40).forEach((h,i)=>holeUniform.value[i].set(h.position[0],h.position[2],h.radius-.03));}
 function updateAdventure(dt){
- if(!admitted)return;const f=fstate(),s=f.sessions?.[selectedCharacter];
+ if(!admitted)return;updateFishingPresentation(dt);const f=fstate(),s=f.sessions?.[selectedCharacter];document.body.dataset.fishingActive=String(!!fishingPoseFor(selectedCharacter));
  if(fishingPanelOpen&&fishTab==='cast'&&$('bite-status')){const waiting=s?.stage==='waiting',biting=waiting&&Date.now()>=s.biteAt&&Date.now()<=s.biteAt+s.hookWindow;$('bite-status').textContent=biting?'BITE! HOOK NOW':waiting?'Waiting for a bite…':s?.stage==='fight'?'Hold to reel · release to ease tension':s?.stage==='escaped'?s.result:s?.stage==='caught'?'A new catch for your collection':'Ready to cast';$('fishing-float').classList.toggle('biting',!!biting);$('line-tension').value=s?.tension||0;$('catch-progress').value=s?.progress||0;$('cast-line').disabled=!!s&&['waiting','fight'].includes(s.stage);$('hook-fish').disabled=!waiting;$('reel-fish').disabled=s?.stage!=='fight';}
  for(const m of waterFeatures.values())m.userData.water.material.uniforms.time.value=globalTime;
- for(const m of pondFish.values()){m.visible=distanceTo(m.userData.pond.position)<40;if(!m.visible)continue;const p=m.userData.pond,seed=m.userData.seed,a=globalTime*.16+seed,r=.8+(seed%1)*(p.radius-1.3);m.position.set(p.position[0]+Math.cos(a)*r,.23,p.position[2]+Math.sin(a)*r);if(m.userData.throwStart){m.userData.throwAge+=dt;const t=Math.min(1,m.userData.throwAge/.9);m.position.lerpVectors(m.userData.throwStart,m.position,t);m.position.y+=Math.sin(t*Math.PI)*1.4;if(t===1)delete m.userData.throwStart;}m.rotation.y=-a+Math.PI/2;const attr=m.userData.mesh.geometry.attributes.position,base=m.userData.base;for(let i=0;i<attr.count;i++){const x=base[i*3];attr.setY(i,base[i*3+1]+Math.sin(globalTime*5+x*7+seed)*Math.max(0,-x+.1)*.12);}attr.needsUpdate=true;}
+ for(const m of pondFish.values()){m.visible=distanceTo(m.userData.pond.position)<40;if(!m.visible)continue;const p=m.userData.pond,seed=m.userData.seed,a=globalTime*.16+seed,dimensions=p.size||[6,2.1,4],r=.45+(seed%1)*.4;m.position.set(p.position[0]+Math.cos(a)*(dimensions[0]/2-.65)*r,dimensions[1]*(.3+(seed%1)*.45),p.position[2]+Math.sin(a)*(dimensions[2]/2-.45)*r);if(m.userData.throwStart){m.userData.throwAge+=dt;const t=Math.min(1,m.userData.throwAge/.9);m.position.lerpVectors(m.userData.throwStart,m.position,t);m.position.y+=Math.sin(t*Math.PI)*1.4;if(t===1)delete m.userData.throwStart;}m.rotation.y=-a+Math.PI/2;const attr=m.userData.mesh.geometry.attributes.position,base=m.userData.base;for(let i=0;i<attr.count;i++){const x=base[i*3];attr.setY(i,base[i*3+1]+Math.sin(globalTime*5+x*7+seed)*Math.max(0,-x+.1)*.12);}attr.needsUpdate=true;}
  for(const m of weaponDropMeshes.values()){m.children[0].rotation.y+=dt;m.children[0].position.y=Math.sin(globalTime*2)*.12;}
  const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'50 coins');
  pickupButton.hidden=phase!==PHASE.EXPLORE||document.body.dataset.panel!=='none'||!(gameView.weaponDrops||[]).some(d=>distanceTo(d.position)<4&&Math.abs(charRoot.position.y-d.position[1])<3);
 }
 function updateFishingRods(f){
  const players=[{character:selectedCharacter,model:charModel},...[...remotePlayers.values()]],active=new Set();
- for(const p of players){const session=f.sessions?.[p.character],hole=f.holes.find(h=>h.id===session?.hole);if(!p.model||!hole||!['waiting','fight'].includes(session.stage))continue;const hand=rightHand(p.model);if(!hand)continue;active.add(p.character);let g=fishingRods.get(p.character);
-  if(!g){g=new THREE.Group();const rod=new THREE.Mesh(new THREE.CylinderGeometry(.008,.025,2.4,8),new THREE.MeshStandardMaterial({color:'#80644c',metalness:.3,roughness:.4}));rod.position.y=1.1;g.add(rod);const reel=new THREE.Mesh(new THREE.TorusGeometry(.09,.025,8,20),new THREE.MeshStandardMaterial({color:'#d4c4a0',metalness:.7,roughness:.3}));reel.position.y=.12;g.add(reel);const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),line=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:'#e6f5ee',transparent:true,opacity:.7}));line.frustumCulled=false;scene.add(g,line);const bobber=new THREE.Mesh(new THREE.SphereGeometry(.06,12,8),new THREE.MeshStandardMaterial({color:'#ffad9a',emissive:'#8d3930',emissiveIntensity:.2}));scene.add(bobber);g.userData.bobber=bobber;g.userData.line=line;fishingRods.set(p.character,g);}
-  p.model.updateMatrixWorld(true);hand.getWorldPosition(g.position);const end=new THREE.Vector3(...hole.position);end.y=-.15;if(g?.userData.bobber)g.userData.bobber.position.copy(end).add(new THREE.Vector3(0,Math.sin(globalTime*3)*.02,0));g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),end.clone().sub(g.position).setY(1.6+Math.sin(globalTime*4)*.08).normalize());g.updateMatrixWorld(true);const tip=g.localToWorld(new THREE.Vector3(0,2.3,0)),attr=g.userData.line.geometry.attributes.position;attr.setXYZ(0,tip.x,tip.y,tip.z);attr.setXYZ(1,end.x,end.y,end.z);attr.needsUpdate=true;
+ for(const p of players){const pose=fishingPoseFor(p.character),session=pose?.session,hole=f.holes.find(h=>h.id===session?.hole);if(!p.model||!hole||!pose)continue;const hand=rightHand(p.model);if(!hand)continue;active.add(p.character);let g=fishingRods.get(p.character);
+  if(!g){g=new THREE.Group();const rod=new THREE.Mesh(new THREE.CylinderGeometry(.008,.025,2.4,10,24),new THREE.MeshStandardMaterial({color:'#6d7697',metalness:.6,roughness:.3}));rod.position.y=1.1;g.add(rod);g.userData.rod=rod;g.userData.base=rod.geometry.attributes.position.array.slice();
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.35,12),new THREE.MeshStandardMaterial({color:'#342b3d',roughness:.8}));g.add(grip);
+   const reel=new THREE.Mesh(new THREE.TorusGeometry(.09,.025,8,20),new THREE.MeshStandardMaterial({color:'#d4c4a0',metalness:.7,roughness:.3}));reel.position.y=.12;g.add(reel);g.userData.reel=reel;
+   const lineGeo=new THREE.BufferGeometry();lineGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(25*3),3));const line=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:'#e6f5ee',transparent:true,opacity:.7}));line.frustumCulled=false;scene.add(g,line);const bobber=new THREE.Mesh(new THREE.SphereGeometry(.06,12,8),new THREE.MeshStandardMaterial({color:'#ffad9a',emissive:'#8d3930',emissiveIntensity:.2}));scene.add(bobber);g.userData.bobber=bobber;g.userData.line=line;fishingRods.set(p.character,g);}
+  const fight=session.stage==='fight',landing=session.stage==='caught',bite=session.stage==='waiting'&&Date.now()>=session.biteAt,shake=bite||fight,osc=Math.sin(globalTime*(bite?24:13)),lift=landing?Math.sin(Math.min(1,pose.age/1.6)*Math.PI):0,bend=fight?.16+(session.tension||0)*.5:bite?.2:.04;
+  p.model.updateMatrixWorld(true);hand.getWorldPosition(g.position);const end=new THREE.Vector3(...hole.position);end.y=-.15+(bite?osc*.13:Math.sin(globalTime*3)*.02);if(fight){end.x+=Math.sin(globalTime*5)*.28;end.z+=Math.cos(globalTime*4)*.22;}
+  if(landing){const from=end.clone(),t=Math.min(1,pose.age/1.3);end.lerpVectors(from,g.position.clone().add(new THREE.Vector3(0,.5,0)),t);end.y+=Math.sin(t*Math.PI)*1.5;}
+  g.userData.bobber.position.copy(end);g.userData.bobber.visible=!landing;
+  const toward=new THREE.Vector3(hole.position[0]-g.position.x,1.6+(shake?osc*.32:0)+lift*5,hole.position[2]-g.position.z).normalize();g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),toward);
+  const rodAttr=g.userData.rod.geometry.attributes.position,base=g.userData.base;for(let i=0;i<rodAttr.count;i++){const t=(base[i*3+1]+1.2)/2.4;rodAttr.setZ(i,base[i*3+2]+t*t*bend);}rodAttr.needsUpdate=true;g.userData.reel.rotation.y=fight&&session.reeling?globalTime*14:0;
+  g.updateMatrixWorld(true);const tip=g.localToWorld(new THREE.Vector3(0,2.3,bend)),attr=g.userData.line.geometry.attributes.position;for(let i=0;i<25;i++){const t=i/24;attr.setXYZ(i,THREE.MathUtils.lerp(tip.x,end.x,t),THREE.MathUtils.lerp(tip.y,end.y,t)-Math.sin(t*Math.PI)*(fight?.035:.18),THREE.MathUtils.lerp(tip.z,end.z,t));}attr.needsUpdate=true;
  }
  for(const [id,g] of fishingRods)if(!active.has(id)){disposeAdventure(g.userData.line);disposeAdventure(g.userData.bobber);disposeAdventure(g);fishingRods.delete(id);}
 }
+
+// Animation is derived from the shared fishing session, so both players see the same stage.
+const fishPoseStates=new Map(),fishingPoseRestore=[],fishBoneCache=new WeakMap();
+function syncFishingPoses(f){
+ for(const [name,s] of Object.entries(f.sessions||{})){
+  let p=fishPoseStates.get(name);
+  if(!p||p.id!==s.id){p={id:s.id,stage:s.stage,age:0,session:s,presented:s.stage==='caught'};fishPoseStates.set(name,p);}
+  if(p.stage!==s.stage){p.stage=s.stage;p.age=0;p.presented=false;}
+  p.session=s;
+ }
+ for(const [name,p] of fishPoseStates)if(!f.sessions?.[name]||f.sessions[name].id!==p.id){if(p.landingFish){scene.remove(p.landingFish);disposeFishModel(p.landingFish);}fishPoseStates.delete(name);}
+}
+function fishingPoseFor(name){
+ const p=fishPoseStates.get(name);return p&&(['waiting','fight'].includes(p.stage)||(p.stage==='caught'&&!p.presented&&p.age<1.7))?p:null;
+}
+function restoreFishingPoses(){
+ for(const saved of fishingPoseRestore){if(saved.quaternion)saved.object.quaternion.copy(saved.quaternion);if(saved.position)saved.object.position.copy(saved.position);}
+ fishingPoseRestore.length=0;
+}
+function fishingBones(model){
+ if(!fishBoneCache.has(model)){const bones={};model.traverse(b=>{if(b.isBone)bones[b.name.replace(/[^a-z0-9]/gi,'').replace(/^mixamorig\d*/,'')]=b;});fishBoneCache.set(model,bones);}
+ return fishBoneCache.get(model);
+}
+function applyFishingPoses(){
+ const players=[{character:selectedCharacter,model:charModel,root:charRoot},...[...remotePlayers.values()]];
+ for(const player of players){
+  const p=fishingPoseFor(player.character);if(!p||!player.model)continue;
+  const hole=fstate().holes.find(h=>h.id===p.session.hole);if(!hole)continue;
+  const model=player.model,bones=fishingBones(model),fight=p.stage==='fight',landing=p.stage==='caught';
+  const bite=p.stage==='waiting'&&Date.now()>=p.session.biteAt,shake=bite||fight;
+  const wave=Math.sin(globalTime*(bite?24:13)),pull=fight?(.5+.5*Math.sin(globalTime*4)):0,lift=landing?Math.sin(Math.min(1,p.age/1.6)*Math.PI):0;
+  fishingPoseRestore.push({object:model,position:model.position.clone(),quaternion:model.quaternion.clone()});
+  const root=player.root||model.parent;model.rotation.y=Math.atan2(hole.position[0]-root.position.x,hole.position[2]-root.position.z);
+  model.position.y+=(shake?wave*.045:Math.sin(globalTime*2)*.008)+lift*.12;
+  const rotates={
+   RightArm:[-.85-pull*.35-lift*1.1,0,-.65+(shake?wave*.07:0)],
+   RightForeArm:[-.65-pull*.4-lift*.35,.12,.18],
+   LeftArm:[-.75-pull*.2-lift*.5,.25,.65],
+   LeftForeArm:[-1.2,-.2,-.3+(fight&&p.session.reeling?Math.sin(globalTime*14)*.2:0)],
+   Spine2:[.1-pull*.2-lift*.2,0,shake?wave*.025:0],
+   Head:[.1-lift*.2,Math.sin(globalTime*1.5)*.04,0]
+  };
+  for(const [key,angles] of Object.entries(rotates)){const bone=bones[key];if(!bone)continue;fishingPoseRestore.push({object:bone,quaternion:bone.quaternion.clone()});bone.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...angles)));}
+  model.updateMatrixWorld(true);
+ }
+}
+function updateFishingPresentation(dt){
+ for(const [name,p] of fishPoseStates){
+  p.age+=dt;
+  if(p.stage!=='caught'||p.presented)continue;
+  const species=fishById(p.session.result?.species),hole=fstate().holes.find(h=>h.id===p.session.hole);
+  if(!species||!hole){p.presented=true;continue;}
+  const player=name===selectedCharacter?{model:charModel,root:charRoot}:[...remotePlayers.values()].find(r=>r.character===name);
+  if(!player?.model)continue;
+  if(!p.landingFish){p.landingFish=createFishModel(THREE,species);p.landingFish.scale.setScalar(.24);scene.add(p.landingFish);}
+  const end=player.root.position.clone().add(new THREE.Vector3(0,1.7,0)),start=new THREE.Vector3(...hole.position);start.y=-.24;
+  const t=Math.min(1,p.age/1.3);p.landingFish.position.lerpVectors(start,end,t);p.landingFish.position.y+=Math.sin(t*Math.PI)*1.5;
+  p.landingFish.rotation.set(.15,globalTime*3,.25*Math.sin(globalTime*10));animateFishModel(p.landingFish,globalTime);
+  if(p.age>=1.65){scene.remove(p.landingFish);disposeFishModel(p.landingFish);delete p.landingFish;p.presented=true;
+   if(name===selectedCharacter){reelHeld=false;openCatchViewer(p.session.result);}
+  }
+ }
+}
+
+const catchStyle=document.createElement('style');catchStyle.textContent=`
+body[data-fishing-active="true"] #fishing-panel{top:var(--panel-top,90px);bottom:auto;max-height:min(300px,40dvh);height:auto}
+body[data-fishing-active="true"] #fishing-panel :is(nav,#fishing-feedback,.fishing-guide,#fishing-content>label,header>div){display:none}
+body[data-fishing-active="true"] #fishing-panel header{justify-content:flex-end;padding:0;min-height:0}
+body[data-fishing-active="true"] #fishing-content{overflow:auto}
+body[data-fishing-active="true"] .float-scene{min-height:28px;margin:2px 0}
+body[data-fishing-active="true"] #fishing-panel .fish-controls{margin:4px 0}
+#catch-viewer{position:fixed;inset:0;margin:auto;padding:0;border:1px solid #c6abdd66;border-radius:28px;width:min(680px,94vw);max-width:94vw;height:min(760px,92dvh);max-height:92dvh;overflow:hidden;color:#eee5fa;background:radial-gradient(ellipse at 50% 40%,#243c46,#121629 60%,#0d1020);box-shadow:0 25px 100px #080714aa;cursor:zoom-out;transition:transform .24s ease,opacity .24s ease}
+#catch-viewer::backdrop{background:#080b1bd9;backdrop-filter:blur(7px)}
+#catch-viewer.closing{transform:scale(.15) translateY(80px);opacity:0}
+#catch-viewer .catch-layout{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;text-align:center}
+#catch-viewer header{padding:24px 20px 0;pointer-events:none}
+#catch-viewer small{font:11px/1.4 sans-serif;letter-spacing:.24em;color:#b3dccf}
+#catch-viewer h2{font:clamp(24px,5vw,38px)/1.15 Georgia,serif;margin:10px 0;color:#f2e3fc}
+#catch-stage{position:relative;min-height:0;width:100%;overflow:hidden}
+#catch-stage canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+#catch-viewer footer{padding:0 20px 24px;pointer-events:none}
+#catch-viewer .catch-weight{font:18px/1.6 Georgia;color:#ffe5af}
+#catch-viewer .catch-hint{font:12px/1.6 sans-serif;color:#acafc5;margin:8px 0 0}
+@media(max-height:480px){#catch-viewer header{padding:10px 14px 0}#catch-viewer h2{margin:3px;font-size:22px}#catch-viewer footer{padding:0 14px 8px}#catch-viewer .catch-hint{margin:0}}
+`;document.head.append(catchStyle);
+const catchDialog=document.createElement('dialog');catchDialog.id='catch-viewer';catchDialog.setAttribute('aria-labelledby','catch-name');
+catchDialog.innerHTML='<div class="catch-layout"><header><small id="catch-rarity"></small><h2 id="catch-name"></h2></header><div id="catch-stage" role="button" tabindex="0" aria-label="Rotating catch. Click to minimize."></div><footer><div class="catch-weight" id="catch-weight"></div><p class="catch-hint">Saved to your collection · click the specimen to minimize</p></footer></div>';document.body.append(catchDialog);
+const catchViewState={model:null,renderer:null,species:null,frame:0,closing:false};
+let catchFocus=null;
+function openCatchViewer(fish){
+ const species=fishById(fish?.species);if(!species||catchViewerOpen)return;
+ catchFocus=document.activeElement;keysDown.clear();reelHeld=false;catchViewerOpen=true;catchViewState.closing=false;catchDialog.classList.remove('closing');
+ $('catch-name').textContent=species.name;$('catch-rarity').textContent=['','COMMON','UNCOMMON','RARE','EPIC','MYTHIC','RELIC · CRIMSON SPRING','ELDRITCH · CRIMSON SPRING'][species.rarity];
+ $('catch-weight').textContent=fish.kg+' kg · '+fishPrice(fish)+' coins';catchDialog.showModal();$('catch-stage').focus();
+ const stage=$('catch-stage'),viewScene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,40);
+ const viewRenderer=new THREE.WebGLRenderer({alpha:true,antialias:true});viewRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));viewRenderer.outputColorSpace=THREE.SRGBColorSpace;viewRenderer.toneMapping=THREE.ACESFilmicToneMapping;viewRenderer.toneMappingExposure=1.05;stage.replaceChildren(viewRenderer.domElement);
+ const model=createFishModel(THREE,species);viewScene.add(model);viewScene.add(new THREE.HemisphereLight('#e4e5ff','#274b50',1.8));
+ for(const [color,power,pos] of [['#fff0d5',2.8,[3,4,5]],['#8cebdd',1.8,[-3,1,-2]],['#cf89ff',2,[2,-1,-3]]]){const l=new THREE.DirectionalLight(color,power);l.position.set(...pos);viewScene.add(l);}
+ const box=new THREE.Box3().setFromObject(model),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());model.position.sub(center);const turntable=new THREE.Group();viewScene.remove(model);turntable.add(model);viewScene.add(turntable);
+ Object.assign(catchViewState,{model:turntable,renderer:viewRenderer,species:species.id});
+ let elapsed=0,last=performance.now(),lastW=0,lastH=0;
+ function frame(now){
+  if(!catchViewerOpen)return;elapsed+=Math.min(.05,(now-last)/1000);last=now;
+  const w=Math.max(1,stage.clientWidth),h=Math.max(1,stage.clientHeight);
+  if(w!==lastW||h!==lastH){lastW=w;lastH=h;viewRenderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+   const radius=Math.max(size.length()/2,1),fov=THREE.MathUtils.degToRad(36),distance=radius/Math.sin(Math.min(fov/2,Math.atan(Math.tan(fov/2)*camera.aspect)))*1.08;
+   camera.position.set(0,.18,distance);camera.lookAt(0,0,0);}
+  turntable.rotation.y=elapsed*.55;turntable.rotation.z=Math.sin(elapsed*.7)*.035;animateFishModel(model,elapsed);viewRenderer.render(viewScene,camera);
+  catchViewState.frame=requestAnimationFrame(frame);
+ }
+ catchViewState.dispose=()=>{disposeFishModel(model);viewRenderer.dispose();viewRenderer.forceContextLoss();stage.replaceChildren();Object.assign(catchViewState,{model:null,renderer:null,species:null});};
+ catchViewState.frame=requestAnimationFrame(frame);
+}
+function closeCatchViewer(){
+ if(!catchViewerOpen||catchViewState.closing)return;catchViewState.closing=true;catchDialog.classList.add('closing');
+ setTimeout(()=>{catchViewerOpen=false;cancelAnimationFrame(catchViewState.frame);catchViewState.dispose?.();catchDialog.close();catchViewState.closing=false;if(catchFocus?.isConnected)catchFocus.focus({preventScroll:true});else $('fishing-open').focus({preventScroll:true});},240);
+}
+catchDialog.onclick=e=>{e.stopPropagation();closeCatchViewer();};catchDialog.oncancel=e=>{e.preventDefault();closeCatchViewer();};
+
+function aquariumFeature(data){
+ const group=new THREE.Group();group.name='Raised glass aquarium';group.position.fromArray(data.position);
+ const [w,h,d]=data.size||[6,2.1,4];group.userData.dimensions=[w,h,d];
+ const frameMat=new THREE.MeshStandardMaterial({color:'#b9b8c9',metalness:.7,roughness:.3});
+ const baseMat=new THREE.MeshStandardMaterial({color:'#354655',roughness:.65,metalness:.3});
+ const glassMat=new THREE.MeshPhongMaterial({color:'#bde9e5',transparent:true,opacity:.14,shininess:100,side:THREE.DoubleSide,depthWrite:false});
+ const box=(width,height,depth,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),mat);m.position.set(x,y,z);group.add(m);return m;};
+ box(w+.12,.2,d+.12,0,.1,0,baseMat);
+ for(const x of [-w/2,w/2])for(const z of [-d/2,d/2])box(.065,h,.065,x,h/2,z,frameMat);
+ for(const y of [.22,h]){for(const z of [-d/2,d/2])box(w,.045,.045,0,y,z,frameMat);for(const x of [-w/2,w/2])box(.045,.045,d,x,y,0,frameMat);}
+ for(const z of [-d/2,d/2])box(w,h-.2,.012,0,(h+.2)/2,z,glassMat).renderOrder=3;
+ for(const x of [-w/2,w/2])box(.012,h-.2,d,x,(h+.2)/2,0,glassMat).renderOrder=3;
+ box(w-.1,.04,d-.1,0,.23,0,new THREE.MeshStandardMaterial({color:'#b2bab2',roughness:1}));
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(w-.08,d-.08),new THREE.ShaderMaterial({
+  uniforms:{time:{value:0}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'varying vec2 v;uniform float time;void main(){float lines=pow(.5+.5*sin(v.x*38.+sin(v.y*24.+time)*2.),12.);gl_FragColor=vec4(vec3(.28,.65,.67)+lines*.2,.15+lines*.13);}'
+ }));water.rotation.x=-Math.PI/2;water.position.y=h*.88;water.renderOrder=2;group.add(water);group.userData.water=water;
+ // Sparse substrate plants keep the glass clear and draw calls bounded on phones.
+ const greenery=new THREE.MeshStandardMaterial({color:'#427a69',roughness:.8,side:THREE.DoubleSide});
+ for(let i=0;i<6;i++){const stem=new THREE.Mesh(new THREE.ConeGeometry(.06,h*.32,5),greenery);stem.position.set((i%3-1)*w*.3,.25+h*.16,(i<3?-1:1)*d*.32);stem.rotation.z=Math.sin(i*2)*.15;group.add(stem);}
+ scene.add(group);return group;
+}
+
+// Four hand-held garden weapons; every origin is the grip, never a world-space floating prop.
+function makeNovelWeapon(item){
+ const g=new THREE.Group(),tier=item.tier||1,scale=1+(tier-1)*.17;
+ g.name='Hand-held '+item.family;g.userData.family=item.family;
+ const steel=new THREE.MeshStandardMaterial({color:'#aab9bf',metalness:.85,roughness:.27});
+ const enamel=new THREE.MeshStandardMaterial({color:item.color,metalness:.35,roughness:.28});
+ const gold=new THREE.MeshStandardMaterial({color:'#e3bc78',metalness:.75,roughness:.3});
+ const wood=new THREE.MeshStandardMaterial({color:'#76513f',roughness:.8});
+ const leafMat=new THREE.MeshStandardMaterial({color:'#4d9b64',roughness:.6,side:THREE.DoubleSide});
+ function mesh(geo,mat,x,y,z){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;}
+ function bar(x,y,z,w,h,d,mat){return mesh(new THREE.BoxGeometry(w,h,d),mat,x,y,z);}
+ const shaft=(height,radius=.045,mat=wood)=>mesh(new THREE.CylinderGeometry(radius,radius,height,12),mat,0,height/2-.1,0);
+ const leaf=(x,y,z,a,length,width)=>{
+  const shape=new THREE.Shape();shape.moveTo(0,0);shape.quadraticCurveTo(width,length*.4,0,length);shape.quadraticCurveTo(-width,length*.4,0,0);
+  const m=mesh(new THREE.ShapeGeometry(shape,12),leafMat,x,y,z);m.rotation.set(.4,a,-.6);return m;
+ };
+ if(item.family==='swatter'){
+  shaft(1.05,.035,enamel);const y=1.25,w=.65*scale,h=.75*scale;
+  for(const side of [-1,1]){bar(side*w/2,y,0,.035,h,.045,enamel);bar(0,y+side*h/2,0,w,.035,.045,enamel);}
+  for(let i=1;i<9;i++){bar(-w/2+w*i/9,y,0,.012,h,.015,steel);bar(0,y-h/2+h*i/9,0,w,.012,.015,steel);}
+  for(let i=0;i<tier;i++)mesh(new THREE.OctahedronGeometry(.035),gold,0,.25+i*.11,0);
+ }else if(item.family==='pan'){
+  shaft(.85,.055,wood);const pan=mesh(new THREE.CylinderGeometry(.48*scale,.44*scale,.11,48),new THREE.MeshStandardMaterial({color:'#29323d',metalness:.9,roughness:.3}),0,1.12,0);pan.rotation.x=Math.PI/2;
+  const rim=mesh(new THREE.TorusGeometry(.48*scale,.027,10,64),steel,0,1.12,.07);
+  const base=mesh(new THREE.CylinderGeometry(.31*scale,.31*scale,.012,48),steel,0,1.12,-.062);base.rotation.x=Math.PI/2;
+  for(let i=0;i<tier;i++){const ring=mesh(new THREE.TorusGeometry((.15+i*.045)*scale,.008,6,48),gold,0,1.12,-.075);ring.rotation.z=i*.3;}
+ }else if(item.family==='planter'){
+  mesh(new THREE.CylinderGeometry(.48*scale,.3*scale,.65*scale,32),new THREE.MeshStandardMaterial({color:'#c08266',roughness:.72}),0,.34*scale,0);
+  const rim=mesh(new THREE.TorusGeometry(.48*scale,.05,10,40),enamel,0,.67*scale,0);rim.rotation.x=Math.PI/2;
+  mesh(new THREE.CylinderGeometry(.43*scale,.43*scale,.045,32),new THREE.MeshStandardMaterial({color:'#302a28',roughness:1}),0,.64*scale,0);
+  for(let i=0;i<8+tier*2;i++){const a=i*2.4,r=.18*scale;const m=leaf(Math.cos(a)*r,.67*scale,Math.sin(a)*r,a,.55*scale,.17*scale);m.rotation.z=Math.sin(a)*.65;}
+  for(let i=0;i<tier+2;i++){const a=i*2.4;mesh(new THREE.IcosahedronGeometry(.09,1),enamel,Math.cos(a)*.28*scale,.95*scale+Math.sin(a)*.2,Math.sin(a)*.28*scale);}
+ }else{
+  const h=2.5*scale;shaft(h,.105,wood);
+  for(let i=0;i<18;i++){const ring=mesh(new THREE.TorusGeometry(.108,.009,5,14),gold,0,i*h/18,0);ring.rotation.x=Math.PI/2;}
+  for(let i=0;i<9+tier;i++){const a=i/(9+tier)*Math.PI*2;const shape=new THREE.Shape();shape.moveTo(0,0);for(let j=1;j<=14;j++){const t=j/14;shape.lineTo(t*1.3*scale,Math.sin(t*Math.PI)*.26*scale*(j%2?.7:1));}for(let j=14;j>=0;j--){const t=j/14;shape.lineTo(t*1.3*scale,-Math.sin(t*Math.PI)*.26*scale*(j%2?.7:1));}const frond=mesh(new THREE.ShapeGeometry(shape),leafMat,0,h-.12,0);frond.rotation.set(Math.PI/2+.25,a,0);}
+  for(let i=0;i<3;i++){const a=i*Math.PI*2/3;mesh(new THREE.SphereGeometry(.17,12,10),wood,Math.cos(a)*.18,h-.15,Math.sin(a)*.18);}
+ }
+ g.userData.reach=new THREE.Box3().setFromObject(g).max.y+.2;return g;
+}
+
+// Surface images are uploaded once; world snapshots contain only their content hash.
+let pendingBuildSurface=null,paintTarget=null,paintSelecting=false,paintStroke=null,paintSaving=false,paintOrbit=false;
+const surfaceCache=new Map(),surfaceLoading=new Map(),surfaceObjects=new Map();
+const paintCanvas=document.createElement('canvas');paintCanvas.width=768;paintCanvas.height=512;
+const paintContext=paintCanvas.getContext('2d',{willReadFrequently:true}),paintUndo=[];
+let paintTexture=null,paintPrevious=null;
+const surfaceTools=document.createElement('section');surfaceTools.id='surface-tools';surfaceTools.innerHTML=`<div class="surface-placement"><button id="skin-choose" type="button">CHOOSE IMAGE SKIN</button><input id="build-skin" type="file" accept="image/*" hidden><button id="skin-clear">Clear skin</button><small id="skin-info">Images are resized automatically.</small></div><button id="paint-select">PAINT AN OBJECT</button><div id="paint-controls" hidden><label>Color <input id="paint-color" type="color" value="#eb669d"></label><label>Brush <input id="paint-size" type="range" min="2" max="60" value="12"></label><div class="build-actions"><button id="paint-view">ROTATE VIEW</button><button id="paint-undo" disabled>UNDO</button><button id="paint-save">SAVE</button><button id="paint-cancel">CANCEL</button></div><small>Drag on the object to paint. Switch to ROTATE VIEW to reach another side.</small></div><div id="surface-status" role="status"></div>`;
+buildPanel.querySelector('header').after(surfaceTools);
+const surfaceStyle=document.createElement('style');surfaceStyle.textContent=`#surface-tools{display:grid;gap:8px;padding:8px 0;border-bottom:1px solid #d5bfe0}#surface-tools input[type=file]{width:100%;max-width:100%}#surface-tools small{display:block;line-height:1.4}#paint-controls:not([hidden]){display:grid;gap:8px}#paint-controls label{display:flex;align-items:center;gap:10px}#paint-controls input[type=range]{min-width:0;flex:1}#surface-status{font:12px/1.4 sans-serif;overflow-wrap:anywhere}body[data-painting=select] #build-panel>:not(header):not(#surface-tools){display:none!important}body[data-painting=select] .surface-placement{display:none}body[data-painting=true] #build-panel>:not(header):not(#surface-tools){display:none!important}body[data-painting=true] .surface-placement,body[data-painting=true] #paint-select{display:none}#build-panel{overflow:auto;overscroll-behavior:contain;max-height:min(420px,calc(var(--view-height) - var(--panel-top) - var(--reserved-bottom)))}`;document.head.append(surfaceStyle);
+function atlasUV(geometry){if(geometry.userData.surfaceAtlas)return geometry;geometry.userData.surfaceAtlas=true;const uv=geometry.attributes.uv;for(let g=0;g<geometry.groups.length;g++){const group=geometry.groups[g],indices=new Set();for(let i=group.start;i<group.start+group.count;i++)indices.add(geometry.index?geometry.index.getX(i):i);for(const i of indices)uv.setXY(i,(g%3+uv.getX(i))/3,(Math.floor(g/3)+uv.getY(i))/2);}uv.needsUpdate=true;return geometry;}
+async function encodeSurface(source){let c=source;for(let scale=0;scale<3;scale++){for(const quality of [.86,.7,.5,.32]){const image=c.toDataURL('image/webp',quality);if(image.length<=174000)return image;}const smaller=document.createElement('canvas');smaller.width=Math.round(c.width*.75);smaller.height=Math.round(c.height*.75);smaller.getContext('2d').drawImage(c,0,0,smaller.width,smaller.height);c=smaller;}throw Error('This image is too detailed. Try a smaller image.');}
+async function uploadSurface(source){const image=await encodeSurface(source),r=await api('/api/surfaces',{image});return {id:r.id,bytes:Math.round(image.length*.75/1024)};}
+async function imageElement(src){const image=new Image();image.src=src;await image.decode();return image;}
+$('skin-choose').onclick=()=>$('build-skin').click();
+$('build-skin').onchange=async e=>{const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);try{if(file.size>30*1024*1024)throw Error('Choose an image smaller than 30 MB');$('surface-status').textContent='Compressing image…';const image=await imageElement(url),c=document.createElement('canvas');c.width=768;c.height=512;const ctx=c.getContext('2d');for(let i=0;i<6;i++)ctx.drawImage(image,(i%3)*256,(1-Math.floor(i/3))*256,256,256);const result=await uploadSurface(c);pendingBuildSurface=result.id;$('skin-info').textContent='Skin ready · '+result.bytes+' KB';$('surface-status').textContent='The next placed object will use this skin.';await previewBuildSurface();}catch(error){$('surface-status').textContent=error.message;}finally{URL.revokeObjectURL(url);e.target.value='';}};
+$('skin-clear').onclick=()=>{pendingBuildSurface=null;buildGhost.material.map=null;buildGhost.material.needsUpdate=true;$('skin-info').textContent='No skin selected';};
+async function loadSurface(id){if(surfaceCache.has(id))return surfaceCache.get(id);if(surfaceLoading.has(id))return surfaceLoading.get(id);const task=(async()=>{try{const r=await api('/api/surfaces/'+id,undefined,'GET'),image=await imageElement(r.image),texture=new THREE.Texture(image);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;surfaceCache.set(id,texture);return texture;}finally{surfaceLoading.delete(id);}})();surfaceLoading.set(id,task);return task;}
+
+async function previewBuildSurface(){const id=pendingBuildSurface;if(!id)return;const texture=await loadSurface(id);if(pendingBuildSurface!==id||!texture)return;atlasUV(buildGhost.geometry);buildGhost.material.map=texture;buildGhost.material.color.set('#ffffff');buildGhost.material.needsUpdate=true;}
+function surfaceMesh(object,kind){if(kind==='block')return buildMeshes.get(object.id);const group=waterFeatures.get(object.id);if(!group)return null;let mesh=group.userData.skinMesh;if(!mesh){const [w,h,d]=object.size||[6,2.1,4];mesh=new THREE.Mesh(atlasUV(new THREE.BoxGeometry(w+.018,h+.018,d+.018)),new THREE.MeshStandardMaterial({transparent:true,opacity:0,alphaTest:.02,depthWrite:false,roughness:.65,side:THREE.DoubleSide}));mesh.position.y=h/2;mesh.renderOrder=4;mesh.material.color.set('#ffffff');group.add(mesh);group.userData.skinMesh=mesh;}return mesh;}
+function setSurfaceMaterial(row,texture){const m=row.mesh.material;m.map=texture;m.color.set(texture?'#ffffff':row.kind==='block'?(row.object.color||'#c6a5dc'):'#ffffff');if(row.kind==='pond'){m.opacity=texture?1:0;m.depthWrite=!!texture;}m.needsUpdate=true;}
+async function syncSurfaces(){
+ if(!admitted)return;const rows=[...(gameView.blocks||[]).map(object=>({object,kind:'block'})),...(fstate().ponds||[]).map(object=>({object,kind:'pond'}))];surfaceObjects.clear();
+ for(const row of rows){row.mesh=surfaceMesh(row.object,row.kind);if(!row.mesh)continue;atlasUV(row.mesh.geometry);row.mesh.userData.surfaceKey=row.object.id;surfaceObjects.set(row.object.id,row);}
+ const nearest=[...surfaceObjects.values()].filter(r=>r.object.surface&&distanceTo(r.object.position)<55).sort((a,b)=>distanceTo(a.object.position)-distanceTo(b.object.position)).slice(0,24),wanted=new Set(nearest.map(r=>r.object.surface));if(pendingBuildSurface)wanted.add(pendingBuildSurface);if(paintTarget?.object.surface)wanted.add(paintTarget.object.surface);
+ for(const row of surfaceObjects.values()){if(paintTarget?.object.id===row.object.id)continue;const texture=wanted.has(row.object.surface)?surfaceCache.get(row.object.surface):null;if(row.mesh.material.map!==texture)setSurfaceMaterial(row,texture||null);}
+ for(const [id,t] of surfaceCache)if(!wanted.has(id)){if(buildGhost.material.map===t){buildGhost.material.map=null;buildGhost.material.needsUpdate=true;}t.dispose();surfaceCache.delete(id);}
+ for(const row of nearest){if(paintTarget?.object.id===row.object.id)continue;try{const texture=await loadSurface(row.object.surface);if(texture&&surfaceObjects.get(row.object.id)?.mesh===row.mesh&&paintTarget?.object.id!==row.object.id)setSurfaceMaterial(row,texture);}catch{}}
+}
+let surfaceSyncBusy=false;setInterval(async()=>{if(surfaceSyncBusy)return;surfaceSyncBusy=true;try{await syncSurfaces();}finally{surfaceSyncBusy=false;}},600);
+function surfaceHit(e,only){const rect=canvas.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);return ray.intersectObjects(only?[only.mesh]:[...surfaceObjects.values()].map(r=>r.mesh),false)[0];}
+function stopPaint(){if(paintTarget)setSurfaceMaterial(paintTarget,paintPrevious);paintTexture?.dispose();paintTexture=null;paintTarget=null;paintPrevious=null;paintSelecting=false;paintOrbit=false;paintStroke=null;paintUndo.length=0;document.body.dataset.painting='false';$('paint-controls').hidden=true;$('paint-select').textContent='PAINT AN OBJECT';$('surface-status').textContent='';void syncSurfaces();}
+async function beginPaint(row){if(distanceTo(row.object.position)>18){$('surface-status').textContent='Move closer to this object.';return;}paintSelecting=false;paintTarget={...row,object:{...row.object}};paintPrevious=row.mesh.material.map;paintContext.clearRect(0,0,768,512);if(row.object.surface){const texture=await loadSurface(row.object.surface);if(!paintTarget)return;if(texture)paintContext.drawImage(texture.image,0,0,768,512);}else if(row.kind==='block'){paintContext.fillStyle=row.object.color||'#c6a5dc';paintContext.fillRect(0,0,768,512);}paintTexture=new THREE.CanvasTexture(paintCanvas);paintTexture.colorSpace=THREE.SRGBColorSpace;paintTexture.generateMipmaps=false;paintTexture.minFilter=THREE.LinearFilter;setSurfaceMaterial(row,paintTexture);paintUndo.length=0;$('paint-undo').disabled=true;$('paint-controls').hidden=false;document.body.dataset.painting='true';$('surface-status').textContent='Paint directly on the object. SAVE shares it with both players.';buildGhost.visible=false;}
+$('paint-select').onclick=async()=>{if(paintSelecting){stopPaint();return;}paintSelecting=true;document.body.dataset.painting='select';$('paint-select').textContent='CANCEL SELECTION';$('surface-status').textContent='Tap a block or aquarium to paint it.';buildGhost.visible=false;await syncSurfaces();};
+$('paint-undo').onclick=()=>{const previous=paintUndo.pop();if(previous)paintContext.putImageData(previous,0,0);if(paintTexture)paintTexture.needsUpdate=true;$('paint-undo').disabled=!paintUndo.length;};
+$('paint-cancel').onclick=stopPaint;
+$('paint-view').onclick=()=>{paintOrbit=!paintOrbit;$('paint-view').textContent=paintOrbit?'RESUME PAINT':'ROTATE VIEW';};
+$('paint-save').onclick=async()=>{if(!paintTarget||paintSaving)return;paintSaving=true;$('paint-save').disabled=true;try{const target=paintTarget,result=await uploadSurface(paintCanvas),r=await api('/api/game',{action:'paint',id:target.object.id,kind:target.kind,surface:result.id,expectedRevision:target.object.surfaceRevision||0});stopPaint();if(r.game)receiveGame(r.game);await syncSurfaces();$('surface-status').textContent='Paint saved for both players · '+result.bytes+' KB';}catch(error){$('surface-status').textContent=error.message;}finally{paintSaving=false;$('paint-save').disabled=false;}};
+$('build-close').addEventListener('click',stopPaint);
+function paintAt(hit){if(!hit?.uv){paintStroke.last=null;return;}const point={x:hit.uv.x*768,y:(1-hit.uv.y)*512},tile=Math.floor(hit.uv.x*3)+3*Math.min(1,Math.floor(hit.uv.y*2)),size=+$('paint-size').value;paintContext.save();paintContext.beginPath();paintContext.rect(tile%3*256,(1-Math.floor(tile/3))*256,256,256);paintContext.clip();paintContext.strokeStyle=paintContext.fillStyle=$('paint-color').value;paintContext.lineWidth=size;paintContext.lineCap='round';if(paintStroke.last&&paintStroke.tile===tile&&Math.hypot(point.x-paintStroke.last.x,point.y-paintStroke.last.y)<100){paintContext.beginPath();paintContext.moveTo(paintStroke.last.x,paintStroke.last.y);paintContext.lineTo(point.x,point.y);paintContext.stroke();}else{paintContext.beginPath();paintContext.arc(point.x,point.y,size/2,0,Math.PI*2);paintContext.fill();}paintContext.restore();paintStroke.last=point;paintStroke.tile=tile;paintTexture.needsUpdate=true;}
+window.addEventListener('pointerdown',e=>{if(e.target!==canvas||(!paintSelecting&&!paintTarget)||e.button>0||paintOrbit)return;e.preventDefault();e.stopImmediatePropagation();if(paintSaving)return;const hit=surfaceHit(e,paintTarget);if(paintSelecting){if(hit)void beginPaint(surfaceObjects.get(hit.object.userData.surfaceKey)).catch(error=>{stopPaint();$('surface-status').textContent=error.message;});return;}if(!hit)return;paintUndo.push(paintContext.getImageData(0,0,768,512));if(paintUndo.length>10)paintUndo.shift();$('paint-undo').disabled=false;paintStroke={id:e.pointerId,last:null};canvas.setPointerCapture(e.pointerId);paintAt(hit);},true);
+window.addEventListener('pointermove',e=>{if(!paintStroke||paintStroke.id!==e.pointerId)return;e.preventDefault();e.stopImmediatePropagation();paintAt(surfaceHit(e,paintTarget));},true);
+for(const event of ['pointerup','pointercancel'])window.addEventListener(event,e=>{if(!paintStroke||paintStroke.id!==e.pointerId){if(e.target===canvas&&(paintTarget||paintSelecting)&&!paintOrbit){e.preventDefault();e.stopImmediatePropagation();}return;}e.preventDefault();e.stopImmediatePropagation();paintStroke=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);},true);
+
+const originalUpdateBuildGhost=updateBuildGhost;updateBuildGhost=function(){originalUpdateBuildGhost();if(pendingBuildSurface)void previewBuildSurface();};
+
+function holeAt(x,z){return (gameView.fishing?.holes||[]).find(h=>Math.hypot(x-h.position[0],z-h.position[2])<h.radius-.08);}
+function recoverFromHole(){const h=holeAt(charRoot.position.x,charRoot.position.z);if(!h||charRoot.position.y> -1.2)return;const angle=Math.atan2(charRoot.position.z-h.position[2],charRoot.position.x-h.position[0]);for(let i=0;i<32;i++){const a=angle+i*Math.PI/16,x=h.position[0]+Math.cos(a)*(h.radius+.65),z=h.position[2]+Math.sin(a)*(h.radius+.65);if(!holeAt(x,z)&&!blockedByBuild(x,z,0)){charRoot.position.set(x,0,z);charVelY=0;isJumping=false;charRoot.userData.fallStartY=0;centerNotice('Back on shore');return;}}}
+
+if(window.reletter_test)reletter_test.surfaces={sync:syncSurfaces,objects:surfaceObjects,cache:surfaceCache,canvas:paintCanvas,target:()=>paintTarget,undo:()=>paintUndo.length,holeAt};
 
 // ===== Init =====
 async function init(){await entryGate;tick();await loadSaved()}
