@@ -2,9 +2,9 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {AQUARIUM_SIZES} from '../fishing-catalog.js';import {fishingAction,ensureFishing} from '../server/fishing-rules.js';
 import {sampleMeleePose,meleeDuration,meleeFamilies} from '../melee-motion.js';import {equipmentById} from '../equipment-catalog.js';import {battleAction} from '../server/game-rules.js';import {ensureWorld} from '../server/world-rules.js';
 test('tank size, price and capacity are server-owned and survive serialization; invalid sizes cannot spend coins',()=>{
- for(const [size,option] of Object.entries(AQUARIUM_SIZES)){const g={wallets:{Ely:500},inventories:{Ely:['pond-kit']}};ensureFishing(g);const actor={character:'Ely',state:{visible:true,position:[0,0,0]}};
-  assert.ok(!fishingAction(g,actor,{action:'pond-build',size,position:[0,0,6],price:0,capacity:9999}).error);
-  assert.equal(g.wallets.Ely,500-option.price);const pond=JSON.parse(JSON.stringify(g)).fishing.ponds[0];assert.deepEqual(pond.size,option.size);assert.equal(pond.capacity,option.capacity);
+ for(const [size,option] of Object.entries(AQUARIUM_SIZES)){const g={wallets:{Ely:5000},inventories:{Ely:['pond-kit']}};ensureFishing(g);const actor={character:'Ely',state:{visible:true,position:[0,0,0]}};
+  assert.ok(!fishingAction(g,actor,{action:'pond-build',size,position:[0,0,option.size[2]/2+2],price:0,capacity:9999}).error);
+  assert.equal(g.wallets.Ely,5000-option.price);const pond=JSON.parse(JSON.stringify(g)).fishing.ponds[0];assert.deepEqual(pond.size,option.size);assert.equal(pond.capacity,option.capacity);
  }
  const g={wallets:{Ely:99},inventories:{Ely:['pond-kit']}};const actor={character:'Ely',state:{visible:true,position:[0,0,0]}};
  assert.ok(fishingAction(g,actor,{action:'pond-build',size:'large',position:[0,0,6]}).error);assert.equal(g.wallets.Ely,99);

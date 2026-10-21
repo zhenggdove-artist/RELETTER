@@ -29,7 +29,7 @@ function applyFishingPoses(){
   const bite=p.stage==='waiting'&&Date.now()>=p.session.biteAt,shake=bite||fight;
   const wave=Math.sin(globalTime*(bite?24:13)),pull=fight?(.5+.5*Math.sin(globalTime*4)):0,lift=landing?Math.sin(Math.min(1,p.age/1.6)*Math.PI):0;
   fishingPoseRestore.push({object:model,position:model.position.clone(),quaternion:model.quaternion.clone()});
-  const root=player.root||model.parent;model.rotation.y=Math.atan2(hole.position[0]-root.position.x,hole.position[2]-root.position.z);
+  const root=player.root||model.parent;model.rotation.set(0,Math.atan2(hole.position[0]-root.position.x,hole.position[2]-root.position.z),0);
   model.position.y+=(shake?wave*.045:Math.sin(globalTime*2)*.008)+lift*.12;
   const rotates={
    RightArm:[-.85-pull*.35-lift*1.1,0,-.65+(shake?wave*.07:0)],

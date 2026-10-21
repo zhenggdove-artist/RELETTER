@@ -1,8 +1,9 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
+import {createUltimate,updateUltimate,disposeUltimate} from './ultimate-effects.js';
 import {blockSize as footprint} from './build-shapes.js';
 import {sampleMeleePose,meleeDuration,meleeFamilies,meleeTrailPattern,meleeMoveNames} from './melee-motion.js';
 import {createWeaponSignature,updateWeaponSignature,disposeWeaponSignature} from './weapon-effects.js';
-import {EQUIPMENT,DEFAULT_WEAPON,equipmentById} from './equipment-catalog.js';
+import {EQUIPMENT,DEFAULT_WEAPON,equipmentById,attackStats} from './equipment-catalog.js';
 let pondBuildMode=false,fishingPanelOpen=false, imageViewerOpen=false,catchViewerOpen=false;
 let selectedCharacter='Ely', admitted=false, selfId=null, connected=false, onlineSocket=null;
 let draftMedia={drawing:null,image:null,audio:null,video:null}, plantingMedia=null,replyParentId=null;
@@ -134,6 +135,11 @@ setInterval(()=>{
   else api('/api/state',state).catch(()=>{});
 },100);
 const draw=$('drawing'),ctx=draw.getContext('2d');let drawing=false,hasDrawing=false;const drawingUndo=[];function saveDrawingStep(){drawingUndo.push({pixels:ctx.getImageData(0,0,draw.width,draw.height),hasDrawing});if(drawingUndo.length>30)drawingUndo.shift();$('undo-drawing').disabled=false;}
+let drawingEraser=false;
+const drawingTools=document.createElement('div');drawingTools.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0';drawingTools.innerHTML='<button type="button" id="drawing-pen" aria-pressed="true">PEN</button><button type="button" id="drawing-eraser" aria-pressed="false">ERASER</button>';draw.before(drawingTools);
+function setDrawingTool(eraser){drawingEraser=eraser;$('drawing-pen').setAttribute('aria-pressed',String(!eraser));$('drawing-eraser').setAttribute('aria-pressed',String(eraser));$('drawing-pen').style.outline=eraser?'':'2px solid #8865bd';$('drawing-eraser').style.outline=eraser?'2px solid #8865bd':'';draw.style.cursor=eraser?'cell':'crosshair';}
+$('drawing-pen').onclick=()=>setDrawingTool(false);$('drawing-eraser').onclick=()=>setDrawingTool(true);setDrawingTool(false);
+function finishDrawing(){drawing=false;ctx.globalCompositeOperation='source-over';hasDrawing=ctx.getImageData(0,0,draw.width,draw.height).data.some((v,i)=>i%4===3&&v>0);refreshDraft();}
 // True hue/saturation wheel; the brightness slider also provides black and white.
 const wheel=document.createElement('canvas');wheel.id='color-wheel';wheel.width=144;wheel.height=144;wheel.setAttribute('aria-label','Brush color wheel');wheel.style.cssText='display:block;width:110px;height:110px;touch-action:none;margin:6px auto;cursor:crosshair';
 const brightness=document.createElement('input');brightness.type='range';brightness.min='0';brightness.max='100';brightness.value='100';brightness.setAttribute('aria-label','Brightness');brightness.style.width='100%';
@@ -145,9 +151,9 @@ function selectColor(e){const r=wheel.getBoundingClientRect(),dx=(e.clientX-r.le
 wheel.onpointerdown=e=>{wheel.setPointerCapture(e.pointerId);selectColor(e);};wheel.onpointermove=e=>{if(e.buttons)selectColor(e);};brightness.oninput=()=>{paintWheel();$('brush-color').value='#'+hsv(hue,saturation,+brightness.value/100).map(n=>n.toString(16).padStart(2,'0')).join('');};paintWheel();
 function point(e){const r=draw.getBoundingClientRect();return[(e.clientX-r.left)*draw.width/r.width,(e.clientY-r.top)*draw.height/r.height];}
 function refreshDraft(){draftMedia.drawing=hasDrawing?draw.toDataURL('image/png'):null;goBtn.disabled=!(ta.value.trim()||draftMedia.drawing||draftMedia.image||draftMedia.audio||draftMedia.video);}
-draw.onpointerdown=e=>{saveDrawingStep();drawing=true;draw.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(...point(e));ctx.lineWidth=+$('brush-size').value;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=$('brush-color').value;ctx.lineTo(...point(e).map(v=>v+.01));ctx.stroke();hasDrawing=true;e.stopPropagation();};
+draw.onpointerdown=e=>{saveDrawingStep();drawing=true;ctx.globalCompositeOperation=drawingEraser?'destination-out':'source-over';draw.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(...point(e));ctx.lineWidth=+$('brush-size').value;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=$('brush-color').value;ctx.lineTo(...point(e).map(v=>v+.01));ctx.stroke();hasDrawing=true;e.stopPropagation();};
 draw.onpointermove=e=>{if(drawing){ctx.lineTo(...point(e));ctx.stroke();}e.stopPropagation();};
-draw.onpointerup=()=>{drawing=false;refreshDraft();};draw.onpointercancel=()=>{drawing=false;refreshDraft();};
+draw.onpointerup=finishDrawing;draw.onpointercancel=finishDrawing;
 $('undo-drawing').onclick=e=>{e.stopPropagation();const step=drawingUndo.pop();if(step){ctx.putImageData(step.pixels,0,0);hasDrawing=step.hasDrawing;refreshDraft();}$('undo-drawing').disabled=!drawingUndo.length;};
 $('clear-drawing').onclick=e=>{e.stopPropagation();saveDrawingStep();ctx.clearRect(0,0,draw.width,draw.height);hasDrawing=false;refreshDraft();};
 $('brush-size').oninput=()=>$('brush-value').textContent=$('brush-size').value+' px';
@@ -276,7 +282,7 @@ window.addEventListener('keydown',e=>{
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
-window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
+window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,pkMode:!!gameView.pkMode,ultimates:ultimateEffects.map(f=>({name:f.root.name,age:f.age,range:f.range,radius:f.radius})),fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray(),point:rangedAim().point.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
 if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,showCatch:fish=>openCatchViewer(fish),receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],plantWithinReach,showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e,true);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;if(charModel)charModel.visible=true;isJumping=false;charVelY=0;autoWalkPhase=false;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods,fishPoseStates,catchView:catchViewState}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
 window.reletterPlantScreenPoint=()=>{
@@ -315,7 +321,7 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=old&&boss?.generation===old.generation?!!(gameView.redMode||data.redMode):!!data.redMode;const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=(data.hits?.[selectedCharacter]||0)+' / 3 hits';syncLootMeshes();syncAdventure();}
+function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / 3 hits':'CO-OP';syncLootMeshes();syncAdventure();}
 let worldRefreshBusy=false;
 async function refreshWorld(){if(!connected||worldRefreshBusy)return;worldRefreshBusy=true;try{receiveGame(await api('/api/world',undefined,'GET'));}catch{}finally{worldRefreshBusy=false;}}
 setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
@@ -323,6 +329,7 @@ window.addEventListener('focus',refreshWorld);
 // A short moving jet breaks into droplets, then scatters into a splash.
 // Instancing keeps each spray to one droplet draw call on phones.
 function showWater(data){
+ if(data.ultimate){showUltimateAttack(data);if(meleeFamilies.includes(data.family))showMeleeAttack(data);if(!data.red&&['Ely','Rae'].includes(data.hit)&&!data.blocked)flashPlayerHit(data.hit);return;}
  if((data.charge||0)>=.65&&!meleeFamilies.includes(data.family))showSignatureBurst(data);
  if(data.family&&(data.family!=='water'||data.weapon!=='water')){showEquipmentAttack(data);if(!data.red&&data.hit&&(!data.blocked||data.blocked<Math.min(2,data.damage)))flashPlayerHit(data.hit);return;}
  if(!data.red&&!data.blocked&&['Ely','Rae'].includes(data.hit))flashPlayerHit(data.hit);
@@ -395,7 +402,6 @@ async function shootWater(charge=0){
  }
  shooting=true;const started=performance.now();attackReadyAt=started+weapon.cooldown+30;
  const heading=gameplayHeading(charModel),direction=melee?new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)):rangedAim().direction;
- if(!melee){restoreFishingPoses();restoreMeleePoses();charModel.rotation.set(0,Math.atan2(direction.x,direction.z),0);}
  try{await api('/api/game',{action:'shoot',direction:direction.toArray(),charge});}
  catch(e){if(!/refilling/i.test(e.message))message(e.message);}
  finally{shooting=false;flushAttackQueue();}
@@ -408,7 +414,7 @@ waterButton.onclick=e=>{e.preventDefault();e.stopPropagation();if(e.detail===0)s
 window.addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){e.preventDefault();if(!e.repeat)beginWaterCharge('keyboard');}});
 window.addEventListener('keyup',e=>{if(e.code==='KeyQ'){e.preventDefault();releaseWaterCharge('keyboard');}});
 window.addEventListener('blur',cancelWaterCharge);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelWaterCharge();});
-function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.floor(waterCharge()*100);waterButton.textContent=percent+'%';waterButton.style.background='linear-gradient(to right,#70d7ff '+percent+'%,#d9f2ff '+percent+'%)';}}syncLootMeshes();for(const [id,mesh] of lootMeshes){mesh.children[0].rotation.y=globalTime*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+COIN_FLOAT_HEIGHT+Math.sin(globalTime*1.8+mesh.userData.floatPhase)*.4;}waterEffects=waterEffects.filter(fx=>{if(animateWaterSpray(fx,dt))return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
+function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.floor(waterCharge()*100);waterButton.textContent=percent===100?'100% READY':percent+'%';waterButton.style.background='linear-gradient(to right,#70d7ff '+percent+'%,#d9f2ff '+percent+'%)';}}syncLootMeshes();for(const [id,mesh] of lootMeshes){mesh.children[0].rotation.y=globalTime*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+COIN_FLOAT_HEIGHT+Math.sin(globalTime*1.8+mesh.userData.floatPhase)*.4;}waterEffects=waterEffects.filter(fx=>{if(animateWaterSpray(fx,dt))return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
 
 // ===== Cooperative encounter =====
 const bossHud=document.createElement('div');bossHud.id='boss-health';bossHud.hidden=true;bossHud.setAttribute('role','progressbar');bossHud.setAttribute('aria-label','Auntie health');bossHud.setAttribute('aria-valuemax','100');bossHud.innerHTML='<div id="boss-fill"></div><span id="boss-text">AUNTIE · 100 / 100</span>';document.body.append(bossHud);
@@ -462,7 +468,7 @@ function updateGardenWorld(dt){
  const canGoDown=phase===PHASE.IDLE||phase===PHASE.DONE||(phase===PHASE.EXPLORE&&charRoot.position.y>3);goDownButton.hidden=!canGoDown;buildButton.hidden=canGoDown;buildButton.disabled=phase!==PHASE.EXPLORE;
  bossHud.hidden=!admitted;bossFlash=Math.max(0,bossFlash-dt);
  const boss=gameView.boss;
- for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}if(!gameView.redMode){bossDefeatGeneration=null;if(m.bloodUniform){m.bloodUniform.amount.value=0;m.bloodUniform.flash.value=0;m.drips.geometry.setDrawRange(0,0);}continue;}
+ for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}
   prepareBossBlood(m);const damage=(100-boss.hp)/100;m.bloodUniform.amount.value=damage;m.bloodUniform.flash.value=bossFlash>0&&Math.floor(bossFlash*35)%2?1:0;
   const count=damage>0?Math.max(1,Math.floor(damage*60)):0;m.drips.geometry.setDrawRange(0,count);const attr=m.drips.geometry.attributes.position,{min,size}=m.bloodBounds;
   for(let i=0;i<count;i++){const a=i*2.39996,t=(performance.now()/1100+i*.137)%1;attr.setXYZ(i,min.x+size.x*(.5+Math.cos(a)*.3),min.y+size.y*(.85-t*.8),min.z+size.z*(.5+Math.sin(a)*.3));}attr.needsUpdate=true;
@@ -578,7 +584,7 @@ function refreshEquipmentUI(force=false){
  const items=EQUIPMENT.filter(i=>shopTab==='all'||shopTab==='owned'&&owned.includes(i.id)||i.slot===shopTab||shopTab==='fishing'&&['rod','tool','pond'].includes(i.slot));
  $('shop-items').innerHTML=items.length?items.map(item=>{
   const has=owned.includes(item.id),equipped=slots[item.slot]===item.id;
-  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?`<span><b>${item.depth} m</b> water depth</span><span><b>${Math.round(item.redChance*100)}%</b> crimson spring chance</span>`:item.family==='pond'?'<span>Unlocks glass aquariums · choose size in BUILD · 15 / 45 / 100 coins.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${item.damage} → ${item.chargeDamage}</b> damage</span><span><b>${item.range} → ${item.range+item.chargeRange}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
+  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?`<span><b>${item.depth} m</b> water depth</span><span><b>${Math.round(item.redChance*100)}%</b> crimson spring chance</span>`:item.family==='pond'?'<span>Unlocks glass aquariums · choose size in BUILD · 15 / 45 / 100 coins.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${item.damage} → ${attackStats(item,1).damage}</b> damage</span><span><b>${item.range} → ${attackStats(item,1).range}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
   return `<article class="item-card" style="--item-color:${item.color}" data-item="${item.id}"><div class="item-art ${item.family}">${itemArt(item)}<i></i></div><div class="item-info"><small>${item.family.toUpperCase()} · TIER ${item.tier}</small><h3>${item.name}</h3><div class="item-stats">${stats}</div><div class="item-bottom"><span>${has?'OWNED':item.price+' coins'}</span><button data-${has?'equip':'buy'}="${item.id}" ${equipped||shopBusy||!has&&balance<item.price?'disabled':''}>${equipped?'Equipped':has?'Equip':'Buy'}</button></div></div></article>`;
  }).join(''):'<p class="shop-empty">Your collection starts here. Earn coins in the garden, then choose your first piece.</p>';
 }
@@ -618,7 +624,7 @@ function showEquipmentAttack(data){
  scene.add(group);equipmentFX.push({group,points,accents,impact,data,travel,age:0,duration:data.family==='saber'?.55:1.05});
 }
 function updateEquipmentEffects(dt){
- updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);
+ updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);
  const chargeLabel=$('shield-charge'),guard=equipmentById(gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
  if(chargeLabel&&guard){const left=guardState?Math.max(0,Math.ceil(guard.recharge-(Date.now()-guardState.lastHit)/1000)):0;chargeLabel.textContent=left?Math.max(0,guard.capacity-guardState.used).toFixed(1)+' / '+guard.capacity+' · '+left+'s':guard.capacity+' / '+guard.capacity+' · Ready';}
 
@@ -648,11 +654,11 @@ function updateEquipmentEffects(dt){
  for(const [key,aura] of equipmentAuras)if(!active.has(key)){scene.remove(aura);aura.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});equipmentAuras.delete(key);}
 }
 
-// ===== Screen-centred 3D aiming, including the camera-to-muzzle parallax =====
+// ===== Character-facing shooting; camera aiming supplies elevation only =====
 const aimReticle=document.createElement('div');aimReticle.id='aim-reticle';aimReticle.hidden=true;aimReticle.setAttribute('aria-hidden','true');aimReticle.innerHTML='<i></i><b></b>';document.body.append(aimReticle);
 // Aim against gameplay volumes, never deform and scan every skinned triangle.
 const aimRay=new THREE.Raycaster(),aimCenter=new THREE.Vector2(),aimBox=new THREE.Box3(),aimSphere=new THREE.Sphere(),aimHit=new THREE.Vector3(),aimGround=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-function rangedAim(){
+function cameraElevationAim(){
  const origin=charRoot.position.clone().add(new THREE.Vector3(0,1,0));camera.updateMatrixWorld();aimRay.setFromCamera(aimCenter,camera);aimRay.far=250;
  const ray=aimRay.ray,minDistance=camera.position.distanceTo(origin)*.3;
  let point=ray.at(150,new THREE.Vector3()),nearest=150;
@@ -665,8 +671,31 @@ function rangedAim(){
  let direction=point.clone().sub(origin).normalize();if(direction.dot(ray.direction)<.1)direction=ray.direction.clone();
  return {direction,point,inRange:origin.distanceTo(point)<=currentWeapon().range+currentWeapon().chargeRange*waterCharge()};
 }
-let aimUpdatedAt=0;
-function updateCrosshair(){aimReticle.hidden=!admitted||!connected||phase!==PHASE.EXPLORE||['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family)||document.body.dataset.panel!=='none'||monsterDeathActive;if(!aimReticle.hidden&&performance.now()-aimUpdatedAt>100){aimUpdatedAt=performance.now();aimReticle.classList.toggle('in-range',rangedAim().inRange);aimReticle.style.setProperty('--charge',String(waterCharge()));}}
+function rangedAim(){
+ // Preserve the established vertical aiming/parallax, but never borrow camera yaw.
+ const cameraDirection=cameraElevationAim().direction,heading=gameplayHeading(charModel),vertical=THREE.MathUtils.clamp(cameraDirection.y,-.98,.98),horizontal=Math.sqrt(1-vertical*vertical);
+ const direction=new THREE.Vector3(Math.sin(heading)*horizontal,vertical,Math.cos(heading)*horizontal),origin=charRoot.position.clone().add(new THREE.Vector3(0,1,0));
+ const weapon=currentWeapon(),range=attackStats(weapon,waterCharge()).range;aimRay.set(origin,direction);aimRay.far=range;
+ const ray=aimRay.ray,point=ray.at(range,new THREE.Vector3());let nearest=range,hitTarget=false;
+ const accept=hit=>{if(!hit)return;const d=origin.distanceTo(hit);if(d>.01&&d<=nearest){nearest=d;point.copy(hit);hitTarget=true;}};
+ for(const mesh of buildMeshes.values()){mesh.updateMatrixWorld();for(const hit of aimRay.intersectObject(mesh,false))accept(hit.point);}
+ for(const monster of monsters){if(!monster.root.visible)continue;const p=monster.root.position;aimBox.min.set(p.x-2.8,p.y,p.z-2.8);aimBox.max.set(p.x+2.8,p.y+12,p.z+2.8);accept(ray.intersectBox(aimBox,aimHit));}
+ for(const player of remotePlayers.values()){if(!player.root.visible)continue;aimSphere.center.copy(player.root.position);aimSphere.center.y+=1;aimSphere.radius=1.25;accept(ray.intersectSphere(aimSphere,aimHit));}
+ accept(ray.intersectPlane(aimGround,aimHit));
+ return {direction,point,inRange:hitTarget};
+}
+let cachedReticleAim=null,reticleSampleAt=0;
+function updateCrosshair(){
+ aimReticle.hidden=!admitted||!connected||phase!==PHASE.EXPLORE||meleeFamilies.includes(currentWeapon().family)||document.body.dataset.panel!=='none'||monsterDeathActive;
+ if(!aimReticle.hidden){
+  const now=performance.now();if(!cachedReticleAim||now-reticleSampleAt>=100){cachedReticleAim=rangedAim();reticleSampleAt=now;}
+  const aim=cachedReticleAim,screen=aim.point.clone().project(camera);
+  // A fixed screen-centre crosshair would advertise a direction the weapon does not fire.
+  aimReticle.hidden=screen.z< -1||screen.z>1||Math.abs(screen.x)>.98||Math.abs(screen.y)>.98;
+  aimReticle.style.left=((screen.x+1)*50)+'%';aimReticle.style.top=((1-screen.y)*50)+'%';
+  aimReticle.classList.toggle('in-range',aim.inRange);aimReticle.style.setProperty('--charge',String(waterCharge()));
+ }
+}
 // Suppress browser gestures, while keeping one-finger panel scrolling and editable inputs usable.
 for(const event of ['gesturestart','gesturechange','gestureend'])document.addEventListener(event,e=>e.preventDefault(),{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
@@ -694,7 +723,7 @@ function showMeleeAttack(data){
  const runeGeo=new THREE.BufferGeometry();runeGeo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));sigil.add(new THREE.LineSegments(runeGeo,new THREE.LineBasicMaterial({color,transparent:true,opacity:.45,depthWrite:false,blending:THREE.AdditiveBlending})));group.add(sigil);
  const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:equipmentGlow,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));flash.position.set(0,0,Math.min(radius,2.5));group.add(flash);scene.add(group);
  sigil.visible=data.family==='saber';const waves=[];for(let i=0;i<(data.family==='saber'?Math.ceil(tier/2):0);i++){const wave=new THREE.Mesh(new THREE.RingGeometry(.84,1,48,1,.15,Math.PI*1.65),glowMaterial(i%2?'#fff0d2':color,.5));wave.rotation.z=combo*.65+i*.9;group.add(wave);waves.push(wave);}
- showSignatureBurst(data);
+ if(!data.ultimate)showSignatureBurst(data);
  meleeEffects.push({group,strokes,sparks,sigil,flash,waves,combo,data,age:0,radius:data.range,duration:meleeDuration(data.family,combo)+.35});
 }
 function updateMeleeEffects(dt){
@@ -738,3 +767,10 @@ function updateSignatureEffects(dt){
  if(charging){if(!heldSignature){heldSignature=createWeaponSignature(THREE,item);heldSignature.weapon=item.id;scene.add(heldSignature.root);}heldSignature.root.position.copy(charRoot.position).add(new THREE.Vector3(0,1.1,0));heldSignature.root.rotation.y=gameplayHeading(charModel);updateWeaponSignature(THREE,heldSignature,globalTime,waterCharge());}
  for(let i=signatureBursts.length-1;i>=0;i--){const fx=signatureBursts[i];fx.age+=dt;if(fx.age>=fx.duration){disposeWeaponSignature(fx);signatureBursts.splice(i,1);continue;}updateWeaponSignature(THREE,fx,fx.age,fx.age/fx.duration);fx.root.scale.multiplyScalar(fx.power);}
 }
+
+const ultimateEffects=[];
+function showUltimateAttack(data){
+ const item=equipmentById(data.weapon)||DEFAULT_WEAPON,fx=createUltimate(THREE,item,data);scene.add(fx.root);ultimateEffects.push(fx);
+ while(ultimateEffects.length>3)disposeUltimate(ultimateEffects.shift());
+}
+function updateUltimateEffects(dt){for(let i=ultimateEffects.length-1;i>=0;i--){const fx=ultimateEffects[i];updateUltimate(THREE,fx,dt);if(fx.age>=fx.duration){disposeUltimate(fx);ultimateEffects.splice(i,1);}}}

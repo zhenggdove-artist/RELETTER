@@ -26,3 +26,10 @@ for(const item of EQUIPMENT)if(['saber','whip','swatter','pan','planter','palm']
  item.cooldown=({saber:300,whip:320,swatter:260,pan:340,planter:360,palm:380}[item.family])-(item.tier-1)*15;
  item.range=+(item.range*1.2).toFixed(2);item.radius=+(item.radius*1.3).toFixed(2);
 }
+
+// Full charge is a separate server-authoritative attack, not a client visual multiplier.
+export function attackStats(weapon,charge=0){
+ const ultimate=charge>=1,baseRange=weapon.range+weapon.chargeRange*charge,baseRadius=weapon.radius+.38*charge;
+ const damage=weapon.id==='water'?1+Math.floor(4*charge):+(weapon.damage+(weapon.chargeDamage-weapon.damage)*charge).toFixed(2);
+ return {ultimate,range:ultimate?+Math.min(160,Math.max(30,baseRange*1.8)).toFixed(2):baseRange,radius:ultimate?Math.min(16,Math.max(6,baseRadius*2.4)):baseRadius,damage:ultimate?+(Math.max(10,damage*2.2)).toFixed(2):damage};
+}

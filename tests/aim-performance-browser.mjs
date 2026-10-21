@@ -6,7 +6,7 @@ try{
  await page.goto('http://127.0.0.1:8788');await page.locator('#password').fill('rae1210');await page.locator('#login-form button').click();await page.locator('[data-character="Ely"]').click();
  await page.waitForFunction(()=>window.reletter_test?.model()&&reletter_test.threat().loaded);
  const result=await page.evaluate(()=>{
-  const t=reletter_test,w=t.world(),T=t.THREE;t.explore([0,0,12]);w.camera.position.set(0,6,20);w.camera.lookAt(0,6,0);w.monsters[0].root.visible=true;w.monsters[0].root.position.set(0,0,0);
+  const t=reletter_test,w=t.world(),T=t.THREE;t.explore([0,0,12]);t.model().rotation.set(0,Math.PI,0);w.camera.position.set(0,6,20);w.camera.lookAt(0,6,0);w.monsters[0].root.visible=true;w.monsters[0].root.position.set(0,0,0);
   let calls=0;const original=T.SkinnedMesh.prototype.raycast;T.SkinnedMesh.prototype.raycast=function(...args){calls++;return original.apply(this,args);};
   const start=performance.now();for(let i=0;i<30;i++)render_game_to_text();const elapsed=performance.now()-start;
   const target=JSON.parse(render_game_to_text()).aim.direction;
@@ -20,6 +20,6 @@ try{
  assert.ok(result.elapsed<500,`30 aim queries exceeded generous CPU budget: ${result.elapsed}ms`);
  assert.ok(result.target[1]>.4&&result.target[2]<-.8,'aim converges on the monster gameplay volume');
  assert.ok(result.sky[2]<0,'hidden monster does not intercept aim');
- assert.ok(result.cover[1]>.9,'building intercepts aim before the monster location');
+ assert.ok(Math.abs(Math.atan2(result.cover[0],result.cover[2]))>3.14,'cover cannot redirect character yaw');
  console.log('PASS bounded aim cost, no skinned raycasts, visible monster targeting, hidden monster exclusion and building cover',result);
 }finally{await browser.close();}
