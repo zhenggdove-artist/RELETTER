@@ -11,6 +11,7 @@ vSeed=aSeed.x;p=(instanceMatrix*vec4(p,1.)).xyz;
 float a=aSeed.x*6.28318,q=fract(aSeed.y+uTime*.38);
 if(uKind<1.5){p+=vec3(sin(a+uTime*2.)*q*3.,3.+cos(a*1.3+uTime)*q*1.8,q*uSpan);}
 else if(uKind<2.5){p.z*=uSpan*smoothstep(0.,.28,uTime);}
+else if(uKind>4.5&&uKind<5.5){float age=max(0.,uTime-.72),speed=3.+aSeed.z*6.;p+=vec3(cos(a)*age*speed,max(0.,age*(5.+aSeed.y*7.)-age*age*9.),sin(a)*age*speed);}
 else if(uKind<3.5){p+=vec3(sin(a*7.+uTime*17.),cos(a*5.+uTime*13.),sin(a*3.+uTime*19.))*(.12+.9*smoothstep(1.8,2.8,uTime));}
 #endif
 p.x+=sin(vUv.y*14.-uTime*8.)*.05*vUv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`;
@@ -18,9 +19,13 @@ const fieldFragment=`precision highp float;varying vec2 vUv;varying float vSeed;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
 void main(){float edge=pow(max(0.,sin(vUv.x*3.14159)),1.4);float ends=sin(clamp(vUv.y,0.,1.)*3.14159);float noise=sin(vUv.y*37.-uTime*9.+sin(vUv.x*21.+uTime)*1.6);float a=edge*ends;
-if(uKind<1.5){vec2 p=vUv*vec2(3.,5.)-vec2(0.,uTime*2.+vSeed*9.);float cloud=noise2(p)*.65+noise2(p*2.13)*.35;a*=smoothstep(.25,.75,cloud)*.85;}
+if(uKind>7.5){vec2 p=vec2(vUv.x*3.,vUv.y*6.-uTime*3.+vSeed*13.);float cloud=noise2(p)*.65+noise2(p*2.1)*.35;float taper=1.-vUv.y*.75;a*=smoothstep(.22,.65,cloud)*taper;}
+else if(uKind<1.5){vec2 p=vUv*vec2(3.,5.)-vec2(0.,uTime*2.+vSeed*9.);float cloud=noise2(p)*.65+noise2(p*2.13)*.35;a*=smoothstep(.25,.75,cloud)*.85;}
 else if(uKind<2.5)a*=.55+.16*sin(vUv.y*110.-uTime*20.);
 else if(uKind<3.5)a*=.32;
+else if(uKind>4.5&&uKind<5.5){a=1.;}
+else if(uKind>6.5){a=pow(edge,12.)*.65;}
+else if(uKind>5.5){a=edge; }
 else a*=.65+.25*sin(vUv.y*35.-uTime*7.);
 vec3 c=mix(uEdge,uColor,pow(edge,.8));gl_FragColor=vec4(c,a*uFade);
 #include <tonemapping_fragment>
@@ -35,6 +40,7 @@ function addFields(T,art,family){
  function ribbon(points,width,material){const c=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),v=[],uv=[],idx=[];for(let i=0;i<=64;i++){const t=i/64,p=c.getPoint(t),tangent=c.getTangent(t),side=new T.Vector3(-tangent.y,tangent.x,.1).normalize(),w=Math.sin(t*Math.PI)*width;for(const sign of [-1,1]){v.push(p.x+side.x*w*sign,p.y+side.y*w*sign,p.z+side.z*w*sign);uv.push(sign<0?0:1,t);}if(i<64){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2);}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();const o=new T.Mesh(g,material);o.frustumCulled=false;fields.add(o);return o;}
  if(family==='fire'){
   const g=new T.PlaneGeometry(1.1,3,2,10);instances(g,field(1,'#ffc97d','#ce3a23'),64,0,(d,i,h)=>{d.rotation.y=i*2.399;d.rotation.x=.5;d.position.z=6;d.scale.set(.6+h,1+h,1);});
+  const mane=instances(new T.PlaneGeometry(.9,2.8,2,8),field(8,'#ffd68a','#e24e23'),36,0,(d,i,h)=>{const pts=[[0,2,-17],[-2.8,2.4,-14],[-3.5,4,-10],[-1.5,4.7,-6],[2.2,3.5,-2],[1.5,3,1],[0,3.2,4]],c=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),p=c.getPoint(.12+h*.86);d.position.copy(p).add(new T.Vector3(0,1.3,0));d.rotation.y=i*2.399;d.scale.set(1,1+h*.8,1);});art.body.add(mane);
   for(let j=0;j<3;j++){const r=ribbon([[0,3,4],[2-j*2,3.5,8],[-2+j*2,3,15],[0,4,25]],.65,field(1));flows.push({o:r,kind:'flame',index:j});}
  }else if(family==='beam'){
   const g=new T.CylinderGeometry(.045,.12,1,6,1,true);g.rotateX(Math.PI/2);g.translate(0,0,.5);instances(g,field(2,'#d9eee3','#6bafc0'),12,0,(d,i)=>{const a=i*Math.PI/6;d.position.set(Math.cos(a)*3.4,3+Math.sin(a)*3.4,1.6);d.scale.setScalar(1);});
@@ -46,7 +52,17 @@ function addFields(T,art,family){
   const g=new T.OctahedronGeometry(.2);g.scale(.6,3,.6);instances(g,artMaterial(2,1),64,1);
   for(let j=0;j<3;j++){const pts=Array.from({length:25},(_,k)=>{const a=k/24*Math.PI*2;return [Math.cos(a)*(3+j),2+Math.sin(a)*2,j*4];});flows.push({o:ribbon(pts,.12,field(4)),kind:'snow',index:j});}
  }else if(family==='saber'){
-  for(let j=0;j<3;j++){const pts=Array.from({length:25},(_,k)=>{const a=-1.2+k/24*2.4;return [Math.sin(a)*(7+j*.7),Math.cos(a)*(7+j*.7)-2,0];});const o=ribbon(pts,j===0?.6:.15,field(4,palette[3],palette[1]));flows.push({o,kind:'cleave',index:j});}
+  // Impact plane is independently aligned to world ground, never tilted with aim elevation.
+  const ground=new T.Group();ground.name='Ground rupture';fields.add(ground);flows.push({o:ground,kind:'ground',index:0});
+  const v=[],uv=[],ix=[];let seed=71;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const fissure=(pts,width)=>{for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len,k=v.length/3,w=width*(1-i/pts.length*.8);v.push(a[0]+nx*w,.04,a[1]+nz*w,a[0]-nx*w,.04,a[1]-nz*w,b[0]+nx*w*.7,.04,b[1]+nz*w*.7,b[0]-nx*w*.7,.04,b[1]-nz*w*.7);uv.push(0,0,1,0,0,1,1,1);ix.push(k,k+1,k+2,k+1,k+3,k+2);}};
+  fissure([[0,3],[.3,7],[-.3,12],[.2,18],[-.5,24],[.1,31]],.38);
+  for(let j=0;j<18;j++){const z=5+j*1.3,side=j%2?1:-1;fissure([[0,z],[side*(1+rnd()),z+1],[side*(3+rnd()*2),z+2],[side*(5+rnd()*3),z+1+rnd()*3]],.16+rnd()*.14);}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(ix);const dark=field(6,'#120f22','#241d36'),glow=field(7,'#e9b57c','#9e402b');const cracks=new T.Mesh(g,dark);ground.add(cracks);const core=new T.Mesh(g,glow);core.scale.set(1,1,1);core.position.y=.012;ground.add(core);flows.push({o:core,kind:'crackglow',index:0});
+  const rock=instances(new T.IcosahedronGeometry(.32,0),field(5,'#89767e','#514554'),48,0,(d,i,h)=>{d.position.set((i%2?1:-1)*(1+h*3),0,5+h*24);d.rotation.set(i,i*.7,i*.3);d.scale.set(.7+h*1.8,.6+h,1+h);});ground.add(rock);flows.push({o:rock,kind:'debris',index:0});
+  const ring=new T.Mesh(new T.RingGeometry(.7,1,64),field(6,'#d6dce3','#8498a9'));ring.rotation.x=-Math.PI/2;ring.position.set(0,.09,18);ground.add(ring);flows.push({o:ring,kind:'impactring',index:0});
+  // A vertical crescent follows the falling edge, then erupts forward from the impact.
+  const pts=Array.from({length:33},(_,k)=>{const a=k/32*Math.PI*.9;return [0,4+Math.cos(a)*21,3+Math.sin(a)*21];});const arc=ribbon(pts,1.3,field(4,'#edffff','#4599ee'));flows.push({o:arc,kind:'downstroke',index:0});
  }else if(family==='swatter'){
   const positions=(d,i,h)=>{const a=i*2.399,part=i%4,y=part===0?6+h*3:part===1?2+h*4:h*2;const r=part===0?.6:part===1?.6+h*.5:1+h*1.7;d.position.set(Math.cos(a)*r,y,Math.sin(a)*r);d.rotation.set(i,i*.4,0);d.scale.set(.6+h,.6+h,.6+h);};
   instances(new T.SphereGeometry(.055,5,4),artMaterial(0,3),320,3,positions);const wing=new T.PlaneGeometry(.23,.075);instances(wing,field(3),320,0,positions);
@@ -68,7 +84,7 @@ function addFields(T,art,family){
  return {fields,flows};
 }
 function bankFor(T){let bank=banks.get(T);if(!bank){bank=new Map();banks.set(T,bank);}return bank;}
-function template(T,family){const bank=bankFor(T);if(bank.has(family))return bank.get(family);const start=performance.now(),art=makeArt(T,family),{fields,flows}=addFields(T,art,family);art.root.name='Ultimate: '+ultimateNames[family];art.body.name='Sculpted summon';let id=0;art.root.traverse(o=>{o.userData.artId=id++;});const descriptors=art.parts.map(p=>({id:p.o.userData.artId,motion:p.motion,side:p.side,phase:p.phase})),flowDescriptors=flows.map(p=>({id:p.o.userData.artId,kind:p.kind,index:p.index}));const result={...art,descriptors,flowDescriptors,buildMs:performance.now()-start};bank.set(family,result);return result;}
+function template(T,family){const bank=bankFor(T);if(bank.has(family))return bank.get(family);const start=performance.now(),art=makeArt(T,family),{fields,flows}=addFields(T,art,family);art.root.name='Ultimate: '+ultimateNames[family];art.body.name='Sculpted summon';let id=0;art.root.traverse(o=>{o.userData.artId=id++;});const descriptors=art.parts.map(p=>({id:p.o.userData.artId,motion:p.motion,side:p.side,phase:p.phase})),flowDescriptors=flows.map(p=>({id:p.o.userData.artId,kind:p.kind,index:p.index}));const result={...art,fieldGroupId:fields.userData.artId,descriptors,flowDescriptors,buildMs:performance.now()-start};bank.set(family,result);return result;}
 export async function prepareUltimates(T,renderer,camera){
  const target=new T.WebGLRenderTarget(32,32,{depthBuffer:true}),temp=new T.Scene(),view=camera.clone();view.position.set(16,10,22);view.lookAt(0,4,4);const timings=[];
  try{for(const family of ['water','saber','fire','ice','lightning','planter','swatter','pan','beam','whip','palm','petal','wave']){await new Promise(resolve=>setTimeout(resolve,30));const art=template(T,family);temp.add(art.root);await renderer.compileAsync(temp,view);const previous=renderer.getRenderTarget();renderer.setRenderTarget(target);renderer.render(temp,view);renderer.setRenderTarget(previous);temp.remove(art.root);timings.push({family,buildMs:art.buildMs});}}finally{target.dispose();}return timings;
@@ -77,18 +93,21 @@ export function createUltimate(T,item,shot){
  const family=item.family in ultimateNames?item.family:'water',source=template(T,family),root=source.root.clone(true),objects=new Map(),clones=new Map(),materials=[];
  root.traverse(o=>{objects.set(o.userData.artId,o);if(o.material){if(!clones.has(o.material)){const m=o.material.clone();clones.set(o.material,m);materials.push(m);}o.material=clones.get(o.material);}});
  const bind=d=>({...d,o:objects.get(d.id),rotation:objects.get(d.id).rotation.clone(),position:objects.get(d.id).position.clone()});
- const f={root,family,age:0,duration:2.9,materials,parts:source.descriptors.map(bind),flows:source.flowDescriptors.map(bind),body:objects.get(source.body.userData.artId),range:shot.range||30,radius:shot.radius||6,tier:item.tier||1};
+ const f={root,family,originY:shot.origin[1],fieldGroup:objects.get(source.fieldGroupId),age:0,duration:family==='saber'?3.4:2.9,materials,parts:source.descriptors.map(bind),flows:source.flowDescriptors.map(bind),body:objects.get(source.body.userData.artId),range:shot.range||30,radius:shot.radius||6,tier:item.tier||1};
  root.position.fromArray(shot.origin);root.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...shot.direction).normalize());
+ if(family==='saber')root.quaternion.setFromAxisAngle(new T.Vector3(0,1,0),Math.atan2(shot.direction[0],shot.direction[2]));
+ const ground=f.flows.find(p=>p.kind==='ground');if(ground){ground.o.quaternion.copy(root.quaternion).invert().multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.atan2(shot.direction[0],shot.direction[2])));ground.rotation.copy(ground.o.rotation);ground.position.copy(new T.Vector3(0,(-shot.origin[1]+.03)/(.8+Math.min(5,f.tier)*.04),0).applyQuaternion(root.quaternion.clone().invert()));}
  f.travel=Math.min(f.range,shot.impact?new T.Vector3(...shot.impact).distanceTo(new T.Vector3(...shot.origin)):f.range);
  for(const m of materials)if(m.uniforms.uSpan)m.uniforms.uSpan.value=f.travel;
  updateUltimate(T,f,0);return f;
 }
 export function updateUltimate(T,f,dt){
  f.age+=dt;const t=f.age,u=Math.min(1,t/f.duration),open=Math.min(1,t/.22),fade=Math.min(1,open,(f.duration-t)/.5),advance=Math.min(f.travel*.4,18)*(1-Math.pow(1-Math.min(1,t/1.5),2));
+ if(['swatter','beam'].includes(f.family))f.fieldGroup.position.z=advance;
  f.root.scale.setScalar(.8+Math.min(5,f.tier)*.04);f.root.visible=fade>0;
  for(const m of f.materials){if(m.uniforms.uTime)m.uniforms.uTime.value=t;if(m.uniforms.uFade)m.uniforms.uFade.value=Math.max(0,fade);}
  for(const p of f.parts){const o=p.o;o.rotation.copy(p.rotation);o.position.copy(p.position);
-  switch(p.motion){case 'body':o.position.z=advance;if(['fire','water'].includes(f.family)){o.position.y=Math.sin(t*2.4)*.18;o.rotation.y=Math.sin(t*2)*.06;}if(['ice','lightning'].includes(f.family))o.position.y=.6+Math.sin(t*2)*.25;if(f.family==='saber'){o.rotation.z=-.9+Math.min(1,t/.8)*1.8;o.position.y=2;}if(['planter','palm'].includes(f.family))o.scale.y=Math.max(.02,Math.min(1,t/.65));break;
+  switch(p.motion){case 'body':o.position.z=advance;if(['fire','water'].includes(f.family)){o.position.y=Math.sin(t*2.4)*.18;o.rotation.y=Math.sin(t*2)*.06;}if(['ice','lightning'].includes(f.family))o.position.y=.6+Math.sin(t*2)*.25;if(f.family==='saber'){const swing=T.MathUtils.smoothstep(t,.32,.74);o.scale.set(2.2,1.9,2.2);o.rotation.x=-.22+swing*2;o.rotation.z=0;o.position.set(0,7+swing*(4.84-f.originY/(.8+Math.min(5,f.tier)*.04)-7),2);o.visible=t<1.45;}if(f.family==='swatter'){o.scale.y=1+Math.sin(t*4)*.025;o.rotation.y=Math.sin(t*1.8)*.1;}if(f.family==='pan'){o.position.y=.4+Math.abs(Math.sin(t*3))*.8;o.rotation.y=Math.sin(t*2)*.18;}if(f.family==='petal'){o.rotation.y=Math.sin(t*1.4)*.4;o.position.y=Math.sin(t*2)*.3;}if(f.family==='beam')o.rotation.z=Math.sin(t*2)*.12;if(['planter','palm'].includes(f.family))o.scale.y=Math.max(.02,Math.min(1,t/.65));break;
    case 'wing':o.rotation.z+=p.side*Math.sin(t*5.5)*.32;o.rotation.x+=Math.cos(t*5.5)*.08;break;
    case 'dragon-wing':o.rotation.z+=p.side*(.1+Math.sin(t*4)*.23);break;
    case 'head':o.rotation.y+=Math.sin(t*2.3)*.025;break;
@@ -102,7 +121,12 @@ export function updateUltimate(T,f,dt){
   }
  }
  for(const p of f.flows){const o=p.o;o.position.copy(p.position);o.rotation.copy(p.rotation);
-  if(p.kind==='cleave'){o.position.z=Math.min(f.travel,Math.max(0,t-p.index*.12)*f.travel*.7);o.rotation.z=.4+p.index*.15;}
+  if(p.kind==='ground'){o.visible=t>=.72;}
+  else if(p.kind==='debris'){o.visible=t>=.72&&t<2.2;}
+  else if(p.kind==='crackglow'){o.visible=t>=.72;for(const m of [o.material])m.uniforms.uFade.value=Math.max(0,Math.min(1,(2.7-t)/1.5));}
+  else if(p.kind==='impactring'){const q=Math.max(0,t-.72);o.visible=q>0&&q<.9;o.scale.setScalar(1+q*21);o.material.uniforms.uFade.value=Math.max(0,1-q/.9)*.55;}
+  else if(p.kind==='downstroke'){o.visible=t>.38&&t<1.2;o.material.uniforms.uFade.value=Math.max(0,Math.sin((t-.38)/.82*Math.PI))*.65;}
+  else if(p.kind==='cleave'){o.position.z=Math.min(f.travel,Math.max(0,t-p.index*.12)*f.travel*.7);o.rotation.z=.4+p.index*.15;}
   else if(p.kind==='lightning'){o.position.z=advance*.7;o.visible=Math.sin(t*26+p.index*2)>.05;}
   else if(p.kind==='orbit'){o.position.z=advance;o.rotation.y=t*.35+p.index*.5;o.rotation.x=p.index*.4;}
   else if(p.kind==='snow'){o.position.z=advance+p.index*3;o.rotation.z=t*.3;}
