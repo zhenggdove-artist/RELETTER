@@ -17,7 +17,7 @@ const moves=[
  [pose([-2.25,-.3,-.3],[-1,0,.2],[-.22,-.2,0],[0,-.18,0],.4),pose([-.55,.3,-.25],[-.12,0,.05],[.42,.25,.05],[0,.12,0],-.42)]
 ];
 export const meleeFamilies=['saber','whip','swatter','pan','planter','palm'];
-export const meleeDuration=(family,combo)=> (combo===6?1.35:1.02)*({swatter:.76,pan:1.12,planter:1.3,palm:1.42,whip:1.12}[family]||1);
+export const meleeDuration=(family,combo)=> (combo===6?.65:.3)*({swatter:.85,pan:1.1,planter:1.18,palm:1.25,whip:1.05}[family]||1);
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
 export function sampleMeleePose(family,combo,age){

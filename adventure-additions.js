@@ -37,38 +37,55 @@ function attachHeldWeapon(player,aura,blade,fx){
  }
 }
 
+let fishingHUDActive=false;
 let reelHeld=false,fishBusy=false,fishPollBusy=false,fishTab='cast',fishSignature='',selectedHole=null;
 const fishingButton=document.createElement('button');fishingButton.id='fishing-open';fishingButton.textContent='FISH';dock.append(fishingButton);
 const fishingPanel=document.createElement('section');fishingPanel.id='fishing-panel';fishingPanel.hidden=true;fishingPanel.innerHTML=`<header><div><small>THE WATER GARDEN</small><h2>Stillwater</h2></div><button id="fishing-close" aria-label="Close fishing">×</button></header><nav><button data-fish-tab="cast">Fish</button><button data-fish-tab="collection">Collection</button><button data-fish-tab="pond">Aquariums</button><button data-fish-tab="atlas">${FISH.length} species</button></nav><p id="fishing-feedback" role="status">Equip a rod in SHOP. Use a chisel to open a fishing hole.</p><div id="fishing-content"></div>`;document.body.append(fishingPanel);
 const fstate=()=>gameView.fishing||{holes:[],ponds:[],bags:{},sessions:{}};
 const distanceTo=p=>Math.hypot(charRoot.position.x-p[0],charRoot.position.z-p[2]);
-function openFishing(tab='cast'){if(!admitted)return;claimPanel('fishing');fishingPanelOpen=true;fishingPanel.hidden=false;fishTab=tab;fishSignature='';renderFishing(true);reflectPanels();}
-fishingButton.onclick=()=>fishingPanelOpen?(claimPanel('none'),reflectPanels()):openFishing();$('fishing-close').onclick=()=>{claimPanel('none');reflectPanels();};
-for(const button of fishingPanel.querySelectorAll('[data-fish-tab]'))button.onclick=()=>{reelHeld=false;fishTab=button.dataset.fishTab;renderFishing(true);};
+const fishHUD=document.createElement('div');fishHUD.id='fishing-hud';fishHUD.hidden=true;
+fishHUD.innerHTML=`<div id="fishing-meters"><span id="bite-status" role="status"></span><label>TENSION <meter id="line-tension" min="0" max="1" low=".13" high=".88" optimum=".5"></meter></label><label>LANDING <progress id="catch-progress" max="100" value="0"></progress></label></div><div id="world-fishing-action"><button id="hook-fish">HOOK</button><button id="reel-fish">HOLD</button><small>Hold to reel · release to ease</small></div><nav id="fishing-tools" aria-label="Fishing tools"></nav>`;
+document.body.append(fishHUD);
+function syncFishingHUD(){
+ const show=fishingHUDActive&&admitted;fishHUD.hidden=!show;document.body.classList.toggle('fishing-hud-active',show);
+}
+function openFishing(tab='cast'){
+ if(!admitted)return;claimPanel('fishing');reelHeld=false;fishTab=tab;fishingHUDActive=tab==='cast';fishingPanelOpen=!fishingHUDActive;fishingPanel.hidden=fishingHUDActive;fishSignature='';syncFishingHUD();renderFishing(true);reflectPanels();
+}
+fishingButton.onclick=()=>openFishing();$('fishing-close').onclick=()=>{claimPanel('none');reflectPanels();};
+for(const button of fishingPanel.querySelectorAll('[data-fish-tab]'))button.onclick=()=>openFishing(button.dataset.fishTab);
+let hookPointerId=null;
+const hookButton=$('hook-fish'),reelButton=$('reel-fish');
+hookButton.onpointerdown=e=>{e.preventDefault();hookPointerId=e.pointerId;hookButton.setPointerCapture(e.pointerId);reelHeld=true;adventureAction({action:'hook',id:fstate().sessions?.[selectedCharacter]?.id});};
+hookButton.onclick=e=>{if(e.detail===0)adventureAction({action:'hook',id:fstate().sessions?.[selectedCharacter]?.id});};
+reelButton.onpointerdown=e=>{e.preventDefault();reelButton.setPointerCapture(e.pointerId);reelHeld=true;};
+for(const button of [hookButton,reelButton]){
+ button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>{reelHeld=false;hookPointerId=null;};
+ button.onkeydown=e=>{if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(button===hookButton&&!e.repeat)adventureAction({action:'hook',id:fstate().sessions?.[selectedCharacter]?.id});reelHeld=true;}};
+ button.onkeyup=()=>reelHeld=false;
+}
 window.addEventListener('blur',()=>reelHeld=false);window.addEventListener('pointerup',()=>reelHeld=false);window.addEventListener('pointercancel',()=>reelHeld=false);
 async function adventureAction(body){if(fishBusy)return;fishBusy=true;try{const r=await api('/api/game',body);if(r.game)receiveGame(r.game);if(r.notice)centerNotice(r.notice);$('fishing-feedback').textContent=r.notice||'Saved for both players.';return r;}catch(e){$('fishing-feedback').textContent=e.message;centerNotice(e.message);}finally{fishBusy=false;}}
 const fishIllustrations=new Map();function cachedFishArt(species){if(!fishIllustrations.has(species.id))fishIllustrations.set(species.id,fishDataURL(species));return fishIllustrations.get(species.id);}
 shopPanel.addEventListener('click',e=>{const b=e.target.closest('[data-sell-fish]');if(b)adventureAction({action:'sell-fish',id:b.dataset.sellFish});});
 const fishCard=(fish,buttons='')=>{const species=fishById(fish.species)||fish;return `<article class="fish-card"><img loading="lazy" src="${cachedFishArt(species)}" alt="${species.name}"><div><small>${['','COMMON','UNCOMMON','RARE','EPIC','MYTHIC','RELIC','ELDRITCH'][species.rarity]}</small><h3>${species.name}</h3><p>${fish.kg?fish.kg+' kg · '+fishPrice(fish)+' coins':species.minKg+'–'+species.maxKg+' kg'}</p>${fish.caughtAt?'<time>'+new Date(fish.caughtAt).toLocaleDateString()+'</time>':''}<div class="fish-actions">${buttons}</div></div></article>`;};
 function renderFishing(force=false){
- if(!fishingPanelOpen)return;const f=fstate(),session=f.sessions?.[selectedCharacter],bag=f.bags?.[selectedCharacter]||[],rod=fishingById(gameView.equipment?.[selectedCharacter]?.rod);
+ if(!fishingPanelOpen&&!fishingHUDActive)return;const f=fstate(),session=f.sessions?.[selectedCharacter],bag=f.bags?.[selectedCharacter]||[],rod=fishingById(gameView.equipment?.[selectedCharacter]?.rod);
  const signature=JSON.stringify([fishTab,fishTab==='cast'?[session?.id,session?.stage,rod?.id,f.holes.length]:[f.revision,gameView.wallets?.[selectedCharacter]]]);if(!force&&signature===fishSignature)return;fishSignature=signature;
  for(const b of fishingPanel.querySelectorAll('[data-fish-tab]'))b.setAttribute('aria-pressed',String(b.dataset.fishTab===fishTab));
- const content=$('fishing-content');
+ const content=fishTab==='cast'?$('fishing-tools'):$('fishing-content');
  if(fishTab==='cast'){
   const near=[...f.holes].sort((a,b)=>distanceTo(a.position)-distanceTo(b.position));if(!near.some(h=>h.id===selectedHole))selectedHole=near[0]?.id;
-  content.innerHTML=`<div class="fishing-guide"><strong>${rod?.name||'No rod equipped'}</strong><p>1 · Dig on empty ground<br>2 · Cast beside a hole<br>3 · HOOK when the float dips<br>4 · Hold REEL, release before the line turns red</p><button id="dig-hole">CHISEL · dig in front</button></div><label>Fishing hole <select id="hole-select">${near.map((h,i)=>'<option value="'+h.id+'" '+(selectedHole===h.id?'selected':'')+'>Hole '+(i+1)+' · '+Math.round(distanceTo(h.position))+' m away · '+(h.depth||1)+' m deep'+(h.water==='crimson'?' · CRIMSON':'')+'</option>').join('')}</select></label><div class="float-scene"><div id="fishing-float">◉</div><span id="bite-status"></span></div><div id="fight-meters"><label>Line tension <meter id="line-tension" min="0" max="1" low=".13" high=".88" optimum=".5"></meter></label><label>Landing progress <progress id="catch-progress" max="100" value="0"></progress></label></div><div class="fish-controls"><button id="cast-line">CAST</button><button id="hook-fish">HOOK</button><button id="reel-fish">HOLD TO REEL</button><button id="cancel-fish">CANCEL</button></div>${session?.stage==='caught'?fishCard(session.result,'<button id="inspect-catch">View catch · 3D</button>'):''}`;
-  if($('inspect-catch'))$('inspect-catch').onclick=()=>openCatchViewer(session.result);
-  const chisel=selectedChisel(gameView.inventories?.[selectedCharacter],gameView.equipment?.[selectedCharacter]?.tool);$('dig-hole').textContent=chisel?chisel.name+' · '+chisel.depth+' m · DIG':'Buy a chisel in SHOP';
-  $('dig-hole').onclick=()=>{const d=new THREE.Vector3(0,0,4).applyAxisAngle(new THREE.Vector3(0,1,0),charModel?.rotation.y||0);adventureAction({action:'dig',position:[Math.round(charRoot.position.x+d.x),0,Math.round(charRoot.position.z+d.z)]});};
-  $('hole-select').onchange=e=>selectedHole=e.target.value;$('cast-line').onclick=()=>adventureAction({action:'cast',hole:selectedHole});$('hook-fish').onclick=()=>adventureAction({action:'hook',id:fstate().sessions?.[selectedCharacter]?.id});$('cancel-fish').onclick=()=>adventureAction({action:'cancel-fishing'});
-  $('reel-fish').onpointerdown=e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);reelHeld=true;};$('reel-fish').onpointerup=$('reel-fish').onpointercancel=$('reel-fish').onlostpointercapture=()=>reelHeld=false;
+  content.innerHTML=`<button id="dig-hole">DIG</button><select id="hole-select" aria-label="Fishing hole">${near.map((h,i)=>'<option value="'+h.id+'" '+(selectedHole===h.id?'selected':'')+'>HOLE '+(i+1)+' · '+Math.round(distanceTo(h.position))+'m · depth '+(h.depth||1)+'m</option>').join('')}</select><button id="cast-line">CAST</button><button id="cancel-fish">CANCEL</button><button id="fish-bag">BAG</button><button id="fish-back">BACK</button>`;
+  $('dig-hole').onclick=()=>{const d=new THREE.Vector3(0,0,4).applyAxisAngle(new THREE.Vector3(0,1,0),gameplayHeading(charModel));adventureAction({action:'dig',position:[Math.round(charRoot.position.x+d.x),0,Math.round(charRoot.position.z+d.z)]});};
+  $('hole-select').onchange=e=>selectedHole=e.target.value;$('cast-line').onclick=()=>adventureAction({action:'cast',hole:selectedHole});$('cancel-fish').onclick=()=>adventureAction({action:'cancel-fishing'});
+  $('fish-bag').onclick=()=>openFishing('collection');$('fish-back').onclick=()=>{claimPanel('none');reflectPanels();};
  }else if(fishTab==='atlas')content.innerHTML=FISH.map(s=>fishCard(s)).join('');
  else if(fishTab==='collection')content.innerHTML=bag.length?bag.map(fish=>fishCard(fish,`<button data-sell-fish="${fish.id}">Sell · ${fishPrice(fish)}</button><span>Kept in collection</span>`)).join(''):'<p>Your catches are kept here automatically. Sell them or release them into a pond.</p>';
  else {const ponds=f.ponds.filter(p=>distanceTo(p.position)<Math.max(7,(p.radius||3)+4)&&charRoot.position.y<3);content.innerHTML=ponds.length?ponds.map(p=>`<section class="pond-collection"><h3>Glass aquarium · ${p.fish.length}/${p.capacity||30}</h3><button data-pond-destroy="${p.id}" ${p.fish.length?'disabled':''}>Remove empty pond</button><h4>Your collection · release into this pond</h4>${bag.map(f=>fishCard(f,`<button data-release="${f.id}" data-pond="${p.id}">Release into pond</button>`)).join('')}<h4>Swimming here</h4>${p.fish.map(f=>fishCard(f,f.owner===selectedCharacter?`<button data-retrieve="${f.id}" data-pond="${p.id}">Return to collection</button>`:'')).join('')}</section>`).join(''):'<p>Stand beside a pond to release or retrieve your fish. Purchase a pond in SHOP, then place it in BUILD.</p>';}
 }
 fishingPanel.addEventListener('click',e=>{const b=e.target.closest('[data-sell-fish],[data-release],[data-retrieve],[data-pond-destroy]');if(!b)return;adventureAction(b.dataset.sellFish?{action:'sell-fish',id:b.dataset.sellFish}:b.dataset.pondDestroy?{action:'pond-destroy',pond:b.dataset.pondDestroy}:{action:b.dataset.release?'pond-release':'pond-retrieve',id:b.dataset.release||b.dataset.retrieve,pond:b.dataset.pond});});
-setInterval(async()=>{const s=fstate().sessions?.[selectedCharacter];if(!connected||!s||!['waiting','fight'].includes(s.stage)||fishPollBusy||fishBusy)return;fishPollBusy=true;try{const r=await api('/api/game',{action:'reel',id:s.id,reeling:reelHeld&&fishingPanelOpen&&fishTab==='cast'});if(r.game)receiveGame(r.game);if(r.notice)centerNotice(r.notice);}catch{}finally{fishPollBusy=false;}},250);
+setInterval(async()=>{const s=fstate().sessions?.[selectedCharacter];if(!connected||!s||!['waiting','fight'].includes(s.stage)||fishPollBusy||fishBusy)return;fishPollBusy=true;try{const r=await api('/api/game',{action:'reel',id:s.id,reeling:reelHeld&&fishingHUDActive});if(r.game)receiveGame(r.game);if(r.notice)centerNotice(r.notice);}catch{}finally{fishPollBusy=false;}},250);
 
 const oldBuildPlace=$('build-place').onclick;
 const aquariumOptions=document.createElement('label');aquariumOptions.id='aquarium-options';aquariumOptions.hidden=true;aquariumOptions.textContent='Aquarium size ';const aquariumSelect=document.createElement('select');aquariumSelect.id='aquarium-size';for(const [id,tank] of Object.entries(AQUARIUM_SIZES)){const option=document.createElement('option');option.value=id;option.textContent=tank.label+' · '+tank.size.join(' × ')+' m · '+tank.price+' coins';aquariumSelect.append(option);}aquariumOptions.append(aquariumSelect);$('build-status').before(aquariumOptions);
@@ -101,7 +118,19 @@ const holeUniform={value:Array.from({length:40},()=>new THREE.Vector3(10000,1000
 function updateGroundHoles(holes){if(!groundPatched){const ground=scene.children.find(o=>o.isMesh&&o.geometry?.type==='CircleGeometry'&&o.geometry.parameters.radius===500);if(ground){groundPatched=true;ground.material.onBeforeCompile=shader=>{shader.uniforms.gardenHoles=holeUniform;shader.uniforms.gardenHoleCount=holeCount;shader.vertexShader='varying vec3 gardenWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ngardenWorld=(modelMatrix*vec4(position,1.0)).xyz;');shader.fragmentShader='varying vec3 gardenWorld;uniform vec3 gardenHoles[40];uniform int gardenHoleCount;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfor(int h=0;h<40;h++){if(h>=gardenHoleCount)break;vec2 delta=gardenWorld.xz-gardenHoles[h].xy;if(dot(delta,delta)<gardenHoles[h].z*gardenHoles[h].z)discard;}');};ground.material.needsUpdate=true;}}holeCount.value=Math.min(40,holes.length);holes.slice(0,40).forEach((h,i)=>holeUniform.value[i].set(h.position[0],h.position[2],h.radius-.03));}
 function updateAdventure(dt){
  if(!admitted)return;updateFishingPresentation(dt);const f=fstate(),s=f.sessions?.[selectedCharacter];document.body.dataset.fishingActive=String(!!fishingPoseFor(selectedCharacter));
- if(fishingPanelOpen&&fishTab==='cast'&&$('bite-status')){const waiting=s?.stage==='waiting',biting=waiting&&Date.now()>=s.biteAt&&Date.now()<=s.biteAt+s.hookWindow;$('bite-status').textContent=biting?'BITE! HOOK NOW':waiting?'Waiting for a bite…':s?.stage==='fight'?'Hold to reel · release to ease tension':s?.stage==='escaped'?s.result:s?.stage==='caught'?'A new catch for your collection':'Ready to cast';$('fishing-float').classList.toggle('biting',!!biting);$('line-tension').value=s?.tension||0;$('catch-progress').value=s?.progress||0;$('cast-line').disabled=!!s&&['waiting','fight'].includes(s.stage);$('hook-fish').disabled=!waiting;$('reel-fish').disabled=s?.stage!=='fight';}
+ if(fishingHUDActive){
+  const waiting=s?.stage==='waiting',fight=s?.stage==='fight',biting=waiting&&Date.now()>=s.biteAt&&Date.now()<=s.biteAt+s.hookWindow;
+  $('bite-status').textContent=biting?'BITE! HOLD HOOK':waiting?'Waiting for a bite…':fight?(s.tension>.7?'RELEASE · ease the line':'HOLD · bring it closer'):s?.stage==='escaped'?s.result:s?.stage==='caught'?'Catch landed!':'DIG · choose a hole · CAST';
+  $('line-tension').value=s?.tension||0;$('catch-progress').value=s?.progress||0;
+  $('cast-line').disabled=waiting||fight||!selectedHole;$('dig-hole').disabled=waiting||fight;$('hole-select').disabled=waiting||fight;
+  const holdingHook=hookPointerId!==null&&hookButton.hasPointerCapture(hookPointerId);hookButton.hidden=!biting&&!(fight&&holdingHook);hookButton.textContent=fight?'RELEASE':'HOOK';reelButton.hidden=!fight||holdingHook;reelButton.textContent=reelHeld?'RELEASE':'HOLD';
+  // Keep the hook beside the avatar, away from the bottom movement controls.
+  const point=charRoot.position.clone().add(new THREE.Vector3(.9,1.7,0)).project(camera),w=innerWidth,h=innerHeight;
+  const action=$('world-fishing-action');action.hidden=!(biting||fight)||catchViewerOpen;
+  action.style.left=Math.max(h<500?100:12,Math.min(w-(h<500?210:132),(point.x*.5+.5)*w+22))+'px';
+  action.style.top=Math.max(145,Math.min(h-240,(-point.y*.5+.5)*h))+'px';
+ }
+
  for(const m of waterFeatures.values())m.userData.water.material.uniforms.time.value=globalTime;
  for(const m of pondFish.values()){m.visible=distanceTo(m.userData.pond.position)<40;if(!m.visible)continue;const p=m.userData.pond,seed=m.userData.seed,a=globalTime*.16+seed,dimensions=p.size||[6,2.1,4],r=.45+(seed%1)*.4;m.position.set(p.position[0]+Math.cos(a)*(dimensions[0]/2-.65)*r,dimensions[1]*(.3+(seed%1)*.45),p.position[2]+Math.sin(a)*(dimensions[2]/2-.45)*r);if(m.userData.throwStart){m.userData.throwAge+=dt;const t=Math.min(1,m.userData.throwAge/.9);m.position.lerpVectors(m.userData.throwStart,m.position,t);m.position.y+=Math.sin(t*Math.PI)*1.4;if(t===1)delete m.userData.throwStart;}m.rotation.y=-a+Math.PI/2;const attr=m.userData.mesh.geometry.attributes.position,base=m.userData.base;for(let i=0;i<attr.count;i++){const x=base[i*3];attr.setY(i,base[i*3+1]+Math.sin(globalTime*5+x*7+seed)*Math.max(0,-x+.1)*.12);}attr.needsUpdate=true;}
  for(const m of weaponDropMeshes.values()){m.children[0].rotation.y+=dt;m.children[0].position.y=Math.sin(globalTime*2)*.12;}

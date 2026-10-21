@@ -17,7 +17,7 @@ try{
  await a.locator('#fishing-open').click();await a.locator('#hole-select').selectOption(hole.id);await a.locator('#cast-line').click();
  await a.waitForFunction(()=>JSON.parse(render_game_to_text()).fishing.sessions.Ely?.stage==='waiting');let s=(await state(a)).fishing.sessions.Ely;
  await a.evaluate(()=>reletter_test.step(100));await b.evaluate(()=>reletter_test.step(100));const waitPose=await a.evaluate(poseSample);assert.ok(waitPose.grip<.001);await frame(a,'waiting');
- await a.waitForTimeout(Math.max(1,s.biteAt-Date.now()+50));await a.evaluate(()=>reletter_test.step(110));const bitePose=await a.evaluate(poseSample);await a.locator('#hook-fish').click();
+ await a.waitForTimeout(Math.max(1,s.biteAt-Date.now()+50));await a.evaluate(()=>reletter_test.step(110));const bitePose=await a.evaluate(poseSample);const hookBox=await a.locator('#hook-fish').boundingBox();await a.mouse.move(hookBox.x+hookBox.width/2,hookBox.y+hookBox.height/2);await a.mouse.down();await a.waitForTimeout(320);await a.evaluate(()=>reletter_test.step(16));assert.equal(await a.locator('#hook-fish').isVisible(),true,'holding hook survives transition to fight');await a.mouse.up();await a.evaluate(()=>reletter_test.step(16));
  await a.waitForFunction(()=>JSON.parse(render_game_to_text()).fishing.sessions.Ely.stage==='fight');console.log('Waiting/bite hand anchor pass; starting timed fight');
  let held=false;for(let i=0;i<360;i++){s=(await state(a)).fishing.sessions.Ely;if(s.stage!=='fight')break;const hold=s.tension<.65;if(hold!==held){if(hold){await a.locator('#reel-fish').scrollIntoViewIfNeeded();const r=await a.locator('#reel-fish').boundingBox();await a.mouse.move(r.x+r.width/2,r.y+r.height/2);await a.mouse.down();}else await a.mouse.up();held=hold;}await a.evaluate(()=>reletter_test.step(250));await a.waitForTimeout(260);}
  await a.mouse.up();s=(await state(a)).fishing.sessions.Ely;assert.equal(s.stage,'caught',JSON.stringify(s));
@@ -27,7 +27,7 @@ try{
  await a.screenshot({path:'output/deep-fishing/catch-desktop.png'});await a.waitForTimeout(900);assert.equal((await state(a)).catchPresentation.open,true);await a.locator('#catch-stage').click();await a.locator('#catch-viewer').waitFor({state:'hidden'});
  await b.evaluate(fish=>reletter_test.showCatch(fish),s.result);await b.waitForTimeout(300);await b.screenshot({path:'output/deep-fishing/catch-phone.png'});await b.locator('#catch-stage').tap();await b.locator('#catch-viewer').waitFor({state:'hidden'});
  console.log('Real catch, landing, rotating modal, owner-only popup and touch minimize pass');
- await a.locator('#fishing-close').click();
+ await a.locator('#fish-back').click();
  // Deterministic visual fixtures only in the local browser; no fake rewards enter the server.
  await a.evaluate(()=>{const t=reletter_test,w=t.world(),depths=[1,3,7,14,28,28],holes=depths.map((depth,i)=>({id:'depth-'+i,position:[i*4,0,0],radius:1.5,depth,water:i===5?'crimson':'normal'}));t.receiveSnapshot('game',{worldRevision:999999,fishing:{revision:999999,holes,ponds:[],bags:{},sessions:{}}});t.explore([10,0,8]);t.step(32);w.camera.position.set(10,18,12);w.camera.lookAt(10,0,0);t.renderer.render(w.plantRoot.parent,w.camera);});
  const shapes=await a.evaluate(()=>[...reletter_test.world().waterFeatures.values()].map(g=>({depth:g.userData.depth,children:g.children.length,shade:g.userData.water.material.uniforms.depthShade.value})));

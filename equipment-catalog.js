@@ -19,3 +19,10 @@ EQUIPMENT.push(...ranks.map((rank,i)=>({id:'whip-'+(i+1),name:rank+' Thornweave'
 const gardenMelee=[['swatter','Fly Swatter','#9be6dc',1.3,3.4,630],['pan','Frying Pan','#e9bc7b',3,3.1,1120],['planter','Potted Plant','#e2a8d7',3.8,3.5,1350],['palm','Coconut Palm','#97d59b',4.5,5.2,1500]];
 for(const [family,name,color,damage,range,cooldown] of gardenMelee)EQUIPMENT.push(...ranks.map((rank,i)=>({id:family+'-'+(i+1),name:rank+' '+name,slot:'weapon',family,color,tier:i+1,price:[12,30,65,110,180][i],damage:+(damage+i*.65).toFixed(2),chargeDamage:+(damage*2.2+i).toFixed(2),range:range*(1+i*.35),chargeRange:2+i*.3,radius:1.2+i*.45,cooldown:cooldown-i*20})));
 export const equipmentById=id=>id==='water'?DEFAULT_WEAPON:EQUIPMENT.find(x=>x.id===id);
+
+// Shared client/server cadence and rank identity for rapid, buffered melee chains.
+for(const item of EQUIPMENT)if(['saber','whip','swatter','pan','planter','palm'].includes(item.family)){
+ item.color=['#73e5ff','#73ffc1','#b68aff','#ffae55','#ff78d9'][item.tier-1];
+ item.cooldown=({saber:300,whip:320,swatter:260,pan:340,planter:360,palm:380}[item.family])-(item.tier-1)*15;
+ item.range=+(item.range*1.2).toFixed(2);item.radius=+(item.radius*1.3).toFixed(2);
+}

@@ -1,6 +1,6 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
 import {blockSize as footprint} from './build-shapes.js';
-import {sampleMeleePose,meleeDuration} from './melee-motion.js';
+import {sampleMeleePose,meleeDuration,meleeFamilies} from './melee-motion.js';
 import {EQUIPMENT,DEFAULT_WEAPON,equipmentById} from './equipment-catalog.js';
 let pondBuildMode=false,fishingPanelOpen=false, imageViewerOpen=false,catchViewerOpen=false;
 let selectedCharacter='Ely', admitted=false, selfId=null, connected=false, onlineSocket=null;
@@ -68,7 +68,7 @@ function updateOnline(dt){
   for(const p of remotePlayers.values()){
     if(!p.model&&originalCharacterTemplate){p.model=SkeletonUtils.clone(originalCharacterTemplate);tintModel(p.model,p.character);p.root.add(p.model);p.mixer=new THREE.AnimationMixer(p.model);p.action=null;}
     if(!p.state)continue;
-    const target=new THREE.Vector3(...p.state.position);p.root.position.lerp(target,Math.min(1,dt*12));if(p.model)p.model.rotation.y=p.state.rotation;p.root.visible=p.state.visible;
+    const target=new THREE.Vector3(...p.state.position);p.root.position.lerp(target,Math.min(1,dt*12));if(p.model)p.model.rotation.set(0,p.state.rotation,0);p.root.visible=p.state.visible;
     if(p.previous&&target.distanceTo(p.previous)>.02)p.movingUntil=performance.now()+180;const moving=performance.now()<(p.movingUntil||0);p.previous=target;
     const clip=p.state.phase===PHASE.DRINK?clipDrink:p.state.phase===PHASE.FALL?clipFall:moving?clipWalk:clipIdle;
     if(clip&&p.mixer&&p.clip!==clip){p.action?.fadeOut(.2);p.action=p.mixer.clipAction(clip);p.action.reset().fadeIn(.2).play();p.clip=clip;}p.mixer?.update(dt);
@@ -128,7 +128,7 @@ document.addEventListener('visibilitychange',()=>{if(window.RELETTER_TRANSPORT!=
 let lastOnlineState='';
 setInterval(()=>{
   if(!connected||!admitted)return;
-  const state={position:charRoot.position.toArray(),rotation:charModel?.rotation.y||0,visible:charRoot.visible,phase,paused:monstersPausedForGarden()||buildPanelOpen};
+  const state={position:charRoot.position.toArray(),rotation:gameplayHeading(charModel),visible:charRoot.visible,phase,paused:monstersPausedForGarden()||buildPanelOpen};
   if(onlineSocket?.readyState===1){const serialized=JSON.stringify(state);if(serialized!==lastOnlineState||(gameView.boss?.hp>0)){onlineSocket.send(JSON.stringify({type:'state',data:state}));lastOnlineState=serialized;}}
   else api('/api/state',state).catch(()=>{});
 },100);
@@ -197,7 +197,7 @@ function beginPlantReply(entry){
 }
 let monsterInteractionWasPaused=false,monsterResumeGraceUntil=0;
 function monstersPausedForGarden(){
- const paused=admitted&&(catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
+ const paused=admitted&&(fishingHUDActive||catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
  if(paused){monsterInteractionWasPaused=true;return true;}
  if(monsterInteractionWasPaused){monsterInteractionWasPaused=false;monsterResumeGraceUntil=performance.now()+1200;}
  return performance.now()<monsterResumeGraceUntil;
@@ -215,10 +215,10 @@ function positionPlantLabel(){
 }
 new ResizeObserver(positionPlantLabel).observe(plantLabel);
 canvas.addEventListener('pointermove',e=>{
-  if(!admitted||ptrs.size||['chat','write','search'].includes(document.body.dataset.panel)||Date.now()-hoverAt<50)return;hoverAt=Date.now();
+  if(!admitted||fishingHUDActive||ptrs.size||['chat','write','search','shop','build','fishing'].includes(document.body.dataset.panel)||Date.now()-hoverAt<50)return;hoverAt=Date.now();
   hoverPoint={x:e.clientX,y:e.clientY};const rect=canvas.getBoundingClientRect();
   raycaster.setFromCamera({x:(e.clientX-rect.left)/rect.width*2-1,y:-(e.clientY-rect.top)/rect.height*2+1},camera);
-  const hits=raycaster.intersectObjects(plantRoot.children,true);let entry=null;
+  const hits=raycaster.intersectObjects(plantEntries.filter(plantWithinReach).map(p=>p.mesh),true);let entry=null;
   for(const hit of hits){let o=hit.object;while(o&&o.parent!==plantRoot)o=o.parent;entry=plantEntries.find(p=>p.mesh===o);if(entry)break;}
   if(entry){clearTimeout(labelHideTimer);if(activeLabelEntry!==entry)showPlantLabel(entry);positionPlantLabel();}
   else delayHideLabel();
@@ -241,6 +241,7 @@ function reflectPanels(){const open=typeof fishingPanelOpen!=='undefined'&&fishi
 function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').setAttribute('aria-expanded',String(!small));}
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();$('online-panel').classList.remove('chatting');setHistorySmall(true);fitKeyboard();reflectPanels();}
 function claimPanel(name){
+ if(name!=='fishing'&&typeof fishingHUDActive!=='undefined'){fishingHUDActive=false;reelHeld=false;syncFishingHUD();}
  if(name!=='fishing'&&typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen){fishingPanelOpen=false;fishingPanel.hidden=true;reelHeld=false;}
  if(name!=='shop'&&shopPanelOpen){shopPanelOpen=false;shopPanel.hidden=true;}
  if(name!=='build'&&buildPanelOpen){stopPaint();buildPanelOpen=false;buildPanel.hidden=true;buildGhost.visible=false;}
@@ -276,7 +277,7 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>keysDown.clear());
 window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
-if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,showCatch:fish=>openCatchViewer(fish),receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;if(charModel)charModel.visible=true;isJumping=false;charVelY=0;autoWalkPhase=false;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods,fishPoseStates,catchView:catchViewState}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
+if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,showCatch:fish=>openCatchViewer(fish),receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],plantWithinReach,showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e,true);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;if(charModel)charModel.visible=true;isJumping=false;charVelY=0;autoWalkPhase=false;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods,fishPoseStates,catchView:catchViewState}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
 window.reletterPlantScreenPoint=()=>{
   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   for(const entry of [...plantEntries].reverse()){
@@ -367,15 +368,35 @@ let waterChargeStart=null,waterChargeSource=null;
 const waterButton=$('water-gun');waterButton.style.touchAction='none';waterButton.setAttribute('aria-label','Hold to charge water, release to spray');
 function waterCharge(){return waterChargeStart===null?0:Math.min(1,(performance.now()-waterChargeStart)/1500);}
 function cancelWaterCharge(){waterChargeStart=null;waterChargeSource=null;waterButton.textContent=currentWeapon().id==='water'?'WATER':'ATTACK';waterButton.style.removeProperty('background');}
-function beginWaterCharge(source){if(waterChargeStart!==null||shooting||!admitted||!connected||phase!==PHASE.EXPLORE)return;waterChargeStart=performance.now();waterChargeSource=source;}
+function beginWaterCharge(source){if(waterChargeStart!==null||!admitted||!connected||phase!==PHASE.EXPLORE)return;waterChargeStart=performance.now();waterChargeSource=source;}
 function releaseWaterCharge(source){if(waterChargeSource!==source)return;const charge=waterCharge();cancelWaterCharge();shootWater(charge);}
+// Read the unposed orientation: cosmetic spins must never become gameplay aim.
+function gameplayHeading(model){
+ if(!model)return 0;
+ const saved=meleePoseRestore.find(([object])=>object===model)?.[1]||fishingPoseRestore.find(v=>v.object===model)?.quaternion||model.quaternion;
+ const forward=new THREE.Vector3(0,0,1).applyQuaternion(saved);
+ return Math.atan2(forward.x,forward.z);
+}
+let queuedMelee=null,attackReadyAt=0,attackQueueTimer;
+function flushAttackQueue(){
+ clearTimeout(attackQueueTimer);
+ if(!queuedMelee)return;
+ if(performance.now()>queuedMelee.expires||queuedMelee.weapon!==currentWeapon().id||!connected||phase!==PHASE.EXPLORE||document.hidden||fishingHUDActive||document.body.dataset.panel!=='none'){queuedMelee=null;return;}
+ if(shooting||performance.now()<attackReadyAt){attackQueueTimer=setTimeout(flushAttackQueue,Math.max(16,attackReadyAt-performance.now()));return;}
+ const next=queuedMelee;queuedMelee=null;shootWater(next.charge);
+}
 async function shootWater(charge=0){
- if(!admitted||!connected||phase!==PHASE.EXPLORE||shooting)return;
- shooting=true;waterButton.disabled=true;
- // The model faces local +Z. Camera orientation and other players never alter aim.
- const direction=['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family)?new THREE.Vector3(0,0,1).applyQuaternion(charModel.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize():rangedAim().direction;
- if(!['saber','whip','swatter','pan','planter','palm'].includes(currentWeapon().family))charModel.rotation.y=Math.atan2(direction.x,direction.z);
- try{await api('/api/game',{action:'shoot',direction:direction.toArray(),charge});}catch(e){message(e.message);}finally{setTimeout(()=>{shooting=false;waterButton.disabled=false;},currentWeapon().cooldown+40);}
+ if(!admitted||!connected||phase!==PHASE.EXPLORE)return;
+ const weapon=currentWeapon(),melee=meleeFamilies.includes(weapon.family);
+ if(shooting||performance.now()<attackReadyAt){
+  if(melee){queuedMelee={charge,weapon:weapon.id,expires:performance.now()+800};flushAttackQueue();}return;
+ }
+ shooting=true;const started=performance.now();attackReadyAt=started+weapon.cooldown+30;
+ const heading=gameplayHeading(charModel),direction=melee?new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)):rangedAim().direction;
+ if(!melee){restoreFishingPoses();restoreMeleePoses();charModel.rotation.set(0,Math.atan2(direction.x,direction.z),0);}
+ try{await api('/api/game',{action:'shoot',direction:direction.toArray(),charge});}
+ catch(e){if(!/refilling/i.test(e.message))message(e.message);}
+ finally{shooting=false;flushAttackQueue();}
 }
 waterButton.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();waterButton.setPointerCapture(e.pointerId);beginWaterCharge('pointer');});
 waterButton.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();releaseWaterCharge('pointer');});
@@ -466,7 +487,7 @@ const buildPanel=document.createElement('section');buildPanel.id='build-panel';b
 
 function blockGeometry(b){return b.shape==='cylinder'?new THREE.CylinderGeometry(footprint(b)[0]/2,footprint(b)[0]/2,footprint(b)[1],32):new THREE.BoxGeometry(...footprint(b));}
 function updateBuildGhost(){if(pondBuildMode){previewAquarium();buildGhost.position.set(buildPosition[0],0,buildPosition[2]);return;}const block={shape:buildShape,rotation:buildRotation,size:buildSize};buildGhost.material.color.set(buildColor);buildGhost.geometry.dispose();buildGhost.geometry=blockGeometry(block);buildGhost.position.set(buildPosition[0],buildPosition[1]+buildSize[1]/2,buildPosition[2]);for(const btn of buildPanel.querySelectorAll('[data-shape]'))btn.setAttribute('aria-pressed',String(btn.dataset.shape===buildShape));$('build-status').textContent=buildShape+' · '+buildPosition.join(', ');}
-function buildInFront(){const d=new THREE.Vector3(0,0,1).applyAxisAngle(new THREE.Vector3(0,1,0),charModel?.rotation.y||0);buildPosition=[Math.round((charRoot.position.x+d.x*5)/2)*2,Math.max(0,Math.floor(charRoot.position.y/2)*2),Math.round((charRoot.position.z+d.z*5)/2)*2];updateBuildGhost();}
+function buildInFront(){const d=new THREE.Vector3(0,0,1).applyAxisAngle(new THREE.Vector3(0,1,0),gameplayHeading(charModel));buildPosition=[Math.round((charRoot.position.x+d.x*5)/2)*2,Math.max(0,Math.floor(charRoot.position.y/2)*2),Math.round((charRoot.position.z+d.z*5)/2)*2];updateBuildGhost();}
 function openBuild(){if(!admitted)return;if(phase!==PHASE.EXPLORE){message('Return to the garden to build');return;}claimPanel('build');buildPanelOpen=true;buildPanel.hidden=false;buildGhost.visible=true;buildInFront();reflectPanels();}
 buildButton.onclick=()=>{if(buildPanelOpen){claimPanel('none');reflectPanels();}else openBuild();};$('build-close').onclick=()=>{claimPanel('none');reflectPanels();};$('build-front').onclick=buildInFront;
 $('build-rotate').onclick=()=>{buildRotation=1-buildRotation;updateBuildGhost();};for(const b of buildPanel.querySelectorAll('[data-shape]'))b.onclick=()=>{buildShape=b.dataset.shape;buildSize[0]=buildShape==='bar'?6:2;buildSize[2]=2;$('build-width').value=buildSize[0];$('build-depth').value=2;updateBuildGhost();};
@@ -620,7 +641,7 @@ function updateEquipmentEffects(dt){
    if(['saber','whip','swatter','pan','planter','palm'].includes(weapon?.family)){const blade=makeHeldWeapon(weapon);aura.add(blade);aura.userData.blade=blade;}
    scene.add(aura);equipmentAuras.set(key,aura);
   }
-  if(aura){aura.position.copy(p.root.position);aura.rotation.y=p.model?.rotation.y||0;if(shield){const state=gameView.shields?.[key],ready=!state||Date.now()-state.lastHit>=shield.recharge*1000,remaining=ready?1:Math.max(0,1-state.used/shield.capacity);aura.userData.bubble.material.uniforms.pulse.value=remaining*(.8+Math.sin(globalTime*2)*.2);aura.userData.ring.material.opacity=remaining*.5;}}
+  if(aura){aura.position.copy(p.root.position);aura.rotation.y=gameplayHeading(p.model);if(shield){const state=gameView.shields?.[key],ready=!state||Date.now()-state.lastHit>=shield.recharge*1000,remaining=ready?1:Math.max(0,1-state.used/shield.capacity);aura.userData.bubble.material.uniforms.pulse.value=remaining*(.8+Math.sin(globalTime*2)*.2);aura.userData.ring.material.opacity=remaining*.5;}}
  }
  for(const [key,aura] of equipmentAuras)if(!active.has(key)){scene.remove(aura);aura.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});equipmentAuras.delete(key);}
 }
@@ -662,23 +683,25 @@ function slashRibbon(color,opacity){
  const mesh=new THREE.Mesh(geo,material);mesh.frustumCulled=false;return mesh;
 }
 function showMeleeAttack(data){
- const combo=Math.max(0,Math.min(6,data.combo||0)),charged=combo===6,group=new THREE.Group(),color=data.red?'#f62e59':data.color||'#a77bff';group.position.fromArray(data.origin);group.rotation.y=Math.atan2(data.direction[0],data.direction[2]);group.name=(data.family==='whip'?'Whip ':'Saber ')+slashNames[combo];
+ const combo=Math.max(0,Math.min(6,data.combo||0)),charged=combo===6,group=new THREE.Group(),color=data.color||'#a77bff';group.position.fromArray(data.origin);group.rotation.y=Math.atan2(data.direction[0],data.direction[2]);group.name=(data.family==='whip'?'Whip ':'Saber ')+slashNames[combo];
  const patterns=[[[.7,-1.25,1.25,0]], [[-.7,1.25,-1.25,0]], [[.08,-1.45,1.45,0]], [[1.45,-1.3,1.3,0]], [[.8,-1.3,1.3,0],[-.8,1.3,-1.3,.22]], [[.18,-1.5,1.5,0],[-.25,1.5,-1.5,.2]], [[.75,-1.5,1.5,0],[-.75,1.5,-1.5,.18],[.02,-1.6,1.6,.36]]];
- const strokes=patterns[combo].map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay+meleeDuration(data.family,combo)*(['pan','planter','palm'].includes(data.family)?.33:.24),lift:0,ribbon,filament};});
+ const strokes=patterns[combo].map(([tilt,start,end,delay],i)=>{const ribbon=slashRibbon(color,.52),filament=slashRibbon(i%2?'#ffd4ec':'#c9deff',.36);group.add(ribbon,filament);return {tilt: data.family==='whip'?tilt*1.3:tilt,start,end,delay:delay*.35+meleeDuration(data.family,combo)*(['pan','planter','palm'].includes(data.family)?.33:.24),lift:0,ribbon,filament};});
  const tier=equipmentById(data.weapon)?.tier||1;const count=(charged?150:80)+tier*45,geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*3),3));const sparks=new THREE.Points(geometry,new THREE.PointsMaterial({map:equipmentGlow,color,size:charged?.11:.07,transparent:true,opacity:.6,depthWrite:false,blending:THREE.AdditiveBlending}));sparks.frustumCulled=false;group.add(sparks);
- const sigil=new THREE.Group();sigil.position.y=-.92;const radius=data.range*.8;for(let j=0;j<3;j++){const ring=new THREE.Mesh(new THREE.RingGeometry(radius*(.45+j*.16),radius*(.45+j*.16)+.014,96),glowMaterial(color,.28));ring.rotation.x=-Math.PI/2;sigil.add(ring);}
+ const sigil=new THREE.Group();sigil.position.y=-.92;const radius=data.range*.8;for(let j=0;j<3;j++){const ring=new THREE.Mesh(new THREE.RingGeometry(radius*(.45+j*.16),radius*(.45+j*.16)+.018+tier*.009,96),glowMaterial(color,.28));ring.rotation.x=-Math.PI/2;sigil.add(ring);}
  const vertices=[];for(let i=0;i<12;i++){const a=i*Math.PI/6,r=radius*.8;vertices.push(Math.cos(a)*r,0,Math.sin(a)*r,Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.13)*(r-.18),0,Math.sin(a+.13)*(r-.18),Math.cos(a+.21)*r,0,Math.sin(a+.21)*r);}
  const runeGeo=new THREE.BufferGeometry();runeGeo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));sigil.add(new THREE.LineSegments(runeGeo,new THREE.LineBasicMaterial({color,transparent:true,opacity:.45,depthWrite:false,blending:THREE.AdditiveBlending})));group.add(sigil);
  const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:equipmentGlow,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));flash.position.set(0,0,Math.min(radius,2.5));group.add(flash);scene.add(group);
- meleeEffects.push({group,strokes,sparks,sigil,flash,combo,data,age:0,radius:data.range,duration:meleeDuration(data.family,combo)+.35});
+ const waves=[];for(let i=0;i<Math.ceil(tier/2);i++){const wave=new THREE.Mesh(new THREE.RingGeometry(.84,1,48,1,.15,Math.PI*1.65),glowMaterial(i%2?'#fff0d2':color,.5));wave.rotation.z=combo*.65+i*.9;group.add(wave);waves.push(wave);}
+ meleeEffects.push({group,strokes,sparks,sigil,flash,waves,combo,data,age:0,radius:data.range,duration:meleeDuration(data.family,combo)+.35});
 }
 function updateMeleeEffects(dt){
  for(let j=meleeEffects.length-1;j>=0;j--){const fx=meleeEffects[j];fx.age+=dt;const life=fx.age/fx.duration;
-  for(const stroke of fx.strokes){const swing=THREE.MathUtils.clamp((fx.age-stroke.delay)/.46,0,1),head=1-Math.pow(1-swing,3),fade=Math.max(0,1-Math.max(0,fx.age-stroke.delay-.4)/.42);
-   for(const [mesh,thin] of [[stroke.ribbon,false],[stroke.filament,true]]){const attr=mesh.geometry.attributes.position;for(let i=0;i<=64;i++){const t=i/64,progress=Math.max(0,head-(1-t)*.48),taper=Math.sin(Math.PI*t)*(.3+fx.data.charge*.25),r=fx.radius*(thin?1.025:1);const outer=slashPoint(stroke,progress,r),inner=slashPoint(stroke,progress,r-(thin?.025:taper));attr.setXYZ(i*2,...inner.toArray());attr.setXYZ(i*2+1,...outer.toArray());}attr.needsUpdate=true;mesh.material.uniforms.fade.value=(thin?.32:.5)*fade*(swing>0?1:0);mesh.material.uniforms.time.value=fx.age;}
+  for(const stroke of fx.strokes){const swing=THREE.MathUtils.clamp((fx.age-stroke.delay)/(meleeDuration(fx.data.family,fx.combo)*.4),0,1),head=1-Math.pow(1-swing,3),fade=Math.max(0,1-Math.max(0,fx.age-stroke.delay-.14)/.32);
+   for(const [mesh,thin] of [[stroke.ribbon,false],[stroke.filament,true]]){const attr=mesh.geometry.attributes.position;for(let i=0;i<=64;i++){const t=i/64,progress=Math.max(0,head-(1-t)*.48),taper=Math.sin(Math.PI*t)*(.5+(equipmentById(fx.data.weapon)?.tier||1)*.12+fx.data.charge*.35),r=fx.radius*(thin?1.025:1);const outer=slashPoint(stroke,progress,r),inner=slashPoint(stroke,progress,r-(thin?.025:taper));attr.setXYZ(i*2,...inner.toArray());attr.setXYZ(i*2+1,...outer.toArray());}attr.needsUpdate=true;mesh.material.uniforms.fade.value=(thin?.32:.5)*fade*(swing>0?1:0);mesh.material.uniforms.time.value=fx.age;}
   }
-  const attr=fx.sparks.geometry.attributes.position;for(let i=0;i<attr.count;i++){const stroke=fx.strokes[i%fx.strokes.length],t=i/attr.count,age=Math.max(0,fx.age-stroke.delay-t*.25),point=slashPoint(stroke,t,fx.radius*(.8+.2*Math.sin(i*7)));point.x+=Math.sin(i*12.1)*age*.8;point.z+=Math.cos(i*4.7)*age*.8;point.y+=Math.sin(i*2.3)*age-1.4*age*age;attr.setXYZ(i,...point.toArray());}attr.needsUpdate=true;fx.sparks.material.opacity=Math.max(0,Math.sin(Math.min(1,life)*Math.PI)*.55);
-  fx.sigil.rotation.y=fx.age*(fx.combo%2?-.5:.5);fx.sigil.scale.setScalar(.85+Math.sin(Math.min(1,life)*Math.PI)*.18);fx.sigil.traverse(o=>{if(o.material)o.material.opacity=Math.sin(Math.min(1,life)*Math.PI)*(fx.combo===6?.42:.12);});
+  const attr=fx.sparks.geometry.attributes.position;for(let i=0;i<attr.count;i++){const stroke=fx.strokes[i%fx.strokes.length],t=i/attr.count,age=Math.max(0,fx.age-stroke.delay-t*.25),point=slashPoint(stroke,t,fx.radius*(.8+.2*Math.sin(i*7)));point.x+=Math.sin(i*12.1)*age*.8;point.z+=Math.cos(i*4.7)*age*.8;point.y+=(1.4+(i%7)*.23)*age+age*age*.5;attr.setXYZ(i,...point.toArray());}attr.needsUpdate=true;fx.sparks.material.opacity=Math.max(0,Math.sin(Math.min(1,life)*Math.PI)*.55);
+  for(let i=0;i<fx.waves.length;i++){const t=Math.max(0,Math.min(1,(fx.age-i*.055)/.48)),wave=fx.waves[i];wave.position.set(0,.2,fx.radius*t*.85);wave.scale.setScalar((.35+t*.65)*Math.min(3.8,fx.radius*.35));wave.material.opacity=Math.sin(t*Math.PI)*.52;wave.rotation.z+=dt*(i%2?-1.4:1.4);}
+  fx.sigil.rotation.y=fx.age*(fx.combo%2?-.5:.5);fx.sigil.scale.setScalar(.85+Math.sin(Math.min(1,life)*Math.PI)*.18);fx.sigil.traverse(o=>{if(o.material)o.material.opacity=Math.sin(Math.min(1,life)*Math.PI)*(fx.combo===6?.6:.28);});
   const impact=Math.max(0,1-Math.abs(fx.age-meleeDuration(fx.data.family,fx.combo)*.5)*8);fx.flash.material.opacity=impact*(fx.data.hit?.5:.16);fx.flash.scale.setScalar(.3+impact*(fx.combo===6?2:1));
   if(life>=1){scene.remove(fx.group);fx.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});meleeEffects.splice(j,1);}
  }
@@ -687,7 +710,7 @@ const meleePositionRestore=[];
 function restoreMeleePoses(){for(const [object,position] of meleePositionRestore)object.position.copy(position);meleePositionRestore.length=0;for(const [bone,quaternion] of meleePoseRestore)bone.quaternion.copy(quaternion);meleePoseRestore.length=0;}
 function applyMeleePoses(){
  const players=[{character:selectedCharacter,model:charModel},...[...remotePlayers.values()]];
- for(const player of players){if(!player.model)continue;const fx=[...meleeEffects].reverse().find(f=>f.data.shooter===player.character),aura=equipmentAuras.get(player.character),blade=aura?.userData.blade;
+ for(const player of players){if(!player.model)continue;const fx=[...meleeEffects].reverse().find(f=>f.data.shooter===player.character&&f.age<meleeDuration(f.data.family,f.combo)),aura=equipmentAuras.get(player.character),blade=aura?.userData.blade;
   if(fishingPoseFor(player.character)){if(blade)blade.visible=false;continue;}
   if(fx){const pose=sampleMeleePose(fx.data.family,fx.combo,fx.age),model=player.model;
    meleePositionRestore.push([model,model.position.clone()]);const offset=new THREE.Vector3(...pose.offset).applyAxisAngle(new THREE.Vector3(0,1,0),model.rotation.y);model.position.add(offset);

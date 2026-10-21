@@ -26,7 +26,7 @@ try{
   for(const [width,height] of [[1280,800],[580,486],[960,540],[640,480],[390,844],[320,568],[844,390],[390,320]]){
    await page.setViewportSize({width,height});
    for(const action of ['shop','fishing','chat','search','write','build','shop','chat']){
-    await page.locator('#'+{chat:'chat-open',search:'search-btn',write:'write-open',build:'build-open',shop:'shop-open',fishing:'fishing-open'}[action]).click();await check(action);
+    await page.locator('#'+{chat:'chat-open',search:'search-btn',write:'write-open',build:'build-open',shop:'shop-open',fishing:'fishing-open'}[action]).click();await check(action==='fishing'?'none':action);if(action==='fishing'){assert.equal(await page.locator('#fishing-panel').isVisible(),false);await page.locator('#fish-back').click();}
     if(action==='write'){await page.locator('#drawing').scrollIntoViewIfNeeded();await page.locator('#upload-av').setInputFiles({name:'oversized.webm',mimeType:'video/webm',buffer:Buffer.alloc(5*1024*1024+1)});assert.ok((await page.locator('#media-error').textContent()).includes('5 MB'));}
     if(action==='chat'){await page.waitForFunction(()=>{const e=document.querySelector('#chat-log');return e.scrollHeight-e.clientHeight-e.scrollTop<3;});await page.locator('#chat-input').fill('No overlapping controls');}
    }
