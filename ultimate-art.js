@@ -1,0 +1,156 @@
+// Original sculpted spell art. All fine markings are shaded on the GPU; no texture downloads.
+// +Z is forward. Models are authored once, batched, and reused by every cast.
+export const artPalettes={
+ fire:['#3a1724','#a83232','#ed7650','#ffe0a1','#eaa34e'],ice:['#183c63','#358fae','#9bdaea','#eafaff','#b4c5e5'],lightning:['#282343','#55528f','#a795d6','#f2e0aa','#d9b36e'],water:['#133d50','#277e97','#78c2ca','#e1f6da','#cdbd85'],saber:['#252d53','#5f7dba','#b2e7e9','#fff0cc','#d9b873'],whip:['#30213f','#6e486d','#a58b86','#f6d4bc','#c99869'],planter:['#253e39','#4f795e','#9aaf75','#f1dfb2','#b79472'],swatter:['#17272e','#345352','#709b88','#d8c79c','#9a769d'],pan:['#3a3037','#9d6452','#dca86e','#fff1c2','#bea17a'],beam:['#242e40','#566d81','#a6c2c7','#fff0cc','#c8a77c'],palm:['#243e45','#527d73','#9fbd83','#eee0ab','#bb9569'],petal:['#542a55','#a05a81','#e4a6b1','#fff1df','#d3b174'],wave:['#192e45','#3c617e','#8bc6c5','#e7e4c2','#bf9f73']};
+const vertex=`
+ varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying float vSeed;
+ uniform float uTime,uMotion,uSpan;
+ #ifdef USE_INSTANCING
+ attribute vec4 aSeed;
+ #endif
+ void main(){vUv=uv;vec3 p=position;vec3 n=normal;vSeed=0.;
+ #ifdef USE_INSTANCING
+ p=(instanceMatrix*vec4(p,1.)).xyz;n=mat3(instanceMatrix)*n;vSeed=aSeed.x;
+ float t=uTime, a=aSeed.x*6.28318;
+ if(uMotion>0.5&&uMotion<1.5){float q=fract(aSeed.y+t*.42);p+=vec3(sin(a+t)*q*4.,sin(a*1.3+t)*q*2.+q*4.,q*uSpan);}
+ if(uMotion>1.5&&uMotion<2.5){float q=fract(aSeed.y+t*.26);float r=3.2+sin(aSeed.z*7.)*1.4;p+=vec3(cos(a+t*2.)*r,2.+sin(a+t)*3.,q*uSpan);}
+ if(uMotion>2.5&&uMotion<3.5){float k=.12+.8*smoothstep(1.4,2.6,t);p+=vec3(sin(a*7.+t*19.),cos(a*5.+t*13.),sin(a*3.+t*17.))*k;}
+ if(uMotion>3.5&&uMotion<4.5){float q=fract(aSeed.y+t*.3);p+=vec3(cos(a+t)*5.,(1.-q)*13.,sin(a+t)*5.+q*uSpan*.6);}
+ #endif
+ vP=p;vN=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}
+`;
+const fragment=`
+ precision highp float;varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying float vSeed;
+ uniform vec3 uDark,uMid,uLight,uPaper;uniform float uPattern,uFade,uTime,uGlow;
+ float line(float d,float w){float aa=max(.0001,fwidth(d));return (1.-smoothstep(w,w+aa,abs(d)))*min(1.,w/aa*1.8);}
+ void main(){
+ // Screen-door dissolve keeps translucent overdraw bounded, including overlapping summons.
+ float grain=fract(sin(dot(floor(gl_FragCoord.xy),vec2(12.9898,78.233)))*43758.5453);if(grain>uFade)discard;
+ vec3 n=normalize(vN);float lit=dot(n,normalize(vec3(-.42,.7,.55)))*.5+.5;
+ float band=smoothstep(.3,.42,lit)*.48+smoothstep(.67,.79,lit)*.52;
+ vec3 c=mix(uDark,uMid,smoothstep(.18,.38,lit));c=mix(c,uLight,band*.43);
+ float ink=0.,glint=0.;vec2 uv=vUv;
+ if(uPattern<.5){vec2 q=uv*vec2(18.,38.);q.x+=mod(floor(q.y),2.)*.5;vec2 f=fract(q)-.5;float arc=length(vec2(f.x,f.y*.85+.26));ink=line(arc-.48,.025);glint=line(arc-.43,.01)*step(0.,f.y);}
+ else if(uPattern<1.5){float x=uv.x+.025*sin(uv.y*28.);ink=line(sin(x*90.+sin(uv.y*18.)*1.7),.09);glint=line(sin(x*90.+sin(uv.y*18.)*1.7+.2),.035);}
+ else if(uPattern<2.5){ink=line(uv.x-.5,.009);float vane=fract(uv.y*32.+abs(uv.x-.5)*12.);ink=max(ink,line(vane-.5,.035)*.7);glint=line(abs(uv.x-.5)-.46,.015);}
+ else if(uPattern<3.5){vec2 q=abs(fract(uv*vec2(5.,13.))-.5);ink=line(q.x+q.y-.45,.025);glint=line(abs(uv.x-.5)-.42,.018);}
+ else if(uPattern<4.5){ink=max(line(uv.x-.5,.01),line(sin((uv.y+abs(uv.x-.5)*.65)*64.),.09)*.65);glint=line(abs(uv.x-.5)-.46,.012);}
+ else{float curl=sin(uv.x*25.+sin(uv.y*20.)*3.);ink=line(curl,.12)*.65;glint=line(curl-.4,.04);}
+ float brush=sin(uv.x*390.+sin(uv.y*140.)*2.)*sin(uv.y*430.)*.018;
+ c=mix(c,uDark,ink*.36);c=mix(c,uPaper,glint*.22);c+=brush;
+ float rim=pow(1.-abs(n.z),3.);c=mix(c,uPaper,rim*.08);c+=uLight*uGlow*(.65+.2*sin(uTime*3.+vP.y));
+ gl_FragColor=vec4(c,1.);
+ #include <tonemapping_fragment>
+ #include <colorspace_fragment>
+ }
+`;
+export function makeArt(T,family){
+ const root=new T.Group(),palette=artPalettes[family]||artPalettes.water,materials=[],parts=[];let seq=0;
+ const material=(pattern=0,swap=false,glow=0)=>{const m=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms:{uDark:{value:new T.Color(swap?palette[1]:palette[0])},uMid:{value:new T.Color(swap?palette[4]:palette[1])},uLight:{value:new T.Color(swap?palette[3]:palette[2])},uPaper:{value:new T.Color(palette[3])},uPattern:{value:pattern},uFade:{value:1},uTime:{value:0},uGlow:{value:glow},uMotion:{value:0},uSpan:{value:30}},side:T.DoubleSide});materials.push(m);return m;};
+ const skin=material(0),metal=material(3,true),pale=material(2,true),wingMat=material(2),bark=material(1),leafMat=material(4),enamel=material(5),eye=material(3,true,.45);
+ if(['ice','lightning'].includes(family))skin.uniforms.uPattern.value=2;
+ if(['planter','palm','whip'].includes(family)){bark.uniforms.uDark.value.set('#352c31');bark.uniforms.uMid.value.set('#805b49');bark.uniforms.uLight.value.set('#b69268');leafMat.uniforms.uDark.value.set('#193c34');leafMat.uniforms.uMid.value.set('#3b7752');leafMat.uniforms.uLight.value.set('#8eb774');}
+ const mesh=(g,m=skin,parent=root)=>{const o=new T.Mesh(g,m);parent.add(o);return o;};
+ const group=(parent=root,motion='',side=0)=>{const g=new T.Group();parent.add(g);if(motion)parts.push({o:g,motion,side,phase:seq++*.8});return g;};
+ const curve=pts=>new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p)));
+ function sweep(pts,rs,m=skin,parent=root,steps=32,sides=10,oval=1){
+  const c=curve(pts),frames=c.computeFrenetFrames(steps,false),v=[],n=[],uv=[],idx=[];
+  for(let i=0;i<=steps;i++){const t=i/steps,p=c.getPoint(t),a=t*(rs.length-1),k=Math.min(rs.length-2,Math.floor(a)),r=T.MathUtils.lerp(rs[k],rs[k+1],a-k);
+   for(let j=0;j<=sides;j++){const angle=j/sides*Math.PI*2,nn=frames.normals[i].clone().multiplyScalar(Math.cos(angle)).addScaledVector(frames.binormals[i],Math.sin(angle)*oval),q=p.clone().addScaledVector(nn,r);v.push(...q.toArray());nn.normalize();n.push(...nn.toArray());uv.push(j/sides,t);if(i<steps&&j<sides){const o=i*(sides+1)+j;idx.push(o,o+sides+1,o+1,o+1,o+sides+1,o+sides+2);}}
+  }const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(v,3));geo.setAttribute('normal',new T.Float32BufferAttribute(n,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(idx);return mesh(geo,m,parent);
+ }
+ // Curved, tapered, thin sculpted leaf/feather with a raised rachis, never a cone.
+ function blade(length,width,bend=.25,serrated=false){const v=[],uv=[],idx=[],rows=serrated?12:6,cols=serrated?4:2;for(let i=0;i<=rows;i++){const t=i/rows,w=width*Math.pow(Math.sin(Math.PI*t),.62)*(1-.32*t)*(serrated?1-.055*Math.sin(t*100):1);for(let j=0;j<=cols;j++){const x=j/cols*2-1;v.push(x*w,t*length,bend*Math.sin(t*Math.PI)+.13*(1-x*x)*Math.sin(t*Math.PI));uv.push(j/cols,t);if(i<rows&&j<cols){const k=i*(cols+1)+j;idx.push(k,k+1,k+cols+1,k+1,k+cols+2,k+cols+1);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+ const feather=(parent,x,y,z,l,w,angle=0,m=wingMat,bend=.3)=>{const o=mesh(blade(l,w,bend,!['planter','palm'].includes(family)),m,parent);o.position.set(x,y,z);o.rotation.z=angle;return o;};
+ const horn=(pts,r=.2,parent=root,m=metal)=>sweep(pts,[r,r*.85,r*.4,.008],m,parent,20,7);
+ const jewel=(x,y,z,s=.2,parent=root,m=eye)=>{const o=mesh(new T.OctahedronGeometry(s,1),m,parent);o.position.set(x,y,z);o.scale.y=1.4;return o;};
+ function socket(parent,x,y,z,side=1){const o=mesh(new T.SphereGeometry(.18,12,8),eye,parent);o.scale.set(.35,.65,1.5);o.position.set(x,y,z);o.rotation.y=side*.35;const pupil=mesh(new T.SphereGeometry(.09,8,6),skin,parent);pupil.scale.set(.4,.8,.3);pupil.position.set(x+side*.04,y,z+.08);horn([[x,y+.17,z-.22],[x+side*.05,y+.24,z],[x,y+.1,z+.28]],.09,parent,metal);}
+ function torus(r,t=.04,m=metal,parent=root){return mesh(new T.TorusGeometry(r,t,5,64),m,parent);}
+ function birdWing(parent,side,ice){const w=group(parent,'wing',side);w.position.set(side*.65,3,0);w.rotation.x=-.15;
+  // Three overlapping feather tiers define a real swept wing silhouette.
+  for(let layer=0;layer<3;layer++)for(let j=0;j<(layer===0?15:11);j++){const x=side*(.15+j*.28),y=.25+Math.sin(j*.16)*.7,z=-layer*.17-j*.09;const f=feather(w,x,y,z,(layer===0?(ice?3.6:4.4):2.5)-j*.055+(!ice&&j%3===0?.45:0),.19+layer*.025,side*(-.7-j*.035),layer===2?pale:wingMat,ice?.12:.45);f.rotation.x=-.65-layer*.08;}
+  horn([[0,0,0],[side*2,.6,-.3],[side*4.7,-.2,-1.8]],.12,w,metal);return w;
+ }
+ function dragonHead(parent,water=false){const h=group(parent,'head');
+  sweep([[0,3.1,4],[0,3.4,5],[0,3.1,6.2],[0,2.85,7.1]],[.6,.8,.52,.28],skin,h,28,14,.65);
+  sweep([[0,2.65,4.9],[0,2.3,5.8],[0,2.5,6.9]],[.5,.38,.12],bark,h,20,10,.38);
+  for(const side of [-1,1]){socket(h,side*.57,3.5,5.45,side);horn([[side*.45,3.8,4.8],[side*.8,4.9,4.4],[side*1.5,5.8,3.5],[side*1.8,5.5,2.9]],.25,h);horn([[side*.3,3,6.5],[side*1.5,3.1,7],[side*2.2,2.7,5.7],[side*2.7,3.3,4]],.045,h,pale);
+   for(let j=0;j<9;j++){const z=5.1+j*.19;horn([[side*.37,2.82,z],[side*.32,2.6,z+.06],[side*.28,2.5,z+.11]],.065,h,pale);}for(let j=0;j<6;j++)feather(h,side*.45,3.5-j*.08,4.5-j*.2,1.25,.23,side*(1.1+j*.06),water?wingMat:metal);
+  }return h;
+ }
+ function dragonWing(parent,side){const w=group(parent,'dragon-wing',side);w.position.set(side*.6,3.4,.3);
+  const fingers=[[side*1.4,1.4,-.5],[side*4.4,2,-1.1],[side*6.1,.8,-2.3],[side*5,-.5,-3.5],[side*3.1,-1.2,-4.6]];
+  // Individual scalloped membrane panels drape between tapered finger bones.
+  for(let j=0;j<4;j++){const a=fingers[j],b=fingers[j+1],v=[],uv=[],ix=[];for(let y=0;y<=12;y++){const t=y/12;for(let x=0;x<=10;x++){const u=x/10,shrink=1-.23*Math.sin(u*Math.PI),q=new T.Vector3().fromArray(a).lerp(new T.Vector3(...b),u).multiplyScalar(t*shrink);q.y-=Math.sin(u*Math.PI)*Math.sin(t*Math.PI)*.7;v.push(...q.toArray());uv.push(u,t);if(y<12&&x<10){const k=y*11+x;ix.push(k,k+1,k+11,k+1,k+12,k+11);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();mesh(g,wingMat,w);horn([[0,0,0],a.map(n=>n*.5),a],.11,w);}
+  horn([[0,0,0],fingers[4].map(n=>n*.6),fingers[4]],.1,w);return w;
+ }
+ const body=group(root,'body');
+ if(family==='fire'){
+  sweep([[0,1.3,-8],[-1.9,1.7,-5],[-1.5,2.8,-2],[0,3.2,1],[0,3.1,4]],[.025,.27,.65,1.05,.62],skin,body,58,14,.85);dragonHead(body);dragonWing(body,-1);dragonWing(body,1);
+  for(let j=0;j<17;j++){const t=j/16,z=-5+t*8,x=-Math.sin((1-t)*Math.PI)*1.5;horn([[x,3.2,z],[x,4+t*.2,z-.3],[x,4.3,z-.9]],.14,body,metal);}
+  for(const side of [-1,1])for(const z of [-1.5,2]){sweep([[side*.6,2.8,z],[side*1.5,1.7,z+.5],[side*1.4,.8,z+1.2]],[.35,.25,.12],skin,body,18,9);for(let k=0;k<3;k++)horn([[side*1.4,.8,z+1.2],[side*(1.2+k*.2),.4,z+1.6],[side*(1.2+k*.2),.6,z+1.9]],.09,body,pale);}
+ }else if(family==='ice'||family==='lightning'){
+  const ice=family==='ice';sweep(ice?[[0,1.2,-2.8],[0,2.2,-.8],[0,3,1],[0,4.25,1.9],[0,4.4,2.6]]:[[0,1.4,-2.1],[0,2.6,-.5],[0,3.3,1],[0,4.1,1.9],[0,4.4,2.6]],ice?[.08,.85,.65,.43,.25]:[.15,1.12,.94,.62,.35],skin,body,44,14,ice?.9:1.05);
+  sweep([[0,4.3,2.4],[0,4.15,3],[0,3.8,3.3]],[.28,.18,.01],metal,body,18,9,.65);socket(body,-.36,4.52,2.25,-1);socket(body,.36,4.52,2.25,1);
+  birdWing(body,-1,ice);birdWing(body,1,ice);
+  for(let j=0;j<(ice?9:5);j++){const f=feather(body,(j-(ice?4:2))*.18,2,-1.5,(ice?4:2.8)+(j%3)*.5,ice?.22:.34,(j-(ice?4:2))*.16,j%2?pale:wingMat);f.rotation.x=-1.9;}
+  for(let j=0;j<7;j++){const f=feather(body,(j-3)*.1,4.4,1.9,1.5+Math.abs(j-3)*.14,.13,(j-3)*-.17,metal);f.rotation.x=-.65;}
+  for(let row=0;row<4;row++)for(let j=0;j<7;j++)feather(body,(j-3)*.17,3.5-row*.3,1.1,1,.16,(j-3)*-.12,row%2?wingMat:pale,-.15);
+  for(const side of [-1,1]){sweep([[side*.5,1.8,0],[side*.8,.8,1],[side*.8,.3,1.6]],[.15,.12,.06],metal,body,18,7);for(let j=0;j<3;j++)horn([[side*.8,.3,1.6],[side*.8+(j-1)*.3,.15,2],[side*.8+(j-1)*.35,.45,2.3]],.065,body,metal);}
+ }else if(family==='water'){
+  sweep([[0,1,-7],[0,2,-3],[0,2.8,1],[0,3.2,4],[0,3.1,5.6]],[.03,.5,1.7,1.2,.65],skin,body,54,18,.68);
+  for(const side of [-1,1]){socket(body,side*1.1,3.7,4.5,side);const fin=group(body,'fin',side);fin.position.set(side*.8,2.5,1);for(let j=0;j<12;j++){const f=feather(fin,side*j*.27,0,-j*.19,4.8-j*.13,.3,side*(-1.05-j*.04),j%3?wingMat:pale);f.rotation.x=-.5;}horn([[side*.65,3.7,3.8],[side*1.5,5.3,2.3],[side*2.4,5.4,1],[side*2.9,5.1,.3]],.15,body);for(let j=0;j<5;j++)horn([[side*1.1,2.6,4.4],[side*2.2,2.4,4-j*.25],[side*2.8,3.2,3-j*.3]],.035,body,pale);}
+  for(let j=0;j<13;j++){const f=feather(body,0,3.5,-3+j*.5,1.1+j*.06,.25,0,pale);f.rotation.y=Math.PI/2;}
+  for(const side of [-1,1]){const f=feather(body,0,1,-6,4,.65,side*1.05,wingMat);f.rotation.x=-1;}
+ }else if(family==='saber'){
+  // Faceted blade section and narrow bevels, ornate branching winged crossguard.
+  sweep([[0,-1,0],[0,2,0],[0,9,0],[0,12,0]],[.38,.5,.34,.005],pale,body,18,4,.18);
+  sweep([[0,-1,.1],[0,1,.1],[0,8,.1],[0,10.5,.1]],[.1,.16,.09,.001],enamel,body,16,4,.15);
+  for(const side of [-1,1]){horn([[0,-.5,0],[side*1.5,-.1,0],[side*2.3,1,0],[side*2,1.7,0]],.17,body);for(let j=0;j<5;j++)feather(body,side*(.4+j*.22),-.5,0,1.5,.15,side*(-.6-j*.1),metal);}
+  sweep([[0,-.7,0],[0,-2.5,0],[0,-3,0]],[.18,.16,.25],bark,body,12,10);jewel(0,-3.2,0,.35,body);for(let j=0;j<12;j++){const r=torus(.18,.025,metal,body);r.rotation.x=Math.PI/2;r.position.y=-.8-j*.14;}jewel(0,-.3,.22,.38,body);
+ }else if(family==='planter'||family==='palm'){
+  const palm=family==='palm';sweep([[0,-.8,0],[.4,2,0],[-.5,5,.3],[.8,8,0],[.25,11,-.3]],[.65,.5,.38,.25,.08],bark,body,40,12);
+  for(let j=0;j<9;j++){const a=j*Math.PI*2/9;horn([[0,-.6,0],[Math.cos(a)*2,-.6,Math.sin(a)*2],[Math.cos(a)*4,-.9,Math.sin(a)*4]],.22,body,bark);}
+  if(palm){for(let j=0;j<13;j++){const a=j*Math.PI*2/13,fr=group(body,'frond',j%2?1:-1);fr.position.set(.25,10.5,-.3);fr.rotation.y=a;horn([[0,0,0],[2.5,1,0],[5,.4,0],[6,-1.3,0]],.07,fr,metal);for(let k=0;k<19;k++)for(const side of [-1,1]){const f=feather(fr,k*.28,.7*Math.sin(k/19*Math.PI),0,1.1+k*.045,.13,side*1.2,leafMat,.3);f.rotation.x=side*.65;}const o=mesh(new T.SphereGeometry(.42,10,8),bark,body);o.position.set(Math.cos(a)*.7,9.7,Math.sin(a)*.7);}
+  }else{
+   for(let j=0;j<22;j++){const a=j*2.399,level=3.5+j*.26,span=2.5+Math.sin(j)*1.2,tip=[Math.cos(a)*span,level+1.6,Math.sin(a)*span];sweep([[0,level,0],[tip[0]*.55,level+1.3,tip[2]*.55],tip],[.17,.09,.005],bark,body,12,6);
+    for(let k=0;k<19;k++){const v=k*2.399,rr=.25+(k%5)*.18;const f=feather(body,tip[0]+Math.cos(v)*rr,tip[1]+Math.sin(v)*.6,tip[2]+Math.sin(v)*rr,.65+(k%3)*.12,.22,v,leafMat);f.rotation.x=v*.6;}
+    if(j%2===0){const a0=tip;for(let k=0;k<6;k++){const f=feather(body,a0[0],a0[1],a0[2],.45,.18,k*Math.PI/3,pale);f.rotation.x=.5;}jewel(a0[0],a0[1]-.3,a0[2],.12,body);}
+   }
+   // Fluted planter and inset decorative band anchor the botanical summon.
+   mesh(new T.LatheGeometry([new T.Vector2(.65,-1),new T.Vector2(.8,-.8),new T.Vector2(1.2,.2),new T.Vector2(1.3,.25),new T.Vector2(1.25,.4)],20),enamel,body);const lip=torus(1.25,.09,metal,body);lip.rotation.x=Math.PI/2;lip.position.y=.3;
+  }
+ }else if(family==='swatter'){
+  // An anatomical chitin mask and six arms define the deity inside the moving swarm.
+  sweep([[0,2,0],[0,4,0],[0,6,0],[0,7,0]],[.2,.7,.95,.36],skin,body,24,10,.48);
+  sweep([[0,6.5,.1],[0,7.5,.3],[0,8.4,.1],[0,9,0]],[.18,.65,.43,.01],enamel,body,24,10,.65);
+  for(const side of [-1,1]){socket(body,side*.42,7.9,.58,side);horn([[side*.4,8.2,0],[side*1.1,9.4,0],[side*1.6,10.5,-.6],[side*.9,11.3,-.7]],.14,body);for(let j=0;j<3;j++){const y=6.5-j*.85;horn([[side*.6,y,0],[side*(2+j*.4),y+.5,-.2],[side*(3.2+j*.4),y-.8,.5]],.15,body,skin);for(let k=0;k<3;k++)horn([[side*(3.2+j*.4),y-.8,.5],[side*(3.4+j*.4)+(k-1)*.15,y-1.3,.8],[side*(3.2+j*.4)+(k-1)*.2,y-1.6,1]],.055,body,metal);}}
+  for(let j=0;j<26;j++){const a=j*Math.PI*2/26,r=.9;const strip=sweep([[Math.cos(a)*r,5,Math.sin(a)*r],[Math.cos(a)*1.4,2.5,Math.sin(a)*1.4],[Math.cos(a+.3)*2.5,.2,Math.sin(a+.3)*2.5]],[.15,.25,.005],wingMat,body,18,4,.12);}
+  const halo=torus(2.2,.035,metal,body);halo.position.y=8;for(let j=0;j<18;j++){const a=j*Math.PI/9;jewel(Math.cos(a)*2.2,8+Math.sin(a)*2.2,0,.08,body);}
+ }else if(family==='whip'){
+  for(let j=0;j<7;j++){const a=(j-3)*.38,h=group(body,'hydra',j),x=Math.sin(a)*5,y=3+Math.cos(a)*2,z=4+Math.cos(a)*3;
+   sweep([[0,0,-3],[Math.sin(a+1)*2,1,-1],[x*.7,y*.7,z*.5],[x,y,z]],[.14,.27,.34,.2],bark,h,35,9);
+   for(let k=0;k<13;k++){const t=k/13;feather(h,x*t,1+(y-1)*t,-1+(z+1)*t,1,.22,(k%2?1:-1)*1.2,leafMat);}
+   for(let k=0;k<6;k++){const p=feather(h,x,y,z,1.2,.28,k*Math.PI/3,wingMat);p.rotation.x=.8;}jewel(x,y+.3,z+.2,.22,h);for(let side of [-1,1])horn([[x+side*.25,y+.2,z],[x+side*.4,y+.6,z+.2],[x+side*.3,y+.8,z+.5]],.08,h,metal);
+  }
+ }else if(family==='pan'){
+  const pan=group(body,'pan');pan.rotation.x=.45;const profile=[[0,0],[1.8,0],[2.3,.12],[2.55,.4],[2.65,.55],[2.55,.61],[2.4,.35],[2.1,.18],[0,.18]].map(p=>new T.Vector2(...p));mesh(new T.LatheGeometry(profile,40),skin,pan);horn([[2.5,.4,0],[3.5,.5,0],[5.3,.7,0],[5.6,.6,0]],.22,pan,metal);const r=torus(2.57,.05,metal,pan);r.rotation.x=Math.PI/2;r.position.y=.57;
+  for(let j=0;j<8;j++){const a=j*Math.PI/4;jewel(Math.cos(a)*2.5,.6,Math.sin(a)*2.5,.1,pan);}
+ }else if(family==='beam'){
+  for(let j=0;j<12;j++){const a=j*Math.PI/6,gun=group(body);gun.name='Cannon '+j;gun.position.set(Math.cos(a)*3.4,3+Math.sin(a)*3.4,0);sweep([[0,0,-1],[0,0,0],[0,0,1],[0,0,1.8]],[.35,.42,.3,.18],enamel,gun,12,8);const lens=torus(.28,.05,metal,gun);lens.position.z=1.35;jewel(0,0,1.6,.19,gun);for(let k=0;k<4;k++){const f=feather(gun,0,0,-.5,1.8,.15,k*Math.PI/2,metal);f.rotation.x=.8;}}
+  for(const r of [2.7,3.4,4.1]){const o=torus(r,.045,metal,body);o.position.y=3;}jewel(0,3,0,.65,body);for(let j=0;j<24;j++){const a=j*Math.PI/12;jewel(Math.cos(a)*4.1,3+Math.sin(a)*4.1,0,.1,body);}
+ }else if(family==='petal'){
+  const flower=group(body,'flower');flower.position.y=3;
+  for(let layer=0;layer<4;layer++)for(let j=0;j<9;j++){const a=j*Math.PI*2/9+layer*.19,p=feather(flower,Math.cos(a)*.3,Math.sin(a)*.3,layer*.22,4.8-layer*.7,.7-layer*.09,-a,layer%2?wingMat:pale,.9);p.rotation.x=.3+layer*.12;}
+  jewel(0,3,.8,.8,body);for(let j=0;j<18;j++){const a=j*Math.PI/9;horn([[0,3,.4],[Math.cos(a)*1.2,3+Math.sin(a)*1.2,.8],[Math.cos(a)*1.4,3+Math.sin(a)*1.4,1]],.025,body,metal);jewel(Math.cos(a)*1.4,3+Math.sin(a)*1.4,1,.08,body);}
+  for(let j=0;j<7;j++)sweep([[(j-3)*.4,2,0],[(j-3)*.7,0,.3],[(j-3)*.5,-1,1]], [.06,.04,.005],metal,body,20,5);
+ }else{
+  const globe=mesh(new T.IcosahedronGeometry(1.6,3),skin,body);globe.position.y=3;
+  for(let j=0;j<5;j++){const g=group(body,'orrery',j),r=2.2+j*.5;g.position.y=3;g.rotation.set(j*.45,j*.72,j*.25);torus(r,.065,metal,g);for(let k=0;k<18;k++){const a=k*Math.PI/9;const tick=mesh(new T.BoxGeometry(.025,k%3?.14:.32,.06),pale,g);tick.position.set(Math.cos(a)*r,Math.sin(a)*r,0);tick.rotation.z=a-Math.PI/2;}jewel(r,0,0,.14,g);}
+ }
+ batch(T,root,new Set(parts.map(p=>p.o)));
+ return {root,materials,parts,body,palette};
+}
+function batch(T,root,moving){
+ const visit=parent=>{for(const c of [...parent.children])if(c.isGroup){visit(c);if(!moving.has(c)){c.updateMatrix();for(const child of [...c.children]){child.applyMatrix4(c.matrix);parent.add(child);}c.removeFromParent();}}const by=new Map();for(const c of parent.children){if(!c.isMesh||c.isInstancedMesh)continue;const list=by.get(c.material)||[];list.push(c);by.set(c.material,list);}for(const [mat,list]of by){if(list.length<2)continue;const gs=list.map(o=>{o.updateMatrix();const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();g.applyMatrix4(o.matrix);return g;}),count=gs.reduce((n,g)=>n+g.attributes.position.count,0),geo=new T.BufferGeometry();for(const [key,size]of [['position',3],['normal',3],['uv',2]]){const a=new Float32Array(count*size);let at=0;for(const g of gs){if(g.attributes[key])a.set(g.attributes[key].array,at);at+=g.attributes.position.count*size;}geo.setAttribute(key,new T.BufferAttribute(a,size));}for(const o of list){o.removeFromParent();o.geometry.dispose();}for(const g of gs)g.dispose();parent.add(new T.Mesh(geo,mat));}};visit(root);
+}

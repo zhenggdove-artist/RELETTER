@@ -1,5 +1,5 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
-import {createUltimate,updateUltimate,disposeUltimate} from './ultimate-effects.js';
+import {createUltimate,updateUltimate,disposeUltimate,prepareUltimates} from './ultimate-effects.js';
 import {blockSize as footprint} from './build-shapes.js';
 import {sampleMeleePose,meleeDuration,meleeFamilies,meleeTrailPattern,meleeMoveNames} from './melee-motion.js';
 import {createWeaponSignature,updateWeaponSignature,disposeWeaponSignature} from './weapon-effects.js';
@@ -121,7 +121,7 @@ function openCloudConnection(character){
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
   document.querySelectorAll('[data-character]').forEach(b=>b.disabled=true);$('gate-error').textContent='';
-  try{await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;dock.hidden=false;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await ultimateWarmup;await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;dock.hidden=false;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;document.querySelectorAll('[data-character]').forEach(b=>b.disabled=false);}
 };
 function suspendConnection(){if(!admitted)return;pageSuspended=true;clearTimeout(reconnectTimer);const socket=onlineSocket;onlineSocket=null;connected=false;socket?.close(1000,'Page hidden');fetch('/api/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({connectionId}),keepalive:true}).catch(()=>{});}
@@ -774,3 +774,5 @@ function showUltimateAttack(data){
  while(ultimateEffects.length>3)disposeUltimate(ultimateEffects.shift());
 }
 function updateUltimateEffects(dt){for(let i=ultimateEffects.length-1;i>=0;i--){const fx=ultimateEffects[i];updateUltimate(THREE,fx,dt);if(fx.age>=fx.duration){disposeUltimate(fx);ultimateEffects.splice(i,1);}}}
+
+const ultimateWarmup=prepareUltimates(THREE,renderer,camera).catch(error=>console.warn("Spell preparation",error));
