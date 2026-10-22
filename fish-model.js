@@ -1,7 +1,7 @@
 import {fishDimensions} from './fishing-catalog.js';
 // Volumetric catch specimens. Shared geometry uses owned materials/textures and explicit disposal.
 export function createFishModel(T,species){
- const root=new T.Group(),swimmers=[],tentacles=[],[base,light,dark]=species.colors;
+ const root=new T.Group(),swimmers=[],tentacles=[],[base,light,dark]=species.colors,morph=species.morphology||{},shape=species.shape;
  root.name=species.name;root.userData.species=species.id;
  const textureCanvas=document.createElement('canvas');textureCanvas.width=1024;textureCanvas.height=512;
  const ctx=textureCanvas.getContext('2d'),gradient=ctx.createLinearGradient(0,0,0,512);
@@ -10,12 +10,12 @@ export function createFishModel(T,species){
  ctx.globalAlpha=.75;for(let i=0;i<95;i++){const x=(i*137+species.index*31)%1024,y=70+(i*97)%360;ctx.fillStyle=i%4?dark:light;ctx.beginPath();if(species.pattern%3===0)ctx.ellipse(x,y,4+i%7,2+i%5,.4,0,Math.PI*2);else if(species.pattern%3===1)ctx.ellipse(x,y,4,30+i%25,.5,0,Math.PI*2);else ctx.ellipse(x,y,10,3,-.4,0,Math.PI*2);ctx.fill();}
  ctx.globalAlpha=1;
  const map=new T.CanvasTexture(textureCanvas);map.colorSpace=T.SRGBColorSpace;
- const skin=new T.MeshStandardMaterial({map,color:'#ffffff',metalness:.2,roughness:.42,emissive:dark,emissiveIntensity:.12});
+ const skin=new T.MeshStandardMaterial({map,bumpMap:map,bumpScale:.025,color:'#ffffff',metalness:.2,roughness:.42,emissive:dark,emissiveIntensity:.12});
  const luminous=new T.MeshStandardMaterial({color:light,emissive:light,emissiveIntensity:.3,metalness:.3,roughness:.25});
  const black=new T.MeshStandardMaterial({color:'#080e22',roughness:.12,metalness:.3});
  const membrane=new T.MeshStandardMaterial({color:base,emissive:base,emissiveIntensity:.12,metalness:.25,roughness:.4,side:T.DoubleSide,transparent:true,opacity:.78});
- const sphere=(parent,p,s,mat=skin)=>{const m=new T.Mesh(new T.SphereGeometry(1,32,20),mat);m.position.set(...p);m.scale.set(...s);parent.add(m);return m;};
- const tube=(parent,points,r,mat=skin)=>{const m=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),40,r,7,false),mat);parent.add(m);return m;};
+ const sphere=(parent,p,s,mat=skin)=>{const m=new T.Mesh(new T.SphereGeometry(1,Math.max(...s)<.15?10:28,Math.max(...s)<.15?6:18),mat);m.position.set(...p);m.scale.set(...s);parent.add(m);return m;};
+ const tube=(parent,points,r,mat=skin)=>{const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),steps=Math.min(32,points.length*5),sides=r<.025?5:7,geo=new T.TubeGeometry(curve,steps,r,sides,false),a=geo.attributes.position;for(let j=0;j<=steps;j++){const center=curve.getPointAt(j/steps),taper=1-Math.pow(j/steps,3)*.96;for(let k=0;k<=sides;k++){const i=j*(sides+1)+k;a.setXYZ(i,center.x+(a.getX(i)-center.x)*taper,center.y+(a.getY(i)-center.y)*taper,center.z+(a.getZ(i)-center.z)*taper);}}geo.computeVertexNormals();const m=new T.Mesh(geo,mat);parent.add(m);return m;};
  function fin(parent,points,origin,mat=membrane){
   const vertices=[],indices=[];vertices.push(...origin);points.forEach(p=>vertices.push(...p));
   for(let i=1;i<points.length;i++)indices.push(0,i,i+1);
@@ -43,14 +43,14 @@ export function createFishModel(T,species){
   sphere(root,[1.03,-.015,0],[.075,.06,.11],black);
   if(['catfish','loach','sturgeon','lantern'].includes(species.shape))for(const side of [-1,1])tube(root,[[.95,0,side*.1],[1.22,-.12,side*.35],[1.35,-.35,side*.4]],.009,luminous);
  }else{
-  const jelly=species.shape==='jelly',nautilus=species.shape==='nautilus',leviathan=species.shape==='leviathan',ray=species.shape==='manta';
-  sphere(root,[0,.35,0],jelly?[.74,.55,.65]:nautilus?[.68,.72,.48]:leviathan?[.47,.94,.4]:[.48,.67,.4]);
+  const jelly=shape==='jelly',nautilus=shape==='nautilus',leviathan=['leviathan','worm'].includes(shape),ray=shape==='manta';
+  const mantle=sphere(root,[0,.35,0],jelly?[.74,.55,.65]:nautilus?[.68,.72,.48]:leviathan?[.38,1.08,.34]:shape==='crab'?[.85,.35,.58]:shape==='urchin'?[.65,.65,.65]:shape==='mask'?[.63,.8,.23]:[.48,.67,.4]);mantle.scale.y*=morph.elongation||1;
   if(jelly){const crown=new T.Mesh(new T.SphereGeometry(.8,48,24,0,Math.PI*2,0,Math.PI*.52),membrane);crown.position.y=.2;root.add(crown);}
   if(nautilus){const points=[];for(let i=0;i<=100;i++){const a=i*.18,r=.02+i*.0066;points.push([Math.cos(a)*r,.35+Math.sin(a)*r,.46]);}tube(root,points,.026,luminous);
    for(let i=0;i<28;i++){const a=i/28*Math.PI*2;tube(root,[[Math.cos(a)*.34,.35+Math.sin(a)*.34,.47],[Math.cos(a+.2)*.67,.35+Math.sin(a+.2)*.67,.25]],.009,luminous);}}
-  const limbCount=jelly?16:nautilus?10:ray?3:12;
+  const limbCount=morph.limbs||(jelly?16:nautilus?10:ray?3:12);
   for(let i=0;i<limbCount;i++){
-   const a=i/limbCount*Math.PI*2,points=[];for(let j=0;j<=24;j++){const t=j/24,r=.3+t*.55;points.push(new T.Vector3(Math.cos(a)*r+Math.sin(t*7+a)*t*.23,-.12-t*1.35+Math.sin(t*6+a)*t*.18,Math.sin(a)*r*.65));}
+   const a=i/limbCount*Math.PI*2,points=[];for(let j=0;j<=24;j++){const t=j/24,r=(.3+t*.55)*(morph.spread||1);points.push(new T.Vector3(Math.cos(a)*r+Math.sin(t*7+a)*t*.23,-.12-t*1.35+Math.sin(t*6+a)*t*.18,Math.sin(a)*r*.65));}
    const curve=new T.CatmullRomCurve3(points),geo=new T.TubeGeometry(curve,36,.055,7,false);
    const attr=geo.attributes.position,basePositions=attr.array.slice();
    // Taper from the mantle to a fine curled tip.
@@ -58,24 +58,44 @@ export function createFishModel(T,species){
    geo.computeVertexNormals();const limb=new T.Mesh(geo,i%3?skin:luminous);root.add(limb);tentacles.push({mesh:limb,base:attr.array.slice(),phase:a});
    for(let j=1;j<9;j++){const point=curve.getPoint(j/10);const bead=sphere(root,[point.x,point.y,point.z+.04],[.022,.028,.018],luminous);swimmers.push({part:bead,axis:'z',amount:.07,phase:a+j});}
   }
-  if(['cthulhu','seraph','manta'].includes(species.shape))for(const side of [-1,1]){
-   const wing=new T.Group();wing.position.set(side*.25,.3,-.12);root.add(wing);
+  for(let wingLayer=0;wingLayer<(morph.wings!==undefined?morph.wings/2:['cthulhu','seraph','manta'].includes(shape)?1:0);wingLayer++)for(const side of [-1,1]){
+   const wing=new T.Group();wing.position.set(side*.25,.3-wingLayer*.32,-.12-wingLayer*.13);wing.scale.setScalar(1-wingLayer*.17);root.add(wing);
    fin(wing,Array.from({length:33},(_,i)=>{const t=i/32;return [side*(.25+Math.sin(t*Math.PI)*1.05),.7-t*1.5+Math.sin(t*Math.PI*5)*.1,-Math.sin(t*Math.PI)*.3];}),[0,0,0]);
    swimmers.push({part:wing,axis:'y',amount:.12,phase:side});
   }
   // Overlapping chitin plates and fine luminous seams give the mantle a carved surface.
   if(!jelly&&!nautilus)for(let row=0;row<7;row++)for(const side of [-1,1]){const plate=new T.Mesh(new T.OctahedronGeometry(.1,0),skin);plate.position.set(side*(.19+Math.sin(row*.45)*.17),.8-row*.16,.28+Math.sin(row*.4)*.07);plate.scale.set(1.15,.7,.3);plate.rotation.z=side*.35;root.add(plate);tube(root,[[plate.position.x-side*.08,plate.position.y+.025,plate.position.z+.03],[plate.position.x,plate.position.y-.045,plate.position.z+.04],[plate.position.x+side*.08,plate.position.y+.025,plate.position.z+.03]],.004,luminous);}
-  const eyeCount=species.shape==='oracle'?7:3;
+  const eyeCount=morph.eyes??(species.shape==='oracle'?7:3);
   for(let i=0;i<eyeCount;i++){const a=(i-(eyeCount-1)/2)*.32,x=Math.sin(a)*.44,y=.4+Math.cos(a)*.17,z=.35+Math.cos(a)*.04;sphere(root,[x,y,z],[.085,.075,.035],luminous);sphere(root,[x,y,z+.03],[.022,.056,.015],black);}
-  if(!jelly&&!nautilus)for(let i=0;i<9;i++){const a=i/9*Math.PI*2;tube(root,[[Math.cos(a)*.32,.7,Math.sin(a)*.25],[Math.cos(a)*.44,1.05,Math.sin(a)*.36],[Math.cos(a)*.38,1.25,Math.sin(a)*.32]],.022,luminous);}
+  if(!jelly&&!nautilus)for(let i=0;i<(morph.crown||9);i++){const a=i/(morph.crown||9)*Math.PI*2;tube(root,[[Math.cos(a)*.32,.7,Math.sin(a)*.25],[Math.cos(a)*.44,1.05,Math.sin(a)*.36],[Math.cos(a)*.38,1.25,Math.sin(a)*.32]],.022,luminous);}
+ }
+ // Distinct anatomical constructions, layered over the mantle rather than palette swaps.
+ if(species.eldritch){
+  const segments=morph.segments||7;
+  if(['worm','leviathan'].includes(shape))for(let i=0;i<segments;i++){const t=i/(segments-1),x=Math.sin(t*5)*.55,y=.7-t*2.1,z=-t*.35,r=.3*(1-t*.6);sphere(root,[x,y,z],[r,r*.85,r],skin);for(const side of [-1,1])tube(root,[[x+side*r*.7,y,z],[x+side*(r+.22),y+.12,z+.03],[x+side*(r+.32),y-.15,z+.15]],.018,luminous);}
+  if(['coral','shrine','urchin'].includes(shape))for(let i=0;i<(morph.crown||10);i++){const a=i*6.283/(morph.crown||10),x=Math.cos(a),z=Math.sin(a),h=.8+(i%3)*.18;const stem=[[x*.3,.55,z*.3],[x*.6,1,z*.5],[x*.85,h+.65,z*.8]];tube(root,stem,.026,skin);for(const side of [-1,1])tube(root,[[x*.6,1,z*.5],[x*.75+side*.14,h+.2,z*.65],[x*.9+side*.2,h+.32,z*.8]],.012,luminous);}
+  if(shape==='crab')for(const side of [-1,1]){tube(root,[[side*.55,.3,.05],[side*1.1,.35,.2],[side*1.25,.7,.45]],.07,skin);for(const branch of [-1,1])tube(root,[[side*1.25,.7,.45],[side*(1.25+branch*.18),.95,.52],[side*1.28,1.13,.58]],.04,luminous);}
+  if(shape==='hydra')for(let i=0;i<(morph.limbs||7);i++){const a=i*6.283/(morph.limbs||7),x=Math.cos(a)*.85,y=.9+(i%3)*.24,z=Math.sin(a)*.6;tube(root,[[0,.4,0],[x*.6,.9,z*.5],[x,y,z]],.038,skin);sphere(root,[x,y,z],[.11,.17,.11],skin);sphere(root,[x,y,z+.1],[.045,.06,.018],luminous);}
+  if(['shrine','mask','cthulhu','squid','lantern'].includes(shape)){
+   const mouthY=shape==='lantern'?.2:.05,mouthR=shape==='lantern'?.36:.2;
+   sphere(root,[0,mouthY,.38],[mouthR,mouthR*1.2,.09],black);
+   for(let ring=0;ring<2;ring++)for(let i=0;i<16;i++){const a=i*Math.PI/8+ring*.1,r=mouthR*(1-ring*.28);tube(root,[[Math.cos(a)*r,mouthY+Math.sin(a)*r*1.2,.44],[Math.cos(a)*r*.8,mouthY+Math.sin(a)*r*.8,.49],[Math.cos(a)*r*.5,mouthY+Math.sin(a)*r*.6,.46]],.009,luminous);}
+   if(shape==='lantern'){tube(root,[[0,.95,0],[.1,1.4,.2],[.15,1.35,.65]],.018,skin);sphere(root,[.15,1.35,.65],[.11,.15,.09],luminous);}
+  }
+  // Ribbed gills, fine capillaries and raised pores at different scales.
+  for(let i=0;i<segments;i++)for(const side of [-1,1]){const y=.7-i*.13;tube(root,[[side*.12,y,.37],[side*.36,y-.03,.41],[side*.48,y-.14,.2]],.008,luminous);}
+  for(let i=0;i<28;i++){const a=i*2.3999,y=.72-(i%7)*.12;sphere(root,[Math.cos(a)*.43,y,Math.sin(a)*.36],[.012,.018,.012],luminous);}
+  // GPU deformation also moves the suckers and capillaries after batching.
+  const clock={value:0};for(const mat of [skin,luminous,membrane]){mat.onBeforeCompile=shader=>{shader.uniforms.abyssTime=clock;shader.vertexShader='uniform float abyssTime;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+   float bend=clamp(-position.y,0.,2.)*.055;transformed.x+=sin(abyssTime*3.+position.y*5.+position.z*2.)*bend;transformed.z+=cos(abyssTime*2.5+position.y*4.+position.x)*bend;`);};mat.customProgramCacheKey=()=> 'abyss-motion-v2';}root.userData.abyssClock=clock;
  }
  root.userData.swimmers=swimmers;root.userData.tentacles=tentacles;root.userData.ownedTexture=map;
- return root;
+ batchSpecimen(T,root);return root;
 }
 export function animateFishModel(model,time){
  if(model.userData.specimen){animateFishModel(model.userData.specimen,time);return;}
  for(const s of model.userData.swimmers||[])s.part.rotation[s.axis]=Math.sin(time*2.5+s.phase)*s.amount;
- for(const t of model.userData.tentacles||[]){const attr=t.mesh.geometry.attributes.position;for(let i=0;i<attr.count;i++){const x=t.base[i*3],y=t.base[i*3+1],z=t.base[i*3+2],w=Math.max(0,-y)*.055;attr.setXYZ(i,x+Math.sin(time*3+y*5+t.phase)*w,y,z+Math.cos(time*2.5+y*4+t.phase)*w);}attr.needsUpdate=true;}
+ if(model.userData.abyssClock)model.userData.abyssClock.value=time;
 }
 export function disposeFishModel(model){
  const geometries=new Set(),materials=new Set();model.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);});
@@ -90,7 +110,7 @@ export function createWorldFishModel(T,species){
 function batchSpecimen(T,model){
  // Tiny decorative beads stay static; the mantle, wings and articulated tentacles remain animated.
  model.userData.swimmers=model.userData.swimmers.filter(s=>!s.part.isMesh);
- const moving=new Set([...model.userData.swimmers.map(s=>s.part),...model.userData.tentacles.map(t=>t.mesh)]),groups=new Map();model.updateMatrixWorld(true);
+ model.userData.tentacles=[];const moving=new Set(model.userData.swimmers.map(s=>s.part)),groups=new Map();model.updateMatrixWorld(true);
  model.traverse(o=>{if(!o.isMesh)return;for(let p=o;p&&p!==model;p=p.parent)if(moving.has(p))return;let group=groups.get(o.material);if(!group)groups.set(o.material,group=[]);group.push(o);});
  for(const [material,meshes] of groups){if(meshes.length<2)continue;const parts=meshes.map(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();g.applyMatrix4(m.matrixWorld);return g;}),total=parts.reduce((sum,g)=>sum+g.attributes.position.count,0),geometry=new T.BufferGeometry();
   for(const [name,width] of [['position',3],['normal',3],['uv',2]]){const data=new Float32Array(total*width);let offset=0;for(const g of parts){if(g.attributes[name])data.set(g.attributes[name].array,offset);offset+=g.attributes.position.count*width;}geometry.setAttribute(name,new T.BufferAttribute(data,width));}

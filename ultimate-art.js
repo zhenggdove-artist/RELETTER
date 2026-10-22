@@ -3,7 +3,7 @@
 export const artPalettes={
  fire:['#481126','#c43b27','#ff923e','#fff2c9','#ffc45e'],ice:['#183c63','#358fae','#9bdaea','#eafaff','#b4c5e5'],lightning:['#38215b','#d59821','#fff088','#fff9d2','#5b52bd'],water:['#133d50','#277e97','#78c2ca','#e1f6da','#cdbd85'],saber:['#252d53','#5f7dba','#b2e7e9','#fff0cc','#d9b873'],whip:['#30213f','#6e486d','#a58b86','#f6d4bc','#c99869'],planter:['#253e39','#4f795e','#9aaf75','#f1dfb2','#b79472'],swatter:['#060e13','#152b2b','#3b534b','#779f88','#56405d'],pan:['#3a3037','#9d6452','#dca86e','#fff1c2','#bea17a'],beam:['#242e40','#566d81','#a6c2c7','#fff0cc','#c8a77c'],palm:['#243e45','#527d73','#9fbd83','#eee0ab','#bb9569'],petal:['#542a55','#a05a81','#e4a6b1','#fff1df','#d3b174'],wave:['#192e45','#3c617e','#8bc6c5','#e7e4c2','#bf9f73']};
 const vertex=`
- varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying float vSeed;
+ varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying vec3 vLocal;varying float vSeed;
  uniform float uTime,uMotion,uSpan,uCreature;
  #ifdef USE_INSTANCING
  attribute vec4 aSeed;
@@ -23,10 +23,11 @@ const vertex=`
  if(uCreature==4.){p.y+=sin(p.x*.6+p.z*.4+uTime*2.)*.12*smoothstep(8.,11.,p.y);}
  if(uCreature==2.&&p.y<5.){float k=1.-smoothstep(0.,5.,p.y);p.x+=sin(p.y*1.8+uTime*3.+p.z)*.35*k;p.z+=cos(p.y+uTime*2.+p.x)*.25*k;}
  }
+ vLocal=p;
  vP=(modelViewMatrix*vec4(p,1.)).xyz;vN=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}
 `;
 const fragment=`
- precision highp float;varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying float vSeed;
+ precision highp float;varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying vec3 vLocal;varying float vSeed;
  uniform vec3 uDark,uMid,uLight,uPaper;uniform float uPattern,uFade,uTime,uGlow;
  float line(float d,float w){float aa=max(.0001,fwidth(d));return (1.-smoothstep(w,w+aa,abs(d)))*min(1.,w/aa*1.8);}
  void main(){
@@ -35,7 +36,7 @@ const fragment=`
  vec3 n=normalize(vN);vec3 dpdx=dFdx(vP),dpdy=dFdy(vP);vec2 duvdx=dFdx(vUv),duvdy=dFdy(vUv);vec3 tangent=normalize(dpdx*duvdy.y-dpdy*duvdx.y+vec3(.00001));vec3 bitangent=normalize(cross(n,tangent));float relief=uPattern<.5?sin(vUv.x*113.+sin(vUv.y*239.)*.5)*.07:uPattern<2.5?sin(vUv.y*100.+vUv.x*12.)*.025:sin(vUv.x*35.+vUv.y*21.)*.03;n=normalize(n+tangent*relief+bitangent*relief*.4);float lit=dot(n,normalize(vec3(-.42,.7,.55)))*.5+.5;
  float band=smoothstep(.3,.42,lit)*.48+smoothstep(.67,.79,lit)*.52;
  vec3 c=mix(uDark,uMid,smoothstep(.18,.38,lit));c=mix(c,uLight,band*.43);
- float ink=0.,glint=0.;vec2 uv=vUv;
+ float ink=0.,glint=0.,micro=0.;vec2 uv=vUv;
  if(uPattern<.5){vec2 q=uv*vec2(18.,38.);q.x+=mod(floor(q.y),2.)*.5;vec2 f=fract(q)-.5;float arc=length(vec2(f.x,f.y*.85+.26));ink=line(arc-.48,.025);glint=line(arc-.43,.01)*step(0.,f.y);}
  else if(uPattern<1.5){float x=uv.x+.025*sin(uv.y*28.);ink=line(sin(x*90.+sin(uv.y*18.)*1.7),.09);glint=line(sin(x*90.+sin(uv.y*18.)*1.7+.2),.035);}
  else if(uPattern<2.5){ink=line(uv.x-.5,.009);float vane=fract(uv.y*32.+abs(uv.x-.5)*12.);ink=max(ink,line(vane-.5,.035)*.7);glint=line(abs(uv.x-.5)-.46,.015);}
@@ -43,17 +44,31 @@ const fragment=`
  else if(uPattern<4.5){ink=max(line(uv.x-.5,.01),line(sin((uv.y+abs(uv.x-.5)*.65)*64.),.09)*.65);glint=line(abs(uv.x-.5)-.46,.012);}
  else if(uPattern>5.5){vec2 q=uv*vec2(20.,26.);q.x+=mod(floor(q.y),2.)*.5;vec2 cell=fract(q)-.5;float facet=max(abs(cell.x)*.866+abs(cell.y)*.5,abs(cell.y));ink=line(facet-.44,.045);glint=pow(max(0.,1.-length(cell-vec2(-.15,.16))*2.2),6.)*.65;}
  else{float curl=sin(uv.x*25.+sin(uv.y*20.)*3.);ink=line(curl,.12)*.65;glint=line(curl-.4,.04);}
+ // Secondary veins, feather barbules, grain knots and pores use derivative-filtered lines.
+ if(uPattern<.5){micro=line(sin(uv.x*310.+sin(uv.y*77.)*2.)*sin(uv.y*283.),.055);glint+=line(sin(uv.y*239.+uv.x*13.),.04)*.18;}
+ else if(uPattern<1.5){vec2 knot=(uv-vec2(.37,.58))*vec2(5.,2.);float grainPhase=uv.x*170.+sin(uv.y*22.)*3.+atan(knot.y,knot.x)*.7;micro=line(sin(grainPhase),.06);ink=max(ink,line(sin(length(knot)*29.),.06)*exp(-dot(knot,knot)*2.));}
+ else if(uPattern<2.5){float barb=uv.y*113.+abs(uv.x-.5)*44.;micro=line(sin(barb+sin(uv.x*61.)*.4),.055);glint+=micro*.25;}
+ else if(uPattern>3.5&&uPattern<4.5){float branch=fract((uv.y+abs(uv.x-.5)*.65)*10.);micro=line(sin((uv.x+abs(branch-.5)*.17)*220.),.075)*smoothstep(.025,.1,abs(uv.x-.5));}
+ else {micro=line(sin(uv.x*180.+sin(uv.y*43.)*3.),.06)*.4;}
  float brush=sin(uv.x*390.+sin(uv.y*140.)*2.)*sin(uv.y*430.)*.018;
  c=mix(c,uDark,ink*.18);c=mix(c,uPaper,glint*.22);c+=brush*.3;
  float sheen=pow(max(0.,dot(reflect(-normalize(vec3(-.42,.7,.55)),n),vec3(0,0,1))),24.);c+=uLight*sheen*.16;float rim=pow(1.-abs(n.z),3.);c=mix(c,uPaper,rim*.08);c+=uLight*uGlow*(.65+.2*sin(uTime*3.+vP.y));
- gl_FragColor=vec4(c,1.);
+ // A fragmented luminous skin: broad moving gaps expose the scenery, fine cells
+ // retain anatomical markings; no opaque dark core underneath the energy.
+ vec3 q=vLocal*2.8;float drift=sin(q.y*1.7-uTime*3.2+sin(q.z*1.3))*sin(q.x*.9+uTime*1.9);
+ float cell=fract(sin(dot(floor(vLocal*58.+vec3(0.,uTime*1.4,0.)),vec3(12.9898,78.233,39.425)))*43758.5453);
+ float density=.30+rim*.18+glint*.12+.15*drift;
+ if(cell>density)discard;
+ float filament=line(sin(vLocal.y*5.-uTime*4.+sin(vLocal.z*2.+vLocal.x)),.12);
+ c=mix(c,uLight,.42)+uLight*(glint*.55+micro*.25+filament*.5)+uPaper*rim*.22;
+ gl_FragColor=vec4(c,(.55+rim*.15+filament*.15)*uFade);
  #include <tonemapping_fragment>
  #include <colorspace_fragment>
  }
 `;
 export function makeArt(T,family){
  const root=new T.Group(),palette=artPalettes[family]||artPalettes.water,materials=[],parts=[];let seq=0;
- const material=(pattern=0,swap=false,glow=0)=>{const m=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms:{uDark:{value:new T.Color(swap?palette[1]:palette[0])},uMid:{value:new T.Color(swap?palette[4]:palette[1])},uLight:{value:new T.Color(swap?palette[3]:palette[2])},uPaper:{value:new T.Color(palette[3])},uPattern:{value:pattern},uFade:{value:1},uTime:{value:0},uGlow:{value:glow},uMotion:{value:0},uCreature:{value:family==='fire'?1:family==='swatter'?2:family==='whip'?3:family==='palm'?4:0},uSpan:{value:30}},side:T.DoubleSide});materials.push(m);return m;};
+ const material=(pattern=0,swap=false,glow=0)=>{const m=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms:{uDark:{value:new T.Color(swap?palette[1]:palette[0])},uMid:{value:new T.Color(swap?palette[4]:palette[1])},uLight:{value:new T.Color(swap?palette[3]:palette[2])},uPaper:{value:new T.Color(palette[3])},uPattern:{value:pattern},uFade:{value:1},uTime:{value:0},uGlow:{value:glow},uMotion:{value:0},uCreature:{value:family==='fire'?1:family==='swatter'?2:family==='whip'?3:family==='palm'?4:0},uSpan:{value:30}},side:T.DoubleSide,transparent:true,depthWrite:false,blending:T.NormalBlending});materials.push(m);return m;};
  const skin=material(0),metal=material(3,true),pale=material(2,true),wingMat=material(2),bark=material(1),leafMat=material(4),enamel=material(5),eye=material(3,true,.45);
  if(['ice','lightning'].includes(family))skin.uniforms.uPattern.value=2;
  if(family==='lightning'){wingMat.uniforms.uDark.value.set('#151329');wingMat.uniforms.uMid.value.set('#332943');wingMat.uniforms.uLight.value.set('#69547f');pale.uniforms.uMid.value.set('#e9b02d');pale.uniforms.uLight.value.set('#ffe892');}
@@ -172,8 +187,34 @@ export function makeArt(T,family){
   for(let j=0;j<5;j++){const g=group(body,'orrery',j),r=2.2+j*.5;g.position.y=3;g.rotation.set(j*.45,j*.72,j*.25);torus(r,.065,metal,g);for(let k=0;k<18;k++){const a=k*Math.PI/9;const tick=mesh(new T.BoxGeometry(.025,k%3?.14:.32,.06),pale,g);tick.position.set(Math.cos(a)*r,Math.sin(a)*r,0);tick.rotation.z=a-Math.PI/2;}jewel(r,0,0,.14,g);}
  }
  batch(T,root,new Set(parts.map(p=>p.o)));
+ addEnergyDust(T,root,materials);
  return {root,materials,parts,body,palette};
 }
 function batch(T,root,moving){
  const visit=parent=>{for(const c of [...parent.children])if(c.isGroup){visit(c);if(!moving.has(c)){c.updateMatrix();for(const child of [...c.children]){child.applyMatrix4(c.matrix);parent.add(child);}c.removeFromParent();}}const by=new Map();for(const c of parent.children){if(!c.isMesh||c.isInstancedMesh)continue;const list=by.get(c.material)||[];list.push(c);by.set(c.material,list);}for(const [mat,list]of by){if(list.length<2)continue;const gs=list.map(o=>{o.updateMatrix();const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();g.applyMatrix4(o.matrix);return g;}),count=gs.reduce((n,g)=>n+g.attributes.position.count,0),geo=new T.BufferGeometry();for(const [key,size]of [['position',3],['normal',3],['uv',2]]){const a=new Float32Array(count*size);let at=0;for(const g of gs){if(g.attributes[key])a.set(g.attributes[key].array,at);at+=g.attributes.position.count*size;}geo.setAttribute(key,new T.BufferAttribute(a,size));}for(const o of list){o.removeFromParent();o.geometry.dispose();}for(const g of gs)g.dispose();parent.add(new T.Mesh(geo,mat));}};visit(root);
+}
+
+// Sample cached anatomy once. Each articulated group gets one point batch, and
+// every cast shares these buffers. No particle positions are uploaded per frame.
+function addEnergyDust(T,root,materials){
+ const groups=new Map();let total=0,seed=7123;
+ const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ root.traverse(o=>{if(!o.isMesh)return;const g=o.geometry,n=(g.index?.count||g.attributes.position.count)/3;total+=n;const list=groups.get(o.parent)||[];list.push({o,n});groups.set(o.parent,list);});
+ const deform=vertex.slice(vertex.indexOf(' if(uMotion<.5){'),vertex.indexOf(' vLocal=p;'));
+ for(const [parent,meshes] of groups){const positions=[],normals=[],colors=[],seeds=[];let creature=0;
+  for(const {o,n} of meshes){o.updateMatrix();const g=o.geometry,p=g.attributes.position,no=g.attributes.normal,ix=g.index;creature=o.material.uniforms.uCreature.value;const color=o.material.uniforms.uLight.value,normalMatrix=new T.Matrix3().getNormalMatrix(o.matrix),count=Math.floor(6500*n/Math.max(1,total));
+   for(let i=0;i<count;i++){const k=Math.floor(rand()*n)*3,ids=[0,1,2].map(j=>ix?ix.getX(k+j):k+j),a=Math.sqrt(rand()),b=rand(),weights=[1-a,a*(1-b),a*b],point=new T.Vector3(),normal=new T.Vector3();for(let j=0;j<3;j++){point.addScaledVector(new T.Vector3().fromBufferAttribute(p,ids[j]),weights[j]);normal.addScaledVector(new T.Vector3().fromBufferAttribute(no,ids[j]),weights[j]);}point.applyMatrix4(o.matrix);normal.applyMatrix3(normalMatrix).normalize();positions.push(...point.toArray());normals.push(...normal.toArray());colors.push(...color.toArray());seeds.push(rand());}
+  }
+  if(!seeds.length)continue;const geo=new T.BufferGeometry();for(const [key,data,width] of [['position',positions,3],['normal',normals,3],['color',colors,3],['aLife',seeds,1]])geo.setAttribute(key,new T.Float32BufferAttribute(data,width));
+  const mat=new T.ShaderMaterial({uniforms:{uTime:{value:0},uFade:{value:1},uMotion:{value:0},uCreature:{value:creature}},transparent:true,depthWrite:false,blending:T.AdditiveBlending,vertexShader:`
+   attribute float aLife;attribute vec3 color;varying vec3 vColor;varying float vAlpha;uniform float uTime,uFade,uMotion,uCreature;
+   void main(){vec3 p=position;${deform}
+   float t=uTime,a=aLife*6.28318,life=fract(aLife+t*.35),escape=pow(life,4.);
+   p+=normal*(.035+escape*.8)+vec3(sin(t*11.+a+p.y*3.),cos(t*9.+a+p.z*2.),sin(t*13.+a+p.x*2.))*(.025+escape*.12);p.y+=escape*.7;
+   vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(120.*(.25+aLife*.25)/max(1.,-mv.z),1.,3.5);vColor=color;vAlpha=(1.-life*.75)*uFade;
+   }`,fragmentShader:`varying vec3 vColor;varying float vAlpha;void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;gl_FragColor=vec4(vColor*.8,(1.-smoothstep(.1,.5,r))*vAlpha*.5);
+   #include <tonemapping_fragment>
+   #include <colorspace_fragment>
+   }`});materials.push(mat);const points=new T.Points(geo,mat);points.name='Anatomical energy motes';points.frustumCulled=false;parent.add(points);
+ }
 }

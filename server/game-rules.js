@@ -3,7 +3,7 @@ import {attackStats} from '../equipment-catalog.js';
 import {paintAction} from './surface-rules.js';
 import {FISH_ACTIONS,fishingAction} from './fishing-rules.js';
 import {ensureEquipment,equipmentAction,equippedWeapon,absorbShield} from './equipment-rules.js';
-import {ensureWorld,buildAction,coverDistance,shootBoss} from './world-rules.js';
+import {ensureWorld,buildAction,coverDistance,shootBoss,shootConstruction} from './world-rules.js';
 // Shared authoritative rules for the Cloudflare and local transports.
 export const mediaKinds=['drawing','image','audio','video'];
 export const mediaTypes={drawing:['image/png','image/jpeg','image/webp'],image:['image/png','image/jpeg','image/webp'],audio:['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/ogg','audio/webm','audio/mp4','audio/aac','audio/flac'],video:['video/mp4','video/webm','video/ogg','video/quicktime']};
@@ -27,7 +27,7 @@ export function battleAction(game,actor,players,body,now=Date.now()){
  if(body.action==='monster-hit'){
   if(game.boss.hp<=0||game.boss.paused||pos[1]>=5||Math.hypot(pos[0]-game.boss.position[0],pos[2]-game.boss.position[2])>5)return {blocked:true};
   game.monsterHits??={};if(now-(game.monsterHits[name]||0)<1800)return {blocked:true};game.monsterHits[name]=now;
-  const result=absorbShield(game,name,1,now),hits=(game.hits[name]||0)+result.damage,defeated=hits>=playerStats(game,name).maxHp;game.hits[name]=defeated?0:hits;return {blocked:result.damage===0,defeated};
+  const result=absorbShield(game,name,game.boss.damage,now),hits=(game.hits[name]||0)+result.damage,defeated=hits>=playerStats(game,name).maxHp;game.hits[name]=defeated?0:hits;return {blocked:result.damage===0,defeated};
  }
  if(body.action!=='shoot')return {error:'Unknown action'};
  const weapon=equippedWeapon(game,name);
@@ -40,12 +40,13 @@ export function battleAction(game,actor,players,body,now=Date.now()){
  if(['saber','whip','swatter','pan','planter','palm'].includes(weapon.family)){game.meleeCombos??={};const previous=game.meleeCombos[name];shot.combo=charge>=.8?6:previous&&now-previous.time<4000?(previous.index+1)%6:0;game.meleeCombos[name]={index:shot.combo===6?0:shot.combo,time:now};}
  const wall=coverDistance(game,origin,d);
  shootBoss(game,shot,now);
- if(!game.pkMode||shot.hit){if(!shot.hit&&wall<range)shot.impact=origin.map((v,i)=>v+d[i]*wall);return {shot};}
+ if(!game.pkMode||shot.hit){shootConstruction(game,shot,now);if(!shot.hit&&wall<range)shot.impact=origin.map((v,i)=>v+d[i]*wall);return {shot};}
  shot.red=false;
  for(const target of players){if(target.id===actor.id||!target.state?.visible)continue;const t=target.state.position,delta=[t[0]-origin[0],t[1]+1-origin[1],t[2]-origin[2]],along=delta.reduce((s,v,i)=>s+v*d[i],0);if(coverDistance(game,origin,d)<along||along<0||along>range||Math.hypot(...delta.map((v,i)=>v-d[i]*along))>1.25+radius-.12)continue;
   shot.hit=target.character;const pvpDamage=Math.min(2,weapon.id==='water'?playerStats(game,name).attackMultiplier:shot.damage),guard=absorbShield(game,target.character,pvpDamage,now);shot.blocked=guard.blocked;const hits=(game.hits[target.character]||0)+guard.damage,maxHp=playerStats(game,target.character).maxHp;shot.defeated=hits>=maxHp;game.hits[target.character]=shot.defeated?0:+hits.toFixed(2);
   if(shot.defeated){const amount=Math.max(1,game.wallets[target.character]||0);game.wallets[target.character]=0;game.loot.push({id:crypto.randomUUID(),position:[...t],amount,owner:target.character,time:now});}break;
  }
+ shootConstruction(game,shot,now);
  if(!shot.hit&&wall<range)shot.impact=origin.map((v,i)=>v+d[i]*wall);
  return {shot};
 }

@@ -12,6 +12,7 @@ export function expireHoles(g,now=Date.now(),offline=false){
 export const FISH_ACTIONS=['dig','cast','hook','reel','cancel-fishing','sell-fish','pond-build','pond-release','pond-retrieve','pond-destroy','weapon-pickup'];
 export function ensureFishing(g){
  g.fishing??={holes:[],ponds:[],bags:{},sessions:{},revision:0};g.weaponDrops??=[];const f=g.fishing;
+ if(!f.discoveries){f.discoveries={};for(const [name,bag] of Object.entries(f.bags))f.discoveries[name]=[...new Set(bag.map(x=>x.species))];for(const pond of f.ponds)for(const fish of pond.fish){const list=f.discoveries[fish.owner||pond.owner||'Ely']??=[];if(!list.includes(fish.species))list.push(fish.species);}f.revision++;g.worldRevision=(g.worldRevision||0)+1;}
  if(!f.giantSizeMigration){
   for(const pond of f.ponds)for(let i=pond.fish.length-1;i>=0;i--){const fish=pond.fish[i];if(!fishById(fish.species)?.eldritch)continue;
    if(aquariumFit({...pond,fish:pond.fish.filter((_,j)=>j!==i)},fish)){const owner=fish.owner||pond.owner||'Ely',bag=f.bags[owner]??=[];if(!bag.some(x=>x.id===fish.id))bag.push(fish);pond.fish.splice(i,1);}
@@ -76,7 +77,7 @@ export function fishingAction(g,actor,body,now=Date.now(),rng=random){
   const safe=s.tension>.13&&s.tension<.88;s.strain=safe?Math.max(0,s.strain-dt):s.strain+dt;
   if(s.strain>1.8)return fail(s.tension>.88?'Line snapped · release to lower tension':'Fish escaped · keep some tension');
   s.progress=Math.max(0,s.progress+dt*(reeling&&safe?(7+rod.power*.4)/(1+load*.55)/species.temper:-1));
-  if(s.progress>=100){s.stage='caught';s.finishedAt=now;s.progress=100;s.fish.caughtAt=now;bag.push(s.fish);s.result=s.fish;return changed({notice:'Caught '+species.name+' · '+s.fish.kg+' kg'});}return changed();
+  if(s.progress>=100){s.stage='caught';s.finishedAt=now;s.progress=100;s.fish.caughtAt=now;bag.push(s.fish);const discovered=f.discoveries[name]??=[];if(!discovered.includes(s.fish.species))discovered.push(s.fish.species);s.result=s.fish;return changed({notice:'Caught '+species.name+' · '+s.fish.kg+' kg'});}return changed();
  }
  return {error:'Unknown fishing action'};
 }

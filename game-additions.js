@@ -322,7 +322,7 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
+function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncDestructionEvents();syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
 let worldRefreshBusy=false;
 async function refreshWorld(){if(!connected||worldRefreshBusy)return;worldRefreshBusy=true;try{receiveGame(await api('/api/world',undefined,'GET'));}catch{}finally{worldRefreshBusy=false;}}
 setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
@@ -431,7 +431,7 @@ function receiveBoss(old,boss){
  if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;m.walkAction?.reset().play();}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.38;
  if(boss.hp===0&&old?.hp>0&&bossDefeatGeneration!==boss.generation){bossDefeatGeneration=boss.generation;const m=monsters[0];if(m){m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model),center=box.getCenter(new THREE.Vector3());center.y=Math.max(m.root.position.y+1,(box.max.y+m.root.position.y)/2);createBurst(center);}}
  if(boss.hp===0)for(const m of monsters){m.root.visible=false;m.isChasing=false;m.mixer.stopAllAction();}
- bossHud.setAttribute('aria-valuenow',String(boss.hp));$('boss-fill').style.width=boss.hp+'%';$('boss-text').textContent='AUNTIE · '+boss.hp+' / 100'+(boss.hp===0?' · DEFEATED':'');
+ bossHud.setAttribute('aria-valuenow',String(boss.hp));bossHud.setAttribute('aria-valuemax',String(boss.maxHp||100));$('boss-fill').style.width=(100*boss.hp/(boss.maxHp||100))+'%';$('boss-text').textContent='AUNTIE · LV '+(boss.level||1)+' · '+boss.hp+' / '+(boss.maxHp||100)+(boss.hp===0?' · DEFEATED':'');
  $('water-gun').classList.toggle('red-water',!!gameView.redMode);
 }
 function prepareBossBlood(m){
@@ -470,7 +470,7 @@ function updateGardenWorld(dt){
  bossHud.hidden=!admitted;bossFlash=Math.max(0,bossFlash-dt);
  const boss=gameView.boss;if(boss?.hp===0&&boss.respawnAt){const text='AUNTIE · RESPAWN '+Math.max(0,Math.ceil((boss.respawnAt-Date.now())/1000))+'s';if($('boss-text').textContent!==text)$('boss-text').textContent=text;}
  for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}
-  prepareBossBlood(m);const damage=(100-boss.hp)/100;m.bloodUniform.amount.value=damage;m.bloodUniform.flash.value=bossFlash>0&&Math.floor(bossFlash*35)%2?1:0;
+  prepareBossBlood(m);const damage=Math.max(0,Math.min(1,1-boss.hp/(boss.maxHp||100)));m.bloodUniform.amount.value=damage;m.bloodUniform.flash.value=bossFlash>0&&Math.floor(bossFlash*35)%2?1:0;
   const count=damage>0?Math.max(1,Math.floor(damage*60)):0;m.drips.geometry.setDrawRange(0,count);const attr=m.drips.geometry.attributes.position,{min,size}=m.bloodBounds;
   for(let i=0;i<count;i++){const a=i*2.39996,t=(performance.now()/1100+i*.137)%1;attr.setXYZ(i,min.x+size.x*(.5+Math.cos(a)*.3),min.y+size.y*(.85-t*.8),min.z+size.z*(.5+Math.sin(a)*.3));}attr.needsUpdate=true;
  }
@@ -625,7 +625,7 @@ function showEquipmentAttack(data){
  scene.add(group);equipmentFX.push({group,points,accents,impact,data,travel,age:0,duration:data.family==='saber'?.55:1.05});
 }
 function updateEquipmentEffects(dt){
- updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);
+ updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);updateConstructionDamage(dt);
  const chargeLabel=$('shield-charge'),guard=equipmentById(gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
  if(chargeLabel&&guard){const left=guardState?Math.max(0,Math.ceil(guard.recharge-(Date.now()-guardState.lastHit)/1000)):0;chargeLabel.textContent=left?Math.max(0,guard.capacity-guardState.used).toFixed(1)+' / '+guard.capacity+' · '+left+'s':guard.capacity+' / '+guard.capacity+' · Ready';}
 

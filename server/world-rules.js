@@ -4,8 +4,17 @@ import {dropWeapon,fishingView} from './fishing-rules.js';
 // Shared, server-owned encounter and persistent construction rules.
 import {blockSize,validBlockSize} from '../build-shapes.js';
 export {blockSize};
-export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;return g;}
-export function resetEncounter(g,now=Date.now()){ensureWorld(g);g.pkMode=false;g.redMode=true;g.boss={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
+// One roll per encounter, owned by the server and persisted in the shared world.
+export const BOSS_VARIANTS=[
+ {tier:'Wanderer',level:1,maxHp:100,damage:1,speed:1,weight:.4},
+ {tier:'Hunter',level:5,maxHp:240,damage:1,speed:1.08,weight:.27},
+ {tier:'Elder',level:12,maxHp:600,damage:2,speed:1.16,weight:.18},
+ {tier:'Dread',level:24,maxHp:1400,damage:2,speed:1.24,weight:.10},
+ {tier:'Ancient',level:40,maxHp:3000,damage:3,speed:1.32,weight:.05}
+];
+export function rollBoss(rng=Math.random){let r=rng();const variant=BOSS_VARIANTS.find(v=>(r-=v.weight)<0)||BOSS_VARIANTS.at(-1);const {weight,...stats}=variant;return {...stats,hp:stats.maxHp};}
+export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;g.boss.maxHp??=100;g.boss.level??=1;g.boss.tier??='Wanderer';g.boss.damage??=1;g.boss.speed??=1;return g;}
+export function resetEncounter(g,now=Date.now(),rng=Math.random){ensureWorld(g);g.pkMode=false;g.redMode=true;g.boss={...rollBoss(rng),position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
 export function activateEncounter(g,text,name){
  ensureWorld(g);const command=text.trim().toLowerCase();
  if(command==='/show me the money'&&['Ely','Rae'].includes(name)){g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+100;g.worldRevision++;return true;}
@@ -13,7 +22,7 @@ export function activateEncounter(g,text,name){
  if(command==='/pk'){g.pkMode=!g.pkMode;g.redMode=!g.pkMode;g.worldRevision++;return true;}
  if(command!=='/一起打阿姨')return false;g.pkMode=false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
  ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;g.boss.paused=players.some(p=>p.state?.paused);
@@ -22,7 +31,7 @@ export function advanceBoss(g,players,now=Date.now()){
  const pos=g.boss.position,targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&p.state.position[1]<5);
  targets.sort((a,b)=>Math.hypot(a.state.position[0]-pos[0],a.state.position[2]-pos[2])-Math.hypot(b.state.position[0]-pos[0],b.state.position[2]-pos[2]));
  g.boss.target=targets[0]?.character||null;if(!targets.length){g.boss.chasing=false;return;}const t=targets[0].state.position,dx=t[0]-pos[0],dz=t[2]-pos[2],distance=Math.hypot(dx,dz);g.boss.chasing=distance<8;if(distance<1.3)return;
- const step=Math.min(distance-1.3,(distance<8?4.5:1.25)*dt),nx=pos[0]+dx/distance*step,nz=pos[2]+dz/distance*step;
+ const step=Math.min(distance-1.3,(distance<8?4.5:1.25)*g.boss.speed*dt),nx=pos[0]+dx/distance*step,nz=pos[2]+dz/distance*step;
  const free=(x,z)=>!g.blocks.some(b=>b.position[1]<12&&containsBlock(b,x,b.position[1]+.5,z,1.1));
  if(free(nx,nz)){pos[0]=nx;pos[2]=nz;}else if(free(nx,pos[2]))pos[0]=nx;else if(free(pos[0],nz))pos[2]=nz;
  g.boss.rotation=Math.atan2(dx,dz);
@@ -57,7 +66,7 @@ export function rayBlock(b,origin,direction){
  if(a<1e-8)return c<=0?near:Infinity;const disc=bb*bb-4*a*c;if(disc<0)return Infinity;
  near=Math.max(near,(-bb-Math.sqrt(disc))/(2*a));far=Math.min(far,(-bb+Math.sqrt(disc))/(2*a));return far>=near?near:Infinity;
 }
-export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)));}
+export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)),...(g.fishing?.ponds||[]).map(p=>rayBlock({shape:'cube',position:p.position,size:p.size||[6,2.1,4]},origin,direction)));}
 export function shootBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;
  const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
@@ -65,4 +74,19 @@ export function shootBoss(g,shot,now=Date.now()){
  const damage=shot.damage??(1+Math.floor(4*shot.charge));g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;
  if(g.boss.hp===0){g.boss.respawnAt=now+30000;awardKill(g,shot.shooter);dropWeapon(g,now);}
  shot.hit='Auntie';shot.damage=damage;shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);
+}
+
+export function shootConstruction(g,shot,now=Date.now()){
+ if(shot.hit)return;
+ const candidates=[...(g.blocks||[]).map(row=>({row,kind:'block',distance:rayBlock(row,shot.origin,shot.direction)})),...(g.fishing?.ponds||[]).map(row=>({row,kind:'pond',distance:rayBlock({shape:'cube',position:row.position,size:row.size||[6,2.1,4]},shot.origin,shot.direction)}))];
+ const target=candidates.filter(c=>Number.isFinite(c.distance)&&c.distance<=shot.range&&c.distance<=coverDistance(g,shot.origin,shot.direction)+.001).sort((a,b)=>a.distance-b.distance)[0];if(!target)return;
+ const {row,kind,distance}=target;
+ row.maxHits??=kind==='pond'?10:3+[...row.id].reduce((n,c)=>n+c.charCodeAt(0),0)%3;
+ row.hits=Math.min(row.maxHits,(row.hits||0)+1);row.lastHit=now;
+ const destroyed=row.hits===row.maxHits;
+ shot.hit=kind==='pond'?'Aquarium':'Block';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*distance);
+ shot.structureHit={id:row.id,kind,hits:row.hits,maxHits:row.maxHits,destroyed};
+ if(kind==='block'){if(destroyed)g.blocks=g.blocks.filter(b=>b.id!==row.id);g.buildRevision++;}
+ else {if(destroyed)g.fishing.ponds=g.fishing.ponds.filter(p=>p.id!==row.id);g.fishing.revision++;}
+ if(destroyed){g.destructions??=[];g.destructions.push({id:row.id,kind,position:row.position,size:kind==='pond'?row.size||[6,2.1,4]:blockSize(row),color:row.color||'#a7daed',time:now});g.destructions=g.destructions.slice(-12);}
 }

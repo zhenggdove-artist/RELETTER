@@ -80,7 +80,7 @@ function renderFishing(force=false){
   $('dig-hole').onclick=()=>{const d=new THREE.Vector3(0,0,4).applyAxisAngle(new THREE.Vector3(0,1,0),gameplayHeading(charModel));adventureAction({action:'dig',position:[Math.round(charRoot.position.x+d.x),0,Math.round(charRoot.position.z+d.z)]});};
   $('hole-select').onchange=e=>{manualHole=e.target.value;selectedHole=manualHole;};$('cast-line').onclick=()=>{selectedHole=chooseFishingHole(fstate().holes,charRoot.position.toArray(),manualHole)?.id||null;if(!selectedHole){centerNotice('Stand within 6 m of a hole');return;}adventureAction({action:'cast',hole:selectedHole});};$('cancel-fish').onclick=()=>adventureAction({action:'cancel-fishing'});
   $('fish-bag').onclick=()=>openFishing('collection');$('fish-back').onclick=()=>{claimPanel('none');reflectPanels();};
- }else if(fishTab==='atlas')content.innerHTML=FISH.map(s=>fishCard(s)).join('');
+ }else if(fishTab==='atlas')content.innerHTML=FISH.map(s=>s.redOnly&&!(f.discoveries?.[selectedCharacter]||[]).includes(s.id)?'<article class="fish-card undiscovered"><div aria-hidden="true" style="width:120px;min-height:100px;display:grid;place-items:center;font-size:38px;color:#afa4c2">??</div><div><small>UNDISCOVERED</small><h3>??</h3><p>Discover in crimson waters</p></div></article>':fishCard(s)).join('');
  else if(fishTab==='collection')content.innerHTML=bag.length?bag.map(fish=>fishCard(fish,`<button data-sell-fish="${fish.id}">Sell · ${fishPrice(fish)}</button><span>Kept in collection</span>`)).join(''):'<p>Your catches are kept here automatically. Sell them or release them into a pond.</p>';
  else {const ponds=f.ponds.filter(p=>distanceTo(p.position)<Math.max(7,(p.radius||3)+4)&&charRoot.position.y<3);content.innerHTML=ponds.length?ponds.map(p=>`<section class="pond-collection"><h3>Glass aquarium · ${p.fish.length}/${p.capacity||30}</h3><button data-pond-destroy="${p.id}" ${p.fish.length?'disabled':''}>Remove empty pond</button><h4>Your collection · release into this pond</h4>${bag.map(f=>fishCard(f,`<button data-release="${f.id}" data-pond="${p.id}" ${aquariumFit(p,f)?'disabled':''}>${aquariumFit(p,f)||'Release into pond'}</button>`)).join('')}<h4>Swimming here</h4>${p.fish.map(f=>fishCard(f,f.owner===selectedCharacter?`<button data-retrieve="${f.id}" data-pond="${p.id}">Return to collection</button>`:'')).join('')}</section>`).join(''):'<p>Stand beside a pond to release or retrieve your fish. Purchase a pond in SHOP, then place it in BUILD.</p>';}
 }
@@ -163,4 +163,49 @@ function updateFishingRods(f){
   g.updateMatrixWorld(true);const tip=g.localToWorld(new THREE.Vector3(0,2.3,bend)),attr=g.userData.line.geometry.attributes.position;for(let i=0;i<25;i++){const t=i/24;attr.setXYZ(i,THREE.MathUtils.lerp(tip.x,end.x,t),THREE.MathUtils.lerp(tip.y,end.y,t)-Math.sin(t*Math.PI)*(fight?.035:.18),THREE.MathUtils.lerp(tip.z,end.z,t));}attr.needsUpdate=true;
  }
  for(const [id,g] of fishingRods)if(!active.has(id)){disposeAdventure(g.userData.line);disposeAdventure(g.userData.bobber);disposeAdventure(g);fishingRods.delete(id);}
+}
+
+// Shared structural damage: shader cracks preserve user-painted skins and atlas UVs.
+const seenDestructions=new Set(),constructionBursts=[];
+function damageMaterial(mesh){
+ const mat=mesh.material;if(!mat?.isMeshStandardMaterial&&!mat?.isMeshPhongMaterial)return null;
+ if(mat.userData.structuralDamage)return mat.userData.structuralDamage;
+ const uniforms={amount:{value:0},flash:{value:0}};mat.userData.structuralDamage=uniforms;
+ const previous=mat.onBeforeCompile;mat.onBeforeCompile=shader=>{previous.call(mat,shader);shader.uniforms.buildCracks=uniforms.amount;shader.uniforms.buildFlash=uniforms.flash;
+ shader.vertexShader='varying vec3 fracturePosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nfracturePosition=position;');
+ shader.fragmentShader='varying vec3 fracturePosition;uniform float buildCracks,buildFlash;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+ float crack=0.,edge=0.;vec3 p=fracturePosition;
+ for(int i=0;i<10;i++){float k=float(i);if(k>=buildCracks)break;
+  vec3 axis=normalize(vec3(sin(k*2.7+.5),cos(k*1.7+.4),sin(k*4.1+1.)));
+  float q=dot(p,axis)+sin(dot(p,axis.zxy)*9.+k)*.035+sin(dot(p,axis.yzx)*23.+k)*.018-(k-2.)*.17;
+  float width=.009+.002*buildCracks,aa=max(.001,fwidth(q));crack=max(crack,1.-smoothstep(width,width+aa,abs(q)));edge=max(edge,1.-smoothstep(width*2.,width*2.+aa,abs(q)));
+ }
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.88,.96,1.),edge*.6);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.045,.028,.06),crack*.9);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.,.79,.87),buildFlash*.85);
+ diffuseColor.a=max(diffuseColor.a,crack*.85);
+ `).replace('#include <opaque_fragment>', 'outgoingLight=mix(outgoingLight,vec3(.006,.009,.015),crack*.98);outgoingLight=mix(outgoingLight,vec3(1.,.45,.6),buildFlash*.65);\n#include <opaque_fragment>');};mat.customProgramCacheKey=()=> 'structural-fractures-v1';mat.needsUpdate=true;return uniforms;
+}
+function syncDestructionEvents(){
+ for(const event of gameView.destructions||[]){if(seenDestructions.has(event.id))continue;seenDestructions.add(event.id);if(Date.now()-event.time>5000)continue;
+  if(constructionBursts.length>=6)disposeConstructionBurst(constructionBursts.shift());
+  const group=new THREE.Group(),count=event.kind==='pond'?420:90,positions=[],velocities=[];
+  let seed=event.id.split('').reduce((a,c)=>a+c.charCodeAt(0),1);const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  const [w,h,d]=event.size;for(let i=0;i<count;i++){const a=random()*Math.PI*2,r=random(),height=random()*h;positions.push(Math.cos(a)*w*.45*r,height,Math.sin(a)*d*.45*r);velocities.push(Math.cos(a)*(1.5+random()*4),1+random()*4,Math.sin(a)*(1.5+random()*4));}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('velocity',new THREE.Float32BufferAttribute(velocities,3));
+  const mat=new THREE.ShaderMaterial({uniforms:{age:{value:0},tint:{value:new THREE.Color(event.kind==='pond'?'#9be9ff':event.color)}},transparent:true,depthWrite:false,vertexShader:`attribute vec3 velocity;uniform float age;varying float opacity;void main(){vec3 p=position+velocity*age;p.y=max(.025,p.y-3.8*age*age);vec4 v=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*v;gl_PointSize=clamp(160./max(1.,-v.z),2.,12.);opacity=max(0.,1.-age/2.6);}`,fragmentShader:`uniform vec3 tint;varying float opacity;void main(){vec2 p=gl_PointCoord-.5;float a=1.-smoothstep(.18,.5,length(p*vec2(1.6,1.)));gl_FragColor=vec4(tint,a*opacity*.85);}`});const points=new THREE.Points(geo,mat);points.frustumCulled=false;group.add(points);group.position.fromArray(event.position);scene.add(group);
+  const escaping=[];if(event.kind==='pond')for(const [id,fish] of pondFish)if(fish.userData.pond?.id===event.id){pondFish.delete(id);escaping.push({fish,start:fish.position.clone(),scale:fish.scale.clone(),direction:new THREE.Vector3(Math.sin(fish.userData.seed)*3,0,Math.cos(fish.userData.seed)*3)});}
+  constructionBursts.push({group,mat,age:0,escaping});
+ }while(seenDestructions.size>128)seenDestructions.delete(seenDestructions.values().next().value);
+}
+function disposeConstructionBurst(b){disposeAdventure(b.group);for(const {fish} of b.escaping){scene.remove(fish);fish.userData.giant?disposeFishModel(fish):disposeAdventure(fish);}}
+function updateConstructionDamage(dt){
+ for(const [rows,map,pond] of [[gameView.blocks||[],buildMeshes,false],[fstate().ponds,waterFeatures,true]])for(const row of rows){const object=map.get(row.id);if(!object)continue;
+  const elapsed=(Date.now()-(row.lastHit||0))/1000,flash=Math.max(0,1-elapsed/.32),shake=flash*Math.sin(elapsed*70)*.035;
+  if(!object.userData.damageUniforms){const uniforms=[];object.traverse(o=>{const u=damageMaterial(o);if(u)uniforms.push(u);});object.userData.damageUniforms=uniforms;}
+  for(const u of object.userData.damageUniforms){u.amount.value=row.hits||0;u.flash.value=flash;}
+  object.position.x=row.position[0]+shake;object.position.z=row.position[2]-shake*.6;object.rotation.z=shake*.3;
+ }
+ for(let i=constructionBursts.length-1;i>=0;i--){const b=constructionBursts[i];b.age+=dt;b.mat.uniforms.age.value=b.age;
+  for(const item of b.escaping){const {fish,start,scale,direction}=item;fish.position.copy(start).addScaledVector(direction,b.age);fish.position.y=Math.max(.1,start.y-b.age*b.age*2);fish.scale.copy(scale).multiplyScalar(Math.max(.01,1-Math.max(0,b.age-1)/1.6));fish.rotation.z=Math.sin(b.age*5)*.2;if(fish.userData.giant)animateFishModel(fish,globalTime);}
+  if(b.age>=2.6){disposeConstructionBurst(b);constructionBursts.splice(i,1);}
+ }
 }
