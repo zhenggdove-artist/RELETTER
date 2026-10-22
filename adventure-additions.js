@@ -129,7 +129,7 @@ function updateAdventure(dt){
   const point=charRoot.position.clone().add(new THREE.Vector3(.9,1.7,0)).project(camera),w=innerWidth,h=innerHeight;
   const action=$('world-fishing-action');action.hidden=!(biting||fight)||catchViewerOpen;
   action.style.left=Math.max(h<500?100:12,Math.min(w-(h<500?210:132),(point.x*.5+.5)*w+22))+'px';
-  action.style.top=Math.max(145,Math.min(h-240,(-point.y*.5+.5)*h))+'px';
+  action.style.top=Math.max(170,Math.min(h-240,(-point.y*.5+.5)*h))+'px';
  }
 
  for(const m of waterFeatures.values())m.userData.water.material.uniforms.time.value=globalTime;

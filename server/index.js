@@ -68,7 +68,7 @@ try{
     if(url.pathname==='/api/world'&&req.method==='GET')return json(res,200,worldView(game));
     if(url.pathname==='/api/surfaces'&&req.method==='POST'){const b=await body(req),key=await surfaceHash(b.image);if(pool)await pool.query('INSERT INTO reletter_surfaces VALUES($1,$2) ON CONFLICT(id) DO NOTHING',[key,b.image]);else db.prepare('INSERT OR IGNORE INTO reletter_surfaces VALUES(?,?)').run(key,b.image);return json(res,200,{id:key});}
     if(url.pathname.startsWith('/api/surfaces/')&&req.method==='GET'){const key=url.pathname.split('/').pop();if(!validSurfaceId(key))return json(res,400,{error:'Invalid skin'});const row=await surfaceRow(key);return json(res,row?200:404,row?{image:row.data}:{error:'Skin missing'});}
-    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);if(input.surface&&!await surfaceRow(input.surface))return json(res,400,{error:'Upload the skin first'});advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,notice:result.notice,game:worldView(game)});}
+    if(url.pathname==='/api/game'&&req.method==='POST'){prunePeers();const p=peers.get(id);if(!p)return json(res,409,{error:'Not connected'});const input=await body(req);if(input.surface&&!await surfaceRow(input.surface))return json(res,400,{error:'Upload the skin first'});advanceBoss(game,roster());const result=battleAction(game,{...p,id},roster(),input);if(result.error)return json(res,400,{error:result.error});game.worldRevision++;await saveWorld();broadcast('game',worldView(game));if(result.shot)broadcast('water',result.shot);return json(res,200,{ok:true,blocked:result.blocked,defeated:result.defeated,notice:result.notice,game:worldView(game)});}
     if(url.pathname==='/api/events'){
       prunePeers();
       const character=url.searchParams.get('character');
@@ -104,7 +104,7 @@ try{
   const content=await readFile(path);res.writeHead(200,{'Content-Type':mime[extname(path).toLowerCase()]});res.end(content);
 }catch(e){if(!res.headersSent)json(res,e.code==='ENOENT'?404:500,{error:'Request failed'});else res.end();console.error(e.message);}
 });
-setInterval(()=>{if(!peers.size||game.boss.hp<=0)return;prunePeers();advanceBoss(game,roster());broadcast('boss',game.boss);},100).unref();
+setInterval(()=>{if(!peers.size)return;prunePeers();const generation=game.boss.generation;advanceBoss(game,roster());if(generation!==game.boss.generation)saveWorld().catch(console.error);broadcast('boss',game.boss);},100).unref();
 server.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('RELETTER http://localhost:'+(process.env.PORT||3000)));
 
 setInterval(()=>{prunePeers();if(expireHoles(game)){saveWorld().catch(console.error);broadcast('game',worldView(game));}},15000).unref();

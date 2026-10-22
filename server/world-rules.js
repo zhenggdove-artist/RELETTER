@@ -1,9 +1,10 @@
+import {awardKill} from '../progression.js';
 import {validSurfaceId} from './surface-rules.js';
 import {dropWeapon,fishingView} from './fishing-rules.js';
 // Shared, server-owned encounter and persistent construction rules.
 import {blockSize,validBlockSize} from '../build-shapes.js';
 export {blockSize};
-export function ensureWorld(g){g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;return g;}
+export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;return g;}
 export function resetEncounter(g,now=Date.now()){ensureWorld(g);g.pkMode=false;g.redMode=true;g.boss={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:g.boss.generation+1};g.bossClock=now;}
 export function activateEncounter(g,text,name){
  ensureWorld(g);const command=text.trim().toLowerCase();
@@ -12,11 +13,12 @@ export function activateEncounter(g,text,name){
  if(command==='/pk'){g.pkMode=!g.pkMode;g.redMode=!g.pkMode;g.worldRevision++;return true;}
  if(command!=='/一起打阿姨')return false;g.pkMode=false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
  ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;g.boss.paused=players.some(p=>p.state?.paused);
- if(g.boss.hp<=0||g.boss.paused)return;
+ if(g.boss.hp<=0){g.boss.respawnAt??=now+30000;if(now<g.boss.respawnAt||!players.length)return;const pk=g.pkMode;resetEncounter(g,now);g.pkMode=pk;g.redMode=!pk;g.worldRevision++;g.boss.paused=players.some(p=>p.state?.paused);}
+ if(g.boss.paused)return;
  const pos=g.boss.position,targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&p.state.position[1]<5);
  targets.sort((a,b)=>Math.hypot(a.state.position[0]-pos[0],a.state.position[2]-pos[2])-Math.hypot(b.state.position[0]-pos[0],b.state.position[2]-pos[2]));
  g.boss.target=targets[0]?.character||null;if(!targets.length){g.boss.chasing=false;return;}const t=targets[0].state.position,dx=t[0]-pos[0],dz=t[2]-pos[2],distance=Math.hypot(dx,dz);g.boss.chasing=distance<8;if(distance<1.3)return;
@@ -61,6 +63,6 @@ export function shootBoss(g,shot,now=Date.now()){
  const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
  if(p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)<-2.8||!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<Math.max(along,p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)-2.8))return;
  const damage=shot.damage??(1+Math.floor(4*shot.charge));g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;
- if(g.boss.hp===0)dropWeapon(g,now);
+ if(g.boss.hp===0){g.boss.respawnAt=now+30000;awardKill(g,shot.shooter);dropWeapon(g,now);}
  shot.hit='Auntie';shot.damage=damage;shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);
 }

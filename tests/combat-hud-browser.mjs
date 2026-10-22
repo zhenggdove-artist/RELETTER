@@ -20,7 +20,7 @@ try{
  await p.evaluate(()=>{const t=reletter_test;t.explore([0,0,6]);t.receiveSnapshot('game',{worldRevision:200000,fishing:{revision:200000,holes:[{id:'hud-hole',position:[0,0,10],radius:1.5,depth:3}],ponds:[],bags:{},sessions:{Ely:{id:'hud-cast',hole:'hud-hole',stage:'fight',tension:.55,progress:45}}}});t.step(3000);});
  for(const [width,height] of [[390,844],[320,568],[844,390],[390,320],[1280,800]]){
   await p.setViewportSize({width,height});await p.evaluate(()=>{reletter_test.step(16);reletter_test.render();});
-  const boxes=await p.evaluate(()=>['fishing-tools','world-fishing-action','fishing-meters','joystick-zone','jump-btn','boss-health'].map(id=>document.getElementById(id)).filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&getComputedStyle(e).display!=='none';}).map(e=>{const r=e.getBoundingClientRect();return {id:e.id,x:r.x,y:r.y,w:r.width,h:r.height};}));
+  const boxes=await p.evaluate(()=>['fishing-tools','world-fishing-action','fishing-meters','joystick-zone','jump-btn','boss-health','player-progression'].map(id=>document.getElementById(id)).filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&getComputedStyle(e).display!=='none';}).map(e=>{const r=e.getBoundingClientRect();return {id:e.id,x:r.x,y:r.y,w:r.width,h:r.height};}));
   for(const a of boxes){assert.ok(a.x>=0&&a.y>=0&&a.x+a.w<=width+1&&a.y+a.h<=height+1,JSON.stringify(a));for(const b of boxes)if(a!==b)assert.ok(Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)<=1||Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)<=1,`${width}x${height} ${a.id} overlaps ${b.id}`);}
   await p.screenshot({path:`output/combat-hud/fishing-${width}-${height}.png`});
  }

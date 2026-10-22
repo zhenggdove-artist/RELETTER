@@ -288,7 +288,7 @@ body.fishing-hud-active #action-dock{display:none!important}
 #fishing-tools{position:absolute;left:var(--edge);bottom:calc(10px + env(safe-area-inset-bottom));width:var(--panel-width);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;pointer-events:auto}
 #fishing-tools button,#fishing-tools select{box-sizing:border-box;min-width:0;width:100%;height:48px;border:1px solid #b59ec8;border-radius:14px;background:#f7ecffed;color:#4b365b;font:11px sans-serif;padding:3px;touch-action:manipulation}
 #fishing-tools :disabled{opacity:.55}
-#fishing-meters{position:absolute;top:92px;left:50%;transform:translateX(-50%);width:min(280px,calc(100vw - 32px));text-shadow:0 1px 3px white;pointer-events:none}
+#fishing-meters{position:absolute;top:116px;left:50%;transform:translateX(-50%);width:min(280px,calc(100vw - 32px));text-shadow:0 1px 3px white;pointer-events:none}
 #bite-status{display:block;text-align:center;font-weight:bold;margin-bottom:4px}
 #fishing-meters label{display:grid;grid-template-columns:62px 1fr;gap:6px;align-items:center;font:10px sans-serif}
 #fishing-meters meter,#fishing-meters progress{width:100%;height:10px;accent-color:#9572c7}
@@ -297,8 +297,10 @@ body.fishing-hud-active #action-dock{display:none!important}
 #hook-fish{animation:hook-pulse .65s ease-in-out infinite alternate}
 #world-fishing-action small{display:block;font:10px/1.4 sans-serif;color:white;text-shadow:0 1px 3px #20112a;margin-top:6px}
 @keyframes hook-pulse{to{transform:scale(1.14);box-shadow:0 0 24px #b699ff}}
-@media(max-height:500px){#fishing-meters{top:92px;width:230px}#world-fishing-action small{display:none}}
+@media(max-height:500px){#fishing-meters{top:116px;width:230px}#world-fishing-action small{display:none}}
 @media(prefers-reduced-motion:reduce){#hook-fish{animation:none}}
+
+:root{--panel-top:122px}#boss-health{top:94px}#player-progression{position:fixed;top:70px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 24px));height:18px;box-sizing:border-box;border-radius:9px;background:linear-gradient(90deg,#acd9d4 var(--xp),#f8f2fa var(--xp));font:11px/18px sans-serif;text-align:center;color:#342c44;z-index:180;pointer-events:none}#player-progression[hidden]{display:none}body.keyboard-open #player-progression{visibility:hidden}
 </style>
 </head>
 <body>
@@ -308,7 +310,7 @@ body.fishing-hud-active #action-dock{display:none!important}
 #entry-gate input{box-sizing:border-box;width:100%;padding:14px;border-radius:14px;border:1px solid #c3abce;background:white}#entry-gate button{margin-top:14px;padding:14px 25px;border:0;border-radius:14px;background:#725782;color:white;cursor:pointer}#characters[hidden],#login-form[hidden]{display:none}#characters button{display:inline-flex;flex-direction:column;align-items:center;margin:8px;background:white;color:#493554;width:130px}.character-orb{display:block;width:60px;height:70px;border-radius:45% 45% 35% 35%;background:#eccab2;margin:8px;box-shadow:inset -12px -6px 0 #0001}.rae{background:#8b65c5}#gate-error,#media-error{color:#a23a59;font-size:13px}
 #ui{max-height:80vh;overflow:auto}#media-tools{padding:4px 12px 12px;font-family:sans-serif}#drawing{width:100%;height:145px;background:#fff;border-radius:12px;touch-action:none;cursor:crosshair}#media-tools label{font-size:12px}#media-tools button{padding:6px 10px;margin:4px 0;width:auto;font-size:12px}.upload-button{display:inline-block;padding:6px 10px;margin:4px 6px 4px 0;border:1px solid #ae91bd;border-radius:8px;background:#fff9;cursor:pointer}#upload-name{display:block;font-size:11px;overflow-wrap:anywhere}#image-preview{max-width:100%;max-height:90px;object-fit:contain}#ui.mini #media-tools{display:none}#plant-label{max-width:300px;max-height:55vh;overflow:auto;white-space:normal;pointer-events:none}#plant-label img{display:block;max-width:260px;max-height:140px;object-fit:contain;margin:6px auto;background:#fff;border-radius:8px}
 /* One responsive layout for mouse, touch and hybrid devices. */
-:root{--view-top:0px;--view-height:100dvh;--panel-top:100px;--reserved-bottom:168px;--edge:12px;--panel-width:min(420px,calc(100vw - 24px))}
+:root{--view-top:0px;--view-height:100dvh;--panel-top:122px;--reserved-bottom:168px;--edge:12px;--panel-width:min(420px,calc(100vw - 24px))}
 #action-dock{position:fixed;left:var(--edge);bottom:calc(10px + env(safe-area-inset-bottom));width:var(--panel-width);display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;z-index:220;box-sizing:border-box}
 #action-dock button{position:static!important;inset:auto!important;display:block!important;width:100%!important;height:46px!important;min-width:0;min-height:44px;margin:0!important;padding:6px;border:1px solid #ae91bd;border-radius:14px;background:#f5e5ff;color:#46344f;font:clamp(10px,2.6vw,12px) sans-serif;box-sizing:border-box;cursor:pointer;touch-action:manipulation}
 #action-dock button[hidden]{visibility:hidden}#action-dock #go-down[hidden],#action-dock #build-open[hidden]{display:none!important}#search-btn::before{content:none}#action-dock button[aria-expanded=true]{background:#e4c9f7;border-color:#77518f}#water-gun{background:#d4f3ff!important;color:#34546d!important}#action-dock[hidden]{display:none}
@@ -320,7 +322,7 @@ body.fishing-hud-active #action-dock{display:none!important}
 #plant-label{max-width:min(300px,calc(100vw - 24px));max-height:calc(var(--view-height) - 244px);overflow:auto;white-space:normal;pointer-events:auto;touch-action:pan-y;box-sizing:border-box;z-index:200}#plant-label img{max-width:100%;max-height:140px}#plant-label audio,#plant-label video{display:block;width:100%;max-height:180px;margin:8px 0}#plant-label button{min-height:44px;padding:8px 16px;border:1px solid #ae91bd;border-radius:10px;background:#f5e5ff;color:#46344f}#av-preview audio,#av-preview video{max-width:100%;max-height:150px}#pop{bottom:var(--reserved-bottom);max-height:calc(var(--view-height) - 244px)}
 .message-time{display:block;text-align:right;margin-top:6px;font:11px/1.5 sans-serif;letter-spacing:0;color:#705b7a;white-space:nowrap}
 body.keyboard-open{--panel-top:8px;--reserved-bottom:8px}body.keyboard-open #action-dock,body.keyboard-open #game-controls,body.keyboard-open #title,body.keyboard-open #coin-counter,body.keyboard-open #water-status{visibility:hidden}
-@media(max-height:400px){:root{--panel-top:100px;--reserved-bottom:152px}#title{font-size:20px}#connection{display:none}#online-panel.chatting{padding:5px;gap:4px}#joystick-zone{bottom:70px;width:60px;height:60px}#jump-btn{bottom:74px}}
+@media(max-height:400px){:root{--panel-top:122px;--reserved-bottom:152px}#title{font-size:20px}#connection{display:none}#online-panel.chatting{padding:5px;gap:4px}#joystick-zone{bottom:70px;width:60px;height:60px}#jump-btn{bottom:74px}}
 @media(max-height:400px){body:is([data-panel="chat"],[data-panel="search"],[data-panel="write"],[data-panel="build"],[data-panel="shop"]){--panel-top:8px}body:is([data-panel="chat"],[data-panel="search"],[data-panel="write"],[data-panel="build"],[data-panel="shop"]) :is(#title,#coin-counter,#water-status,#boss-health){visibility:hidden}}
 #search-results .sr-item{cursor:default;padding:10px}.history-preview{display:block;width:100%;min-height:44px;border:0;background:transparent;color:inherit;text-align:left;padding:0;font:14px/1.5 sans-serif;overflow-wrap:anywhere;white-space:pre-wrap;cursor:pointer}.history-actions{display:flex;gap:8px;align-items:center;margin-top:8px;min-width:0}.history-actions .message-time{flex:1;min-width:0;text-align:left;white-space:normal;margin:0}.history-reply{flex:none;min-height:44px;padding:8px 14px;border:1px solid #ae91bd;border-radius:12px;background:#f5e5ff;color:#46344f;font:12px sans-serif;cursor:pointer}
 
@@ -1625,7 +1627,7 @@ function updateMonsters(dt){syncBossMonster(dt);}
 let monsterDeathActive=false;
 
 function triggerPlayerHit(){
-  if(monsterDeathActive||monstersPausedForGarden()||gameView.boss?.hp===0)return;
+  if(monsterDeathActive||monstersPausedForGarden())return;
   monsterDeathActive=true;
 
   // Hide player + explode particles at player position
@@ -2191,7 +2193,7 @@ function animateChar(dt){
 
     // 360-degree camera-relative movement with acceleration
     if(moving&&!isJumping){
-      curSpeed=Math.min(EXPLORE_MAX_SPEED,curSpeed+EXPLORE_ACCEL*dt);
+      curSpeed=Math.min(EXPLORE_MAX_SPEED*currentStats().speedMultiplier,curSpeed+EXPLORE_ACCEL*currentStats().speedMultiplier*dt);
       const fwdX=-Math.sin(camYaw),fwdZ=-Math.cos(camYaw);
       const rightX=-Math.cos(camYaw),rightZ=Math.sin(camYaw);
       let mdx=-joyY*fwdX-joyX*rightX;
@@ -2785,7 +2787,7 @@ document.getElementById('jump-btn').addEventListener('pointerdown',e=>{
   e.preventDefault();e.stopPropagation();
   if(phase!==PHASE.EXPLORE||isJumping)return;
   isJumping=true;
-  charVelY=JUMP_VEL;
+  charVelY=JUMP_VEL*currentStats().jumpMultiplier;
   // Preserve horizontal momentum at jump time
   if(curSpeed>0.1){
     const fwdX=-Math.sin(camYaw),fwdZ=-Math.cos(camYaw);
@@ -3455,6 +3457,7 @@ function updateBugs(t){
 spawnBugsAt(0,0,30);
 
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
+import {playerStats} from './progression.js';
 import {createUltimate,updateUltimate,disposeUltimate,prepareUltimates} from './ultimate-effects.js';
 import {blockSize as footprint} from './build-shapes.js';
 import {sampleMeleePose,meleeDuration,meleeFamilies,meleeTrailPattern,meleeMoveNames} from './melee-motion.js';
@@ -3577,7 +3580,7 @@ function openCloudConnection(character){
 }
 for(const btn of document.querySelectorAll('[data-character]'))btn.onclick=async()=>{
   document.querySelectorAll('[data-character]').forEach(b=>b.disabled=true);$('gate-error').textContent='';
-  try{await ultimateWarmup;await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;dock.hidden=false;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
+  try{await ultimateWarmup;await openConnection(btn.dataset.character);selectedCharacter=btn.dataset.character;receiveGame(gameView);admitted=true;refreshProgression();dock.hidden=false;$('chat-open').hidden=false;$('water-gun').hidden=false;$('chat-minimize').hidden=false;charRoot.position.x=selectedCharacter==='Ely'?-1.5:1.5;$('entry-gate').remove();$('username').value=selectedCharacter;resolveEntryGate();}
   catch(e){$('gate-error').textContent=e.message;document.querySelectorAll('[data-character]').forEach(b=>b.disabled=false);}
 };
 function suspendConnection(){if(!admitted)return;pageSuspended=true;clearTimeout(reconnectTimer);const socket=onlineSocket;onlineSocket=null;connected=false;socket?.close(1000,'Page hidden');fetch('/api/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({connectionId}),keepalive:true}).catch(()=>{});}
@@ -3738,7 +3741,7 @@ window.addEventListener('keydown',e=>{
   if(typing){keysDown.clear();e.stopImmediatePropagation();}
 },true);
 window.addEventListener('blur',()=>keysDown.clear());
-window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,pkMode:!!gameView.pkMode,ultimates:ultimateEffects.map(f=>({name:f.root.name,age:f.age,range:f.range,radius:f.radius})),fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray(),point:rangedAim().point.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
+window.render_game_to_text=()=>JSON.stringify({mode:admitted?phase:'password-or-character',character:selectedCharacter,progression:currentStats(),health:Math.max(0,currentStats().maxHp-(gameView.hits?.[selectedCharacter]||0)),connected,monstersPaused:monstersPausedForGarden(),playerHitFeedback:Object.fromEntries(playerHitTimers),boss:gameView.boss,redMode:!!gameView.redMode,pkMode:!!gameView.pkMode,ultimates:ultimateEffects.map(f=>({name:f.root.name,age:f.age,range:f.range,radius:f.radius})),fishing:gameView.fishing,catchPresentation:{open:catchViewerOpen,species:catchViewState.species,rotation:catchViewState.model?.rotation.y||0},weaponDrops:gameView.weaponDrops,aim:{visible:!aimReticle.hidden,direction:rangedAim().direction.toArray(),point:rangedAim().point.toArray()},melee:meleeEffects.map(f=>({combo:f.combo,age:f.age,strokes:f.strokes.length})),equipment:{effects:equipmentFX.map(f=>({family:f.data.family,age:f.age,range:f.data.range})),open:shopPanelOpen,owned:gameView.inventories?.[selectedCharacter]||[],slots:gameView.equipment?.[selectedCharacter]||{},shields:gameView.shields||{}},build:{revision:gameView.buildRevision,open:buildPanelOpen,preview:buildPosition,selected:selectedBlock,blocks:gameView.blocks||[]},water:{charging:waterChargeStart!==null,charge:waterCharge(),shots:waterEffects.map(f=>({direction:f.direction,range:f.range,radius:f.radius,charge:f.charge,age:f.age,droplets:f.particles.length,red:f.red}))},replyParentId,coins:coinCount,hits:gameView.hits?.[selectedCharacter]||0,loot:gameView.loot||[],players:1+remotePlayers.size,remotePlayers:[...remotePlayers.values()].map(p=>({character:p.character,state:p.state})),coordinateSystem:'Y up, world X/Z horizontal',position:charRoot.position.toArray(),plants:plantEntries.map(p=>({id:p.entryId,text:p.text,username:p.username,drawing:!!p.media?.drawing,image:!!p.media?.image,audio:!!p.media?.audio,video:!!p.media?.video,parentId:p.media?.parentId,position:p.mesh.position.toArray()})),chat:[...$('chat-log').children].map(x=>x.textContent)});
 window.advanceTime=ms=>{for(let t=0;t<ms;t+=50)gameStep(Math.min(50,ms-t)/1000,false);composer.render();};
 if(['localhost','127.0.0.1'].includes(location.hostname))window.reletter_test={THREE,renderer,showCatch:fish=>openCatchViewer(fish),receiveSnapshot:receive,suspend:suspendConnection,resume:()=>{pageSuspended=false;return openCloudConnection(selectedCharacter);},step:ms=>{for(let t=0;t<ms;t+=16)gameStep(Math.min(16,ms-t)/1000,false);},model:()=>charModel,original:()=>originalCharacterTemplate,remotes:()=>[...remotePlayers.values()],plantWithinReach,showEntry:id=>{const e=plantEntries.find(p=>p.entryId===id);if(e)showPlantLabel(e,true);},explore:(position=[0,0,0])=>{phase=PHASE.EXPLORE;charRoot.visible=true;if(charModel)charModel.visible=true;isJumping=false;charVelY=0;autoWalkPhase=false;charRoot.position.fromArray(position);$('game-controls').classList.remove('hide');ui.classList.add('mini');},framePlant:id=>{for(const o of scene.children)if(o!==plantRoot&&!o.isLight)o.visible=false;clearGlow();const e=plantEntries.find(p=>p.entryId===id);if(!e)return;scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(e.mesh),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());charRoot.visible=false;const distance=Math.max(5,size.length()*1.6);camera.position.copy(center).add(new THREE.Vector3(distance*.3,distance*.2,distance));camera.lookAt(center);composer.render();},render:()=>{updateOnline(1);composer.render();},threat:()=>({loaded:monstersLoaded,death:monsterDeathActive,monsters:monsters.map(m=>({position:m.root.position.toArray(),animationTime:m.mixer.time}))}),placeThreat:()=>{monsters.forEach((m,i)=>{m.root.position.set(charRoot.position.x+(i===0?.1:30+i),MONSTER_Y,charRoot.position.z);m.hitCooldown=0;});},world:()=>({charRoot,camera,plantRoot,plantEntries,monsters,buildMeshes,buildGhost,burst,coinTemplate,coins,lootMeshes,equipmentAuras,waterFeatures,pondFish,fishingRods,fishPoseStates,catchView:catchViewState}),plant:(text)=>addPlant(text,false),setBuild:(position,shape='cube')=>{buildPosition=[...position];buildShape=shape;updateBuildGhost();},buildBlocked:blockedByBuild,hitStrength:model=>Math.max(0,...playerFlashUniforms(model).map(u=>u.value))};
 window.reletterPlantScreenPoint=()=>{
@@ -3777,14 +3780,14 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / 3 hits':'CO-OP';syncLootMeshes();syncAdventure();}
+function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
 let worldRefreshBusy=false;
 async function refreshWorld(){if(!connected||worldRefreshBusy)return;worldRefreshBusy=true;try{receiveGame(await api('/api/world',undefined,'GET'));}catch{}finally{worldRefreshBusy=false;}}
 setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
 window.addEventListener('focus',refreshWorld);
 // A short moving jet breaks into droplets, then scatters into a splash.
 // Instancing keeps each spray to one droplet draw call on phones.
-function showWater(data){
+function showWater(data){if(data.defeated&&data.hit===selectedCharacter)triggerPlayerHit();
  if(data.ultimate){showUltimateAttack(data);if(meleeFamilies.includes(data.family))showMeleeAttack(data);if(!data.red&&['Ely','Rae'].includes(data.hit)&&!data.blocked)flashPlayerHit(data.hit);return;}
  if((data.charge||0)>=.65&&!meleeFamilies.includes(data.family))showSignatureBurst(data);
  if(data.family&&(data.family!=='water'||data.weapon!=='water')){showEquipmentAttack(data);if(!data.red&&data.hit&&(!data.blocked||data.blocked<Math.min(2,data.damage)))flashPlayerHit(data.hit);return;}
@@ -3804,7 +3807,7 @@ function showWater(data){
  const rings=[];for(let i=0;i<2;i++){const ring=new THREE.Mesh(new THREE.RingGeometry(.78,1,40),new THREE.MeshBasicMaterial({color:red?'#ef4a62':'#b9eff8',transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.copy(origin).addScaledVector(direction,travel);ring.position.y=impactHeight+.025+i*.008;ring.visible=!data.hit;mesh.add(ring);rings.push(ring);}
  const flight=.65+charge*.3,emission=.22+charge*.2;
  const fx={mesh,drops,particles,rings,origin,heading:direction,side:new THREE.Vector3(-direction.z,0,direction.x),travel,impactHeight,age:0,flight,emission,duration:flight+emission+.5,direction:data.direction,range,radius,charge,red};
- scene.add(mesh);waterEffects.push(fx);animateWaterSpray(fx,0);if(data.hit)$('water-status').textContent=(gameView.hits?.[selectedCharacter]||0)+' / 3 hits · Splash!';
+ scene.add(mesh);waterEffects.push(fx);animateWaterSpray(fx,0);if(data.hit)$('water-status').textContent=(gameView.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits · Splash!';
 }
 const waterDropTransform=new THREE.Object3D(),waterDropTangent=new THREE.Vector3(),waterUp=new THREE.Vector3(0,1,0);
 function animateWaterSpray(fx,dt){
@@ -3907,7 +3910,7 @@ function prepareBossBlood(m){
  m.drips=new THREE.Points(geo,new THREE.PointsMaterial({color:'#9e1030',size:.13,transparent:true,opacity:.8,depthWrite:false}));m.drips.frustumCulled=false;m.root.add(m.drips);
 }
 function syncBossMonster(dt){
- const boss=gameView.boss;
+ const boss=gameView.boss;if(boss?.hp===0&&boss.respawnAt){const text='AUNTIE · RESPAWN '+Math.max(0,Math.ceil((boss.respawnAt-Date.now())/1000))+'s';if($('boss-text').textContent!==text)$('boss-text').textContent=text;}
  for(const m of monsters){
   if(!connected||!boss||boss.hp<=0){m.root.visible=false;continue;}
   // Only the server can move the shared monster. Local frame rates never choose a target.
@@ -3915,7 +3918,7 @@ function syncBossMonster(dt){
   if(boss.paused||monstersPausedForGarden())continue;
   if(!!boss.chasing!==m.isChasing){m.isChasing=!!boss.chasing;if(m.isChasing&&m.chaseAction){m.walkAction?.fadeOut(.2);m.chaseAction.reset().fadeIn(.2).play();}else if(m.walkAction){m.chaseAction?.fadeOut(.2);m.walkAction.reset().fadeIn(.2).play();}}
   m.mixer.update(dt);m.hitCooldown=Math.max(0,m.hitCooldown-dt);
-  const distance=Math.hypot(boss.position[0]-charRoot.position.x,boss.position[2]-charRoot.position.z);if(phase===PHASE.EXPLORE&&charRoot.position.y<5&&distance<MONSTER_HIT_DIST&&m.hitCooldown<=0){m.hitCooldown=MONSTER_HIT_COOLDOWN;if(gameView.equipment?.[selectedCharacter]?.shield){api('/api/game',{action:'monster-hit'}).then(r=>{if(r.game)receiveGame(r.game);if(!r.blocked&&!monstersPausedForGarden()&&gameView.boss?.hp>0)triggerPlayerHit();}).catch(()=>{});}else triggerPlayerHit();}
+  const distance=Math.hypot(boss.position[0]-charRoot.position.x,boss.position[2]-charRoot.position.z);if(phase===PHASE.EXPLORE&&charRoot.position.y<5&&distance<MONSTER_HIT_DIST&&m.hitCooldown<=0){m.hitCooldown=MONSTER_HIT_COOLDOWN;api('/api/game',{action:'monster-hit'}).then(r=>{if(r.game)receiveGame(r.game);if(!r.blocked){flashPlayerHit(selectedCharacter);if(r.defeated)triggerPlayerHit();}}).catch(()=>{});}
  }
  return true;
 }
@@ -3923,7 +3926,7 @@ function updateGardenWorld(dt){
  resolveBuildOverlap();updateEquipmentEffects(dt);
  const canGoDown=phase===PHASE.IDLE||phase===PHASE.DONE||(phase===PHASE.EXPLORE&&charRoot.position.y>3);goDownButton.hidden=!canGoDown;buildButton.hidden=canGoDown;buildButton.disabled=phase!==PHASE.EXPLORE;
  bossHud.hidden=!admitted;bossFlash=Math.max(0,bossFlash-dt);
- const boss=gameView.boss;
+ const boss=gameView.boss;if(boss?.hp===0&&boss.respawnAt){const text='AUNTIE · RESPAWN '+Math.max(0,Math.ceil((boss.respawnAt-Date.now())/1000))+'s';if($('boss-text').textContent!==text)$('boss-text').textContent=text;}
  for(const m of monsters){if(!boss)continue;if(boss.hp===0){m.root.visible=false;continue;}
   prepareBossBlood(m);const damage=(100-boss.hp)/100;m.bloodUniform.amount.value=damage;m.bloodUniform.flash.value=bossFlash>0&&Math.floor(bossFlash*35)%2?1:0;
   const count=damage>0?Math.max(1,Math.floor(damage*60)):0;m.drips.geometry.setDrawRange(0,count);const attr=m.drips.geometry.attributes.position,{min,size}=m.bloodBounds;
@@ -4020,7 +4023,7 @@ function resolveBuildOverlap(){
 function currentWeapon(){return equipmentById(gameView.equipment?.[selectedCharacter]?.weapon)||DEFAULT_WEAPON;}
 const shopButton=document.createElement('button');shopButton.id='shop-open';shopButton.textContent='SHOP';shopButton.type='button';dock.append(shopButton);
 const shopPanel=document.createElement('section');shopPanel.id='shop-panel';shopPanel.hidden=true;shopPanel.setAttribute('aria-label','Garden armory');
-shopPanel.innerHTML=`<header><div><small>RELETTER COLLECTION</small><h2>Garden Armory</h2></div><button id="shop-close" aria-label="Close shop">×</button></header><div class="armory-balance"><span>Equipment · fishing · collections</span><b id="shop-coins"></b></div><div id="equipment-slots"></div><div class="shop-tabs" role="group" aria-label="Shop categories"><button data-tab="all" aria-pressed="true">All</button><button data-tab="weapon">Weapons</button><button data-tab="shield">Shields</button><button data-tab="owned">Owned</button><button data-tab="fishing">Fishing</button><button data-tab="fish-market">Fish market</button></div><p id="shop-feedback" role="status">Hold ATTACK to charge. PvP: up to 2 hits per attack; 3 hits drop coins. Shields recharge after no damage.</p><div id="shop-items"></div>`;
+shopPanel.innerHTML=`<header><div><small>RELETTER COLLECTION</small><h2>Garden Armory</h2></div><button id="shop-close" aria-label="Close shop">×</button></header><div class="armory-balance"><span>Equipment · fishing · collections</span><b id="shop-coins"></b></div><div id="equipment-slots"></div><div class="shop-tabs" role="group" aria-label="Shop categories"><button data-tab="all" aria-pressed="true">All</button><button data-tab="weapon">Weapons</button><button data-tab="shield">Shields</button><button data-tab="owned">Owned</button><button data-tab="fishing">Fishing</button><button data-tab="fish-market">Fish market</button></div><p id="shop-feedback" role="status">Hold ATTACK to charge. PvP: up to 2 hits per attack; Lose all HP to drop coins. Leveling increases HP and attack. Shields recharge after no damage.</p><div id="shop-items"></div>`;
 document.body.append(shopPanel);let shopTab='all',shopBusy=false,shopSignature='';
 function openShop(){if(!admitted)return;claimPanel('shop');shopPanelOpen=true;shopPanel.hidden=false;refreshEquipmentUI(true);reflectPanels();}
 shopButton.onclick=()=>shopPanelOpen?(claimPanel('none'),reflectPanels()):openShop();$('shop-close').onclick=()=>{claimPanel('none');reflectPanels();};
@@ -4040,7 +4043,7 @@ function refreshEquipmentUI(force=false){
  const items=EQUIPMENT.filter(i=>shopTab==='all'||shopTab==='owned'&&owned.includes(i.id)||i.slot===shopTab||shopTab==='fishing'&&['rod','tool','pond'].includes(i.slot));
  $('shop-items').innerHTML=items.length?items.map(item=>{
   const has=owned.includes(item.id),equipped=slots[item.slot]===item.id;
-  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?`<span><b>${item.depth} m</b> water depth</span><span><b>${Math.round(item.redChance*100)}%</b> crimson spring chance</span>`:item.family==='pond'?'<span>Unlocks glass aquariums · choose size in BUILD · 15 / 45 / 100 coins.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${item.damage} → ${attackStats(item,1).damage}</b> damage</span><span><b>${item.range} → ${attackStats(item,1).range}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
+  const stats=item.family==='rod'?`<span><b>${item.power.toFixed(1)} kg</b> power</span><span><b>${Math.round(item.control*100)}%</b> control</span><span><b>${Math.round(item.luck*100)}%</b> rare affinity</span><span><b>${(item.hookWindow/1000).toFixed(2)}s</b> hook window</span>`:item.family==='chisel'?`<span><b>${item.depth} m</b> water depth</span><span><b>${Math.round(item.redChance*100)}%</b> crimson spring chance</span>`:item.family==='pond'?'<span>Unlocks glass aquariums · choose size in BUILD · 15 / 45 / 100 coins.</span>':item.slot==='shield'?`<span><b>${item.capacity}</b> capacity</span><span><b>${item.recharge}s</b> recharge</span>`:`<span><b>${+(item.damage*currentStats().attackMultiplier).toFixed(2)} → ${+(attackStats(item,1).damage*currentStats().attackMultiplier).toFixed(2)}</b> damage</span><span><b>${item.range} → ${attackStats(item,1).range}m</b> range</span><span><b>${(item.radius*2).toFixed(1)}m</b> width</span><span><b>${(item.cooldown/1000).toFixed(2)}s</b> cooldown</span>`;
   return `<article class="item-card" style="--item-color:${item.color}" data-item="${item.id}"><div class="item-art ${item.family}">${itemArt(item)}<i></i></div><div class="item-info"><small>${item.family.toUpperCase()} · TIER ${item.tier}</small><h3>${item.name}</h3><div class="item-stats">${stats}</div><div class="item-bottom"><span>${has?'OWNED':item.price+' coins'}</span><button data-${has?'equip':'buy'}="${item.id}" ${equipped||shopBusy||!has&&balance<item.price?'disabled':''}>${equipped?'Equipped':has?'Equip':'Buy'}</button></div></div></article>`;
  }).join(''):'<p class="shop-empty">Your collection starts here. Earn coins in the garden, then choose your first piece.</p>';
 }
@@ -4233,6 +4236,10 @@ function updateUltimateEffects(dt){for(let i=ultimateEffects.length-1;i>=0;i--){
 
 const ultimateWarmup=prepareUltimates(THREE,renderer,camera).catch(error=>console.warn("Spell preparation",error));
 
+function currentStats(){return playerStats(gameView,selectedCharacter);}
+const progressionHud=document.createElement('div');progressionHud.id='player-progression';progressionHud.hidden=true;document.body.append(progressionHud);
+function refreshProgression(){const p=currentStats(),hp=Math.max(0,p.maxHp-(gameView.hits?.[selectedCharacter]||0));progressionHud.hidden=!admitted;progressionHud.textContent=`LV ${p.level} · HP ${+hp.toFixed(2)} / ${p.maxHp} · XP ${p.xp} / ${p.nextXp}`;progressionHud.style.setProperty('--xp',`${p.xp/p.nextXp*100}%`);progressionHud.title=`Attack ×${p.attackMultiplier.toFixed(2)} · Speed ×${p.speedMultiplier.toFixed(3)} · Jump ×${p.jumpMultiplier.toFixed(3)}`;}
+
 // Garden adventures: hand-held equipment, water features and a server-authoritative fishing loop.
 import {FISH,fishById,fishPrice,fishingById,selectedChisel,AQUARIUM_SIZES,fishDimensions,aquariumFit,chooseFishingHole} from './fishing-catalog.js';
 import {fishSVG,fishDataURL} from './fish-art.js';
@@ -4364,7 +4371,7 @@ function updateAdventure(dt){
   const point=charRoot.position.clone().add(new THREE.Vector3(.9,1.7,0)).project(camera),w=innerWidth,h=innerHeight;
   const action=$('world-fishing-action');action.hidden=!(biting||fight)||catchViewerOpen;
   action.style.left=Math.max(h<500?100:12,Math.min(w-(h<500?210:132),(point.x*.5+.5)*w+22))+'px';
-  action.style.top=Math.max(145,Math.min(h-240,(-point.y*.5+.5)*h))+'px';
+  action.style.top=Math.max(170,Math.min(h-240,(-point.y*.5+.5)*h))+'px';
  }
 
  for(const m of waterFeatures.values())m.userData.water.material.uniforms.time.value=globalTime;

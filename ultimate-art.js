@@ -23,7 +23,7 @@ const vertex=`
  if(uCreature==4.){p.y+=sin(p.x*.6+p.z*.4+uTime*2.)*.12*smoothstep(8.,11.,p.y);}
  if(uCreature==2.&&p.y<5.){float k=1.-smoothstep(0.,5.,p.y);p.x+=sin(p.y*1.8+uTime*3.+p.z)*.35*k;p.z+=cos(p.y+uTime*2.+p.x)*.25*k;}
  }
- vP=p;vN=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}
+ vP=(modelViewMatrix*vec4(p,1.)).xyz;vN=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}
 `;
 const fragment=`
  precision highp float;varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying float vSeed;
@@ -32,7 +32,7 @@ const fragment=`
  void main(){
  // Screen-door dissolve keeps translucent overdraw bounded, including overlapping summons.
  float grain=fract(sin(dot(floor(gl_FragCoord.xy),vec2(12.9898,78.233)))*43758.5453);if(grain>uFade)discard;
- vec3 n=normalize(vN);float lit=dot(n,normalize(vec3(-.42,.7,.55)))*.5+.5;
+ vec3 n=normalize(vN);vec3 dpdx=dFdx(vP),dpdy=dFdy(vP);vec2 duvdx=dFdx(vUv),duvdy=dFdy(vUv);vec3 tangent=normalize(dpdx*duvdy.y-dpdy*duvdx.y+vec3(.00001));vec3 bitangent=normalize(cross(n,tangent));float relief=uPattern<.5?sin(vUv.x*113.+sin(vUv.y*239.)*.5)*.07:uPattern<2.5?sin(vUv.y*100.+vUv.x*12.)*.025:sin(vUv.x*35.+vUv.y*21.)*.03;n=normalize(n+tangent*relief+bitangent*relief*.4);float lit=dot(n,normalize(vec3(-.42,.7,.55)))*.5+.5;
  float band=smoothstep(.3,.42,lit)*.48+smoothstep(.67,.79,lit)*.52;
  vec3 c=mix(uDark,uMid,smoothstep(.18,.38,lit));c=mix(c,uLight,band*.43);
  float ink=0.,glint=0.;vec2 uv=vUv;
@@ -45,7 +45,7 @@ const fragment=`
  else{float curl=sin(uv.x*25.+sin(uv.y*20.)*3.);ink=line(curl,.12)*.65;glint=line(curl-.4,.04);}
  float brush=sin(uv.x*390.+sin(uv.y*140.)*2.)*sin(uv.y*430.)*.018;
  c=mix(c,uDark,ink*.18);c=mix(c,uPaper,glint*.22);c+=brush*.3;
- float rim=pow(1.-abs(n.z),3.);c=mix(c,uPaper,rim*.08);c+=uLight*uGlow*(.65+.2*sin(uTime*3.+vP.y));
+ float sheen=pow(max(0.,dot(reflect(-normalize(vec3(-.42,.7,.55)),n),vec3(0,0,1))),24.);c+=uLight*sheen*.16;float rim=pow(1.-abs(n.z),3.);c=mix(c,uPaper,rim*.08);c+=uLight*uGlow*(.65+.2*sin(uTime*3.+vP.y));
  gl_FragColor=vec4(c,1.);
  #include <tonemapping_fragment>
  #include <colorspace_fragment>
@@ -56,6 +56,7 @@ export function makeArt(T,family){
  const material=(pattern=0,swap=false,glow=0)=>{const m=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms:{uDark:{value:new T.Color(swap?palette[1]:palette[0])},uMid:{value:new T.Color(swap?palette[4]:palette[1])},uLight:{value:new T.Color(swap?palette[3]:palette[2])},uPaper:{value:new T.Color(palette[3])},uPattern:{value:pattern},uFade:{value:1},uTime:{value:0},uGlow:{value:glow},uMotion:{value:0},uCreature:{value:family==='fire'?1:family==='swatter'?2:family==='whip'?3:family==='palm'?4:0},uSpan:{value:30}},side:T.DoubleSide});materials.push(m);return m;};
  const skin=material(0),metal=material(3,true),pale=material(2,true),wingMat=material(2),bark=material(1),leafMat=material(4),enamel=material(5),eye=material(3,true,.45);
  if(['ice','lightning'].includes(family))skin.uniforms.uPattern.value=2;
+ if(family==='lightning'){wingMat.uniforms.uDark.value.set('#151329');wingMat.uniforms.uMid.value.set('#332943');wingMat.uniforms.uLight.value.set('#69547f');pale.uniforms.uMid.value.set('#e9b02d');pale.uniforms.uLight.value.set('#ffe892');}
  if(['planter','palm','whip'].includes(family)){bark.uniforms.uDark.value.set('#352c31');bark.uniforms.uMid.value.set('#805b49');bark.uniforms.uLight.value.set('#b69268');leafMat.uniforms.uDark.value.set('#193c34');leafMat.uniforms.uMid.value.set('#3b7752');leafMat.uniforms.uLight.value.set('#8eb774');}
  const tint=(color,glow=0)=>{const m=material(5,false,glow);m.uniforms.uMid.value.set(color);m.uniforms.uDark.value.set(color).multiplyScalar(.38);m.uniforms.uLight.value.set(color).lerp(new T.Color('#fff4dc'),.12);m.uniforms.uPaper.value.set(color).lerp(new T.Color('#ffffff'),.12);return m;};
  const ivory=tint('#f6ddb1'),black=tint('#121525'),iris=tint(family==='swatter'?'#68132f':family==='ice'?'#a23b96':'#f6bb31',.04),belly=tint(family==='fire'?'#f7bf75':family==='swatter'?'#647c75':'#c6e6ed');
@@ -70,7 +71,7 @@ export function makeArt(T,family){
   }const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(v,3));geo.setAttribute('normal',new T.Float32BufferAttribute(n,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(idx);return mesh(geo,m,parent);
  }
  // Curved, tapered, thin sculpted leaf/feather with a raised rachis, never a cone.
- function blade(length,width,bend=.25,serrated=false){const v=[],uv=[],idx=[],rows=serrated?12:6,cols=serrated?4:2;for(let i=0;i<=rows;i++){const t=i/rows,w=width*Math.pow(Math.sin(Math.PI*t),.62)*(1-.32*t)*(serrated?1-.055*Math.sin(t*100):1);for(let j=0;j<=cols;j++){const x=j/cols*2-1;v.push(x*w,t*length,bend*Math.sin(t*Math.PI)+.13*(1-x*x)*Math.sin(t*Math.PI));uv.push(j/cols,t);if(i<rows&&j<cols){const k=i*(cols+1)+j;idx.push(k,k+1,k+cols+1,k+1,k+cols+2,k+cols+1);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+ function blade(length,width,bend=.25,serrated=false){const v=[],uv=[],idx=[],rows=serrated?12:6,cols=serrated?4:2;for(let i=0;i<=rows;i++){const t=i/rows,w=width*Math.pow(Math.sin(Math.PI*t),.62)*(1-.32*t)*(serrated?1-(family==='lightning'?.23:.055)*Math.sin(t*(family==='lightning'?32:100)):1);for(let j=0;j<=cols;j++){const x=j/cols*2-1;v.push(x*w,t*length,bend*Math.sin(t*Math.PI)+.13*(1-x*x)*Math.sin(t*Math.PI));uv.push(j/cols,t);if(i<rows&&j<cols){const k=i*(cols+1)+j;idx.push(k,k+1,k+cols+1,k+1,k+cols+2,k+cols+1);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
  const feather=(parent,x,y,z,l,w,angle=0,m=wingMat,bend=.3)=>{const o=mesh(blade(l,w,bend,!['planter','palm'].includes(family)),m,parent);o.position.set(x,y,z);o.rotation.z=angle;return o;};
  const horn=(pts,r=.2,parent=root,m=metal)=>sweep(pts,[r,r*.85,r*.4,.008],m,parent,20,7);
  const jewel=(x,y,z,s=.2,parent=root,m=eye)=>{const o=mesh(new T.OctahedronGeometry(s,1),m,parent);o.position.set(x,y,z);o.scale.y=1.4;return o;};
@@ -79,7 +80,7 @@ export function makeArt(T,family){
  function livingEye(parent,x,y,z,side,size=.3){flesh(parent,[x,y,z],[size*.4,size*.72,size],ivory);flesh(parent,[x+side*size*.25,y,z+.04],[size*.22,size*.52,size*.55],iris);flesh(parent,[x+side*size*.4,y,z+.07],[size*.12,size*.42,size*.2],black);flesh(parent,[x+side*size*.45,y+size*.23,z+.11],[size*.08,size*.12,size*.13],ivory);horn([[x,y+size*.5,z-size],[x+side*.06,y+size*.9,z],[x,y+size*.32,z+size]],size*.18,parent,skin);}
  function birdWing(parent,side,ice){const w=group(parent,'wing',side);w.position.set(side*.75,3.1,0);w.rotation.x=-.1;
   sweep([[0,0,0],[side*2,.8,-.2],[side*4.4,1,-1],[side*6,.4,-2]],[.55,.65,.43,.025],skin,w,28,14,.65);
-  for(let layer=0;layer<3;layer++)for(let j=0;j<(layer===0?12:9);j++){const x=side*(.4+j*.43),y=.3+Math.sin(j*.2)*.8,z=-layer*.2-j*.16;const f=feather(w,x,y,z,(layer===0?(ice?3.8:4.7):2.6)-j*.06,layer===0?.43:.36,side*(-.6-j*.048),layer===2?belly:wingMat,ice?.35:.6);f.rotation.x=-.95-layer*.09;}
+  for(let layer=0;layer<3;layer++)for(let j=0;j<(layer===0?12:9);j++){const x=side*(.4+j*.43),y=.3+Math.sin(j*.2)*.8,z=-layer*.2-j*.16;const f=feather(w,x,y,z,(layer===0?(ice?3.8:4.7):2.6)-j*.06,layer===0?.43:.36,side*(-.6-j*.048),ice?(layer===2?belly:wingMat):(layer===0?wingMat:pale),ice?.35:.6);f.rotation.x=-.95-layer*.09;}
   return w;
  }
  function dragonHead(parent,water=false){const h=group(parent,'head');
@@ -119,13 +120,7 @@ export function makeArt(T,family){
   for(const side of [-1,1]){const f=feather(body,0,1,-6,4,.65,side*1.05,wingMat);f.rotation.x=-1;}
   flesh(body,[0,3,3.8],[1.4,.9,1.65],skin);flesh(body,[0,2.55,4.8],[1.05,.35,.8],belly);for(const side of [-1,1])livingEye(body,side*1.1,3.5,4.7,side,.32);
  }else if(family==='saber'){
-  // Luminous blade silhouette retains an ornate hilt.
-  pale.uniforms.uGlow.value=.65;
-  // Faceted blade section and narrow bevels, ornate branching winged crossguard.
-  sweep([[0,-1,0],[0,2,0],[0,9,0],[0,12,0]],[.38,.5,.34,.005],pale,body,18,4,.18);
-  sweep([[0,-1,.1],[0,1,.1],[0,8,.1],[0,10.5,.1]],[.1,.16,.09,.001],enamel,body,16,4,.15);
-  for(const side of [-1,1]){horn([[0,-.5,0],[side*1.5,-.1,0],[side*2.3,1,0],[side*2,1.7,0]],.17,body);for(let j=0;j<5;j++)feather(body,side*(.4+j*.22),-.5,0,1.5,.15,side*(-.6-j*.1),metal);}
-  sweep([[0,-.7,0],[0,-2.5,0],[0,-3,0]],[.18,.16,.25],bark,body,12,10);jewel(0,-3.2,0,.35,body);for(let j=0;j<12;j++){const r=torus(.18,.025,metal,body);r.rotation.x=Math.PI/2;r.position.y=-.8-j*.14;}jewel(0,-.3,.22,.38,body);
+  // The ultimate is pure luminous cutting energy; no summoned physical sword.
  }else if(family==='planter'||family==='palm'){
   const palm=family==='palm';sweep([[0,-.8,0],[.4,2,0],[-.5,5,.3],[.8,8,0],[.25,11,-.3]],[.65,.5,.38,.25,.08],bark,body,40,12);
   for(let j=0;j<9;j++){const a=j*Math.PI*2/9;horn([[0,-.6,0],[Math.cos(a)*2,-.6,Math.sin(a)*2],[Math.cos(a)*4,-.9,Math.sin(a)*4]],.22,body,bark);}
