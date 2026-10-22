@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {battleAction} from '../server/game-rules.js';import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,buildAction,rayBlock} from '../server/world-rules.js';
+import {battleAction} from './resolved-attack.js';import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,buildAction,rayBlock} from '../server/world-rules.js';
 const a={id:'a',character:'Ely',state:{position:[30,0,0],visible:true,phase:2}},b={id:'b',character:'Rae',state:{position:[32,0,0],visible:true,phase:2}};
 test('co-op trigger, 100 health, 1/5 damage, no friendly fire, defeat and reset preserve buildings',()=>{
  const g={};ensureWorld(g);assert.equal(g.boss.hp,100);assert.equal(activateEncounter(g,'other'),false);assert.equal(activateEncounter(g,'/一起打阿姨'),true);

@@ -1,4 +1,5 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
+import {AFFIXES,affixById,activeWeapon,resolveItem,FAMILY_TRAITS} from './combat-traits.js';
 import {playerStats} from './progression.js';
 import {createUltimate,updateUltimate,disposeUltimate,prepareUltimates} from './ultimate-effects.js';
 import {blockSize as footprint} from './build-shapes.js';
@@ -205,7 +206,7 @@ function beginPlantReply(entry){
 }
 let monsterInteractionWasPaused=false,monsterResumeGraceUntil=0;
 function monstersPausedForGarden(){
- const paused=admitted&&(fishingHUDActive||catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
+ const paused=admitted&&(fishingHUDActive||catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||bagPanelOpen||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
  if(paused){monsterInteractionWasPaused=true;return true;}
  if(monsterInteractionWasPaused){monsterInteractionWasPaused=false;monsterResumeGraceUntil=performance.now()+1200;}
  return performance.now()<monsterResumeGraceUntil;
@@ -238,19 +239,20 @@ function syncChatScroll(){chatScroll.max=Math.max(0,chatLog.scrollHeight-chatLog
 chatLog.onscroll=syncChatScroll;chatScroll.oninput=()=>chatLog.scrollTop=+chatScroll.value;
 new ResizeObserver(syncChatScroll).observe(chatLog);
 function appendChat(data){if(chatMessages.has(data.id))return;const atBottom=chatLog.scrollHeight-chatLog.clientHeight-chatLog.scrollTop<30;chatMessages.set(data.id,data);const line=document.createElement('div'),name=document.createElement('b');line.dataset.chatId=data.id;name.textContent=data.name+'：';line.append(name,document.createTextNode(data.text));const time=messageTimestamp(data.time);if(time)line.append(time);const next=[...chatLog.children].find(n=>{const m=chatMessages.get(n.dataset.chatId);return m.time>data.time||(m.time===data.time&&m.id>data.id);});chatLog.insertBefore(line,next||null);if(atBottom||data.name===selectedCharacter)latestChat();syncChatScroll();}
-let buildPanelOpen=false,shopPanelOpen=false;
+let buildPanelOpen=false,shopPanelOpen=false,bagPanelOpen=false;
 const chatInput=$('chat-input'),chatForm=$('chat-form');
 const dock=document.createElement('nav');dock.id='action-dock';dock.setAttribute('aria-label','Game tools');dock.hidden=true;
 const writeOpen=document.createElement('button');writeOpen.id='write-open';writeOpen.type='button';writeOpen.textContent='WRITE';
 $('search-btn').textContent='HISTORY';$('search-btn').setAttribute('aria-label','Plant history');searchInput.placeholder='Search messages…';
 dock.append($('search-btn'),$('chat-open'),writeOpen,$('water-gun'));document.body.append(dock);
 const searchHeader=document.createElement('div');searchHeader.id='search-header';const searchClose=document.createElement('button');searchClose.id='search-close';searchClose.type='button';searchClose.textContent='×';searchClose.setAttribute('aria-label','Close search');searchInput.before(searchHeader);searchHeader.append(searchInput,searchClose);searchClose.onclick=()=>{searchInput.blur();claimPanel('none');};
-function reflectPanels(){const open=typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen?'fishing':shopPanelOpen?'shop':buildPanelOpen?'build':!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':$('online-panel').classList.contains('chatting')?'chat':'none';document.body.dataset.panel=open;$('build-open')?.setAttribute('aria-expanded',String(buildPanelOpen));writeOpen.textContent=ui.classList.contains('done-state')?'RETURN':'WRITE';for(const [id,name] of [['search-btn','search'],['chat-open','chat'],['write-open','write']])$(id).setAttribute('aria-expanded',String(open===name));}
+function reflectPanels(){const open=bagPanelOpen?'bag':typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen?'fishing':shopPanelOpen?'shop':buildPanelOpen?'build':!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':$('online-panel').classList.contains('chatting')?'chat':'none';document.body.dataset.panel=open;$('bag-open')?.setAttribute('aria-expanded',String(bagPanelOpen));$('build-open')?.setAttribute('aria-expanded',String(buildPanelOpen));writeOpen.textContent=ui.classList.contains('done-state')?'RETURN':'WRITE';for(const [id,name] of [['search-btn','search'],['chat-open','chat'],['write-open','write']])$(id).setAttribute('aria-expanded',String(open===name));}
 function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').setAttribute('aria-expanded',String(!small));}
 function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur();$('online-panel').classList.remove('chatting');setHistorySmall(true);fitKeyboard();reflectPanels();}
 function claimPanel(name){
  if(name!=='fishing'&&typeof fishingHUDActive!=='undefined'){fishingHUDActive=false;reelHeld=false;syncFishingHUD();}
  if(name!=='fishing'&&typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen){fishingPanelOpen=false;fishingPanel.hidden=true;reelHeld=false;}
+ if(name!=='bag'&&bagPanelOpen){bagPanelOpen=false;bagPanel.hidden=true;}
  if(name!=='shop'&&shopPanelOpen){shopPanelOpen=false;shopPanel.hidden=true;}
  if(name!=='build'&&buildPanelOpen){stopPaint();buildPanelOpen=false;buildPanel.hidden=true;buildGhost.visible=false;}
  if(name!=='chat')closeChat();
@@ -322,7 +324,7 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncDestructionEvents();syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
+function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,weaponInstances:equipmentState.weaponInstances||gameView.weaponInstances,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncDestructionEvents();syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshBag();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
 let worldRefreshBusy=false;
 async function refreshWorld(){if(!connected||worldRefreshBusy)return;worldRefreshBusy=true;try{receiveGame(await api('/api/world',undefined,'GET'));}catch{}finally{worldRefreshBusy=false;}}
 setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
@@ -347,7 +349,7 @@ function showWater(data){if(data.defeated&&data.hit===selectedCharacter)triggerP
   drops.setColorAt(i,new THREE.Color().setHSL(red?.98+random*.025:.52+random*.025,red?.8:.35+random*.25,red?.42+random*.18:.65+random*.25));
   return {delay:i/count*(.22+charge*.2),side:Math.cos(angle)*random,up:Math.sin(angle)*random,size:(.018+random*.024)*(1+charge*.75),core:i%4===0};});
  const rings=[];for(let i=0;i<2;i++){const ring=new THREE.Mesh(new THREE.RingGeometry(.78,1,40),new THREE.MeshBasicMaterial({color:red?'#ef4a62':'#b9eff8',transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.copy(origin).addScaledVector(direction,travel);ring.position.y=impactHeight+.025+i*.008;ring.visible=!data.hit;mesh.add(ring);rings.push(ring);}
- const flight=.65+charge*.3,emission=.22+charge*.2;
+ const flight=data.contactDelay?data.contactDelay/1000:.65+charge*.3,emission=.22+charge*.2;
  const fx={mesh,drops,particles,rings,origin,heading:direction,side:new THREE.Vector3(-direction.z,0,direction.x),travel,impactHeight,age:0,flight,emission,duration:flight+emission+.5,direction:data.direction,range,radius,charge,red};
  scene.add(mesh);waterEffects.push(fx);animateWaterSpray(fx,0);if(data.hit)$('water-status').textContent=(gameView.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits · Splash!';
 }
@@ -402,7 +404,7 @@ async function shootWater(charge=0){
   if(melee){queuedMelee={charge,weapon:weapon.id,expires:performance.now()+800};flushAttackQueue();}return;
  }
  shooting=true;const started=performance.now();attackReadyAt=started+weapon.cooldown+30;
- const heading=gameplayHeading(charModel),direction=melee?new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)):rangedAim().direction;
+ const heading=gameplayHeading(charModel),direction=melee?new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)):rangedAim(charge).direction;
  try{await api('/api/game',{action:'shoot',direction:direction.toArray(),charge});}
  catch(e){if(!/refilling/i.test(e.message))message(e.message);}
  finally{shooting=false;flushAttackQueue();}
@@ -431,7 +433,7 @@ function receiveBoss(old,boss){
  if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;m.walkAction?.reset().play();}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.38;
  if(boss.hp===0&&old?.hp>0&&bossDefeatGeneration!==boss.generation){bossDefeatGeneration=boss.generation;const m=monsters[0];if(m){m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model),center=box.getCenter(new THREE.Vector3());center.y=Math.max(m.root.position.y+1,(box.max.y+m.root.position.y)/2);createBurst(center);}}
  if(boss.hp===0)for(const m of monsters){m.root.visible=false;m.isChasing=false;m.mixer.stopAllAction();}
- bossHud.setAttribute('aria-valuenow',String(boss.hp));bossHud.setAttribute('aria-valuemax',String(boss.maxHp||100));$('boss-fill').style.width=(100*boss.hp/(boss.maxHp||100))+'%';$('boss-text').textContent='AUNTIE · LV '+(boss.level||1)+' · '+boss.hp+' / '+(boss.maxHp||100)+(boss.hp===0?' · DEFEATED':'');
+ bossHud.setAttribute('aria-valuenow',String(boss.hp));bossHud.setAttribute('aria-valuemax',String(boss.maxHp||100));$('boss-fill').style.width=(100*boss.hp/(boss.maxHp||100))+'%';$('boss-text').textContent='AUNTIE · LV '+(boss.level||1)+' · '+boss.hp+' / '+(boss.maxHp||100)+(boss.hp===0?' · DEFEATED':'')+Object.keys(boss.effects||{}).filter(k=>boss.effects[k].until>Date.now()).slice(0,2).map(k=>' · '+k.toUpperCase()).join('');
  $('water-gun').classList.toggle('red-water',!!gameView.redMode);
 }
 function prepareBossBlood(m){
@@ -562,7 +564,7 @@ function resolveBuildOverlap(){
 }
 
 // ===== Garden armory: durable ownership and two independent equipment slots =====
-function currentWeapon(){return equipmentById(gameView.equipment?.[selectedCharacter]?.weapon)||DEFAULT_WEAPON;}
+function currentWeapon(){return activeWeapon(gameView,selectedCharacter);}
 const shopButton=document.createElement('button');shopButton.id='shop-open';shopButton.textContent='SHOP';shopButton.type='button';dock.append(shopButton);
 const shopPanel=document.createElement('section');shopPanel.id='shop-panel';shopPanel.hidden=true;shopPanel.setAttribute('aria-label','Garden armory');
 shopPanel.innerHTML=`<header><div><small>RELETTER COLLECTION</small><h2>Garden Armory</h2></div><button id="shop-close" aria-label="Close shop">×</button></header><div class="armory-balance"><span>Equipment · fishing · collections</span><b id="shop-coins"></b></div><div id="equipment-slots"></div><div class="shop-tabs" role="group" aria-label="Shop categories"><button data-tab="all" aria-pressed="true">All</button><button data-tab="weapon">Weapons</button><button data-tab="shield">Shields</button><button data-tab="owned">Owned</button><button data-tab="fishing">Fishing</button><button data-tab="fish-market">Fish market</button></div><p id="shop-feedback" role="status">Hold ATTACK to charge. PvP: up to 2 hits per attack; Lose all HP to drop coins. Leveling increases HP and attack. Shields recharge after no damage.</p><div id="shop-items"></div>`;
@@ -579,7 +581,7 @@ function refreshEquipmentUI(force=false){
  const signature=JSON.stringify([owned,slots,balance,shopTab,shopBusy,shopTab==='fish-market'?gameView.fishing?.revision:0]);if(!force&&signature===shopSignature)return;shopSignature=signature;
  if(!shopPanelOpen)return;
  $('shop-coins').textContent=balance+' coins';
- $('equipment-slots').innerHTML=['weapon','shield','rod','tool'].map(slot=>{const item=equipmentById(slots[slot]||(slot==='weapon'?'water':null));return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
+ $('equipment-slots').innerHTML=['weapon','shield','rod','tool'].map(slot=>{const item=slot==='weapon'?currentWeapon():equipmentById(slots[slot]);return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
  for(const btn of shopPanel.querySelectorAll('[data-tab]'))btn.setAttribute('aria-pressed',String(btn.dataset.tab===shopTab));
  if(shopTab==='fish-market'){const fish=gameView.fishing?.bags?.[selectedCharacter]||[];$('shop-items').innerHTML=fish.length?fish.map(f=>fishCard(f,`<button data-sell-fish="${f.id}">Sell · ${fishPrice(f)}</button>`)).join(''):'<p class="shop-empty">Your catches appear here. Keep favourites in FISH → Collection, or sell them for coins.</p>';return;}
  const items=EQUIPMENT.filter(i=>shopTab==='all'||shopTab==='owned'&&owned.includes(i.id)||i.slot===shopTab||shopTab==='fishing'&&['rod','tool','pond'].includes(i.slot));
@@ -622,10 +624,10 @@ function showEquipmentAttack(data){
  if(data.family==='petal')for(let i=0;i<12;i++){const petal=new THREE.Mesh(new THREE.SphereGeometry(.13,8,5),new THREE.MeshBasicMaterial({color:i%2?'#ffc7e7':color,transparent:true,opacity:.75,depthWrite:false}));petal.scale.set(.5,1,1.6);petal.userData.petal=i+1;group.add(petal);accents.push(petal);}
  const impact=new THREE.Sprite(new THREE.SpriteMaterial({map:equipmentGlow,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));impact.position.z=travel;group.add(impact);
  for(const m of accents)m.userData.baseOpacity=m.material.opacity;
- scene.add(group);equipmentFX.push({group,points,accents,impact,data,travel,age:0,duration:data.family==='saber'?.55:1.05});
+ scene.add(group);equipmentFX.push({group,points,accents,impact,data,travel,age:0,duration:data.contactDelay?data.contactDelay/1000*1.7:data.family==='saber'?.55:1.05});
 }
 function updateEquipmentEffects(dt){
- updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);updateConstructionDamage(dt);
+ updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);updateConstructionDamage(dt);updateCombatAura(dt);
  const chargeLabel=$('shield-charge'),guard=equipmentById(gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
  if(chargeLabel&&guard){const left=guardState?Math.max(0,Math.ceil(guard.recharge-(Date.now()-guardState.lastHit)/1000)):0;chargeLabel.textContent=left?Math.max(0,guard.capacity-guardState.used).toFixed(1)+' / '+guard.capacity+' · '+left+'s':guard.capacity+' / '+guard.capacity+' · Ready';}
 
@@ -672,11 +674,11 @@ function cameraElevationAim(){
  let direction=point.clone().sub(origin).normalize();if(direction.dot(ray.direction)<.1)direction=ray.direction.clone();
  return {direction,point,inRange:origin.distanceTo(point)<=currentWeapon().range+currentWeapon().chargeRange*waterCharge()};
 }
-function rangedAim(){
+function rangedAim(charge=waterCharge()){
  // Preserve the established vertical aiming/parallax, but never borrow camera yaw.
- const cameraDirection=cameraElevationAim().direction,heading=gameplayHeading(charModel),vertical=THREE.MathUtils.clamp(cameraDirection.y,-.98,.98),horizontal=Math.sqrt(1-vertical*vertical);
+ const cameraDirection=cameraElevationAim().direction,heading=gameplayHeading(charModel),vertical=THREE.MathUtils.clamp(cameraDirection.y,charge>=1&&charRoot.position.y<5?0:-.98,.98),horizontal=Math.sqrt(1-vertical*vertical);
  const direction=new THREE.Vector3(Math.sin(heading)*horizontal,vertical,Math.cos(heading)*horizontal),origin=charRoot.position.clone().add(new THREE.Vector3(0,1,0));
- const weapon=currentWeapon(),range=attackStats(weapon,waterCharge()).range;aimRay.set(origin,direction);aimRay.far=range;
+ const weapon=currentWeapon(),range=attackStats(weapon,charge).range;aimRay.set(origin,direction);aimRay.far=range;
  const ray=aimRay.ray,point=ray.at(range,new THREE.Vector3());let nearest=range,hitTarget=false;
  const accept=hit=>{if(!hit)return;const d=origin.distanceTo(hit);if(d>.01&&d<=nearest){nearest=d;point.copy(hit);hitTarget=true;}};
  for(const mesh of buildMeshes.values()){mesh.updateMatrixWorld();for(const hit of aimRay.intersectObject(mesh,false))accept(hit.point);}
@@ -780,4 +782,10 @@ const ultimateWarmup=prepareUltimates(THREE,renderer,camera).catch(error=>consol
 
 function currentStats(){return playerStats(gameView,selectedCharacter);}
 const progressionHud=document.createElement('div');progressionHud.id='player-progression';progressionHud.hidden=true;document.body.append(progressionHud);
-function refreshProgression(){const p=currentStats(),hp=Math.max(0,p.maxHp-(gameView.hits?.[selectedCharacter]||0));progressionHud.hidden=!admitted;progressionHud.textContent=`LV ${p.level} · HP ${+hp.toFixed(2)} / ${p.maxHp} · XP ${p.xp} / ${p.nextXp}`;progressionHud.style.setProperty('--xp',`${p.xp/p.nextXp*100}%`);progressionHud.title=`Attack ×${p.attackMultiplier.toFixed(2)} · Speed ×${p.speedMultiplier.toFixed(3)} · Jump ×${p.jumpMultiplier.toFixed(3)}`;}
+function refreshProgression(){const p=currentStats(),hp=Math.max(0,p.maxHp-(gameView.hits?.[selectedCharacter]||0));refreshHeartHud(hp,p.maxHp);progressionHud.hidden=!admitted;progressionHud.textContent=`LV ${p.level} · XP ${p.xp} / ${p.nextXp}`;progressionHud.style.setProperty('--xp',`${p.xp/p.nextXp*100}%`);progressionHud.title=`Attack ×${p.attackMultiplier.toFixed(2)} · Speed ×${p.speedMultiplier.toFixed(3)} · Jump ×${p.jumpMultiplier.toFixed(3)}`;}
+
+// A small CSS 3D HUD shares the main animation clock through compositor transforms.
+const heartHud=document.createElement('div');heartHud.id='player-hearts';heartHud.hidden=true;heartHud.setAttribute('role','meter');heartHud.setAttribute('aria-label','Player health');document.body.append(heartHud);
+const heartCss=document.createElement('style');heartCss.textContent=`#player-hearts{position:fixed;top:8px;right:12px;z-index:185;display:flex;align-items:center;gap:7px;pointer-events:none;font:12px sans-serif;color:#602540;background:#fff9;border-radius:16px;padding:4px 9px;perspective:170px}#player-hearts[hidden]{display:none}#player-hearts .heart-solid{position:relative;width:28px;height:30px;transform-style:preserve-3d;animation:heart-turn 5s linear infinite}#player-hearts svg{position:absolute;inset:0;width:28px;height:30px;transform:translateZ(var(--depth));filter:drop-shadow(0 1px 1px #78253a66)}#player-hearts b{white-space:nowrap;font-weight:500}#title{left:12px!important;transform:none!important;width:calc(100vw - 170px)!important;max-width:520px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left!important;font-size:clamp(18px,4vw,30px)!important}body.keyboard-open #player-hearts{visibility:hidden}@keyframes heart-turn{from{transform:rotateY(0deg) rotateZ(-8deg)}to{transform:rotateY(360deg) rotateZ(-8deg)}}@media(prefers-reduced-motion:reduce){#player-hearts .heart-solid{animation:none;transform:rotateY(25deg)}}`;document.head.append(heartCss);
+let heartSignature='';
+function refreshHeartHud(hp,max){if(typeof heartHud==='undefined')return;heartHud.hidden=!admitted;const value=+hp.toFixed(2),signature=`${value}/${max}`;if(heartSignature===signature)return;heartSignature=signature;heartHud.setAttribute('aria-valuemin','0');heartHud.setAttribute('aria-valuemax',String(max));heartHud.setAttribute('aria-valuenow',String(value));const ratio=Math.max(0,Math.min(1,hp/max));heartHud.innerHTML='<span class="heart-solid" aria-hidden="true">'+Array.from({length:9},(_,i)=>`<svg viewBox="0 0 32 32" style="--depth:${i-4}px"><path fill="${i===8?'#ff759e':i===0?'#c52e65':'#a32453'}" d="M16 29C12 25 1 18 1 10C1 1 12 0 16 7C20 0 31 1 31 10C31 18 20 25 16 29Z"/><path fill="#d9d2de" d="M16 29C12 25 1 18 1 10C1 1 12 0 16 7C20 0 31 1 31 10C31 18 20 25 16 29Z" style="clip-path:inset(0 0 ${ratio*100}% 0)"/>${i===8?'<path d="M6 11C5 6 11 5 13 8" fill="none" stroke="#ffe3ed" stroke-width="2.4" stroke-linecap="round"/>':''}</svg>`).join('')+`</span><b>${value} / ${max}</b>`;}

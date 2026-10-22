@@ -1,3 +1,4 @@
+import {AFFIXES,affixById,ownedBaseIds} from '../combat-traits.js';
 import {validSurfaceId} from './surface-rules.js';
 import {FISH,fishById,fishPrice,fishingById,selectedChisel,AQUARIUM_SIZES,aquariumFit} from '../fishing-catalog.js';
 import {EQUIPMENT} from '../equipment-catalog.js';
@@ -22,14 +23,14 @@ export function ensureFishing(g){
  return f;
 }
 const random=()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;
-export function dropWeapon(g,now=Date.now(),rng=random){ensureFishing(g);if(g.weaponDrops.some(d=>d.generation===g.boss.generation))return;const choices={};for(const name of ['Ely','Rae']){const options=EQUIPMENT.filter(i=>i.slot==='weapon'&&!(g.inventories?.[name]||[]).includes(i.id));choices[name]=options.length?options[Math.floor(rng()*options.length)].id:null;}g.weaponDrops.push({id:crypto.randomUUID(),generation:g.boss.generation,position:[...g.boss.position],choices,time:now});if(g.weaponDrops.length>30)g.weaponDrops.shift();}
+export function dropWeapon(g,now=Date.now(),rng=random){ensureFishing(g);if(g.weaponDrops.some(d=>d.generation===g.boss.generation))return;const choices={},affixes={};for(const name of ['Ely','Rae']){const owned=ownedBaseIds(g,name),all=EQUIPMENT.filter(i=>i.slot==='weapon'),fresh=all.filter(i=>!owned.includes(i.id)),pool=fresh.length?fresh:all;choices[name]=pool[Math.min(pool.length-1,Math.floor(rng()*pool.length))].id;affixes[name]=AFFIXES[Math.min(AFFIXES.length-1,Math.floor(rng()*AFFIXES.length))].id;}g.weaponDrops.push({id:crypto.randomUUID(),generation:g.boss.generation,position:[...g.boss.position],choices,affixes,time:now});if(g.weaponDrops.length>30)g.weaponDrops.shift();}
 export function fishingView(g){const f=ensureFishing(g);return {...f,sessions:Object.fromEntries(Object.entries(f.sessions).filter(([,s])=>Date.now()-s.updated<120000).map(([n,s])=>[n,{id:s.id,hole:s.hole,stage:s.stage,biteAt:s.biteAt,hookWindow:s.hookWindow,tension:s.tension,progress:s.progress,updated:s.updated,startedAt:s.startedAt,hookedAt:s.hookedAt,reeling:s.reeling,finishedAt:s.finishedAt,result:s.result}]))};}
 export function fishingAction(g,actor,body,now=Date.now(),rng=random){
  const f=ensureFishing(g),name=actor.character,pos=actor.state?.position,owned=g.inventories?.[name]||[],bag=f.bags[name]??=[];
  if(!pos||!actor.state.visible)return {error:'Enter the garden first'};
  const close=(p,d=6)=>Math.hypot(pos[0]-p[0],pos[2]-p[2])<=d&&Math.abs(pos[1]-p[1])<3;
  const changed=(extra={})=>{f.revision++;return extra;};
- if(body.action==='weapon-pickup'){const drop=g.weaponDrops.find(d=>d.id===body.id);if(!drop||!close(drop.position,4))return {error:'Move closer to the weapon drop'};const choices=EQUIPMENT.filter(i=>i.slot==='weapon'&&!owned.includes(i.id));let item=choices.find(i=>i.id===drop.choices[name])||choices[0];if(item){(g.inventories[name]??=[]).push(item.id);g.equipmentRevision=(g.equipmentRevision||0)+1;}else {g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+50;}g.weaponDrops=g.weaponDrops.filter(d=>d.id!==drop.id);return changed({notice:item?'Obtained '+item.name:'All weapons collected · +50 coins'});}
+ if(body.action==='weapon-pickup'){const drop=g.weaponDrops.find(d=>d.id===body.id);if(!drop||!close(drop.position,4))return {error:'Move closer to the weapon drop'};const item=EQUIPMENT.find(i=>i.id===drop.choices[name]&&i.slot==='weapon')||EQUIPMENT.find(i=>i.slot==='weapon');const affix=affixById(drop.affixes?.[name])||AFFIXES[Math.floor(rng()*AFFIXES.length)];const instance={id:'loot-'+crypto.randomUUID(),baseId:item.id,affixId:affix.id,obtainedAt:now};g.weaponInstances??={};(g.weaponInstances[name]??=[]).push(instance);g.inventories??={};(g.inventories[name]??=[]).push(instance.id);g.equipmentRevision=(g.equipmentRevision||0)+1;g.weaponDrops=g.weaponDrops.filter(d=>d.id!==drop.id);return changed({notice:'Obtained '+affix.name+' '+item.name});}
  if(body.action==='sell-fish'){const i=bag.findIndex(x=>x.id===body.id);if(i<0)return {error:'Fish is no longer in your collection'};g.wallets??={};g.wallets[name]=(g.wallets[name]||0)+fishPrice(bag[i]);bag.splice(i,1);return changed();}
  if(body.action==='dig'||body.action==='pond-build'){
   if(body.surface&&!validSurfaceId(body.surface))return {error:'Invalid skin'};

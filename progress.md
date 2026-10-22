@@ -170,3 +170,13 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Ultimate portraits for 13 families reviewed; warm-cache 40-cast geometries stayed 227 -> 227, textures 0 -> 0 in isolated benchmark. Two-effect CPU p95 <=1ms in this run. This is local SwiftShader evidence, not a guarantee of physical mobile FPS.
 - Standard web-game runner gameplay screenshot/state inspected; no browser shader errors. Art and test evidence in output/energy-abyss, output/ultimate-creatures, output/ultimate-redesign, output/energy-smoke.
 - Deployed to https://reletter-garden.zhenggdove-artist.workers.dev/ (Cloudflare version c619e523-12b7-4326-bc47-ca931cd95a9b). Production health 200; index, ultimate art, fish model and catalog bytes match built assets. Original reference project and database untouched.
+
+
+## 2026-10-23 — Impact timing, affixed loot, range and health
+- Added 20 persistent weapon-instance affixes and categorized BAG. Server-owned fear, stun, root, slow, expose, weakness, burn/poison/bleed, regeneration, lifesteal, coin gain, resonance and equipment stats. Family traits apply on actual monster contact; plant passives affect health/attack/movement/jump.
+- Queued monster damage until visual contact, revalidate target/cover and generation; DoT kills award once and synchronize saved inventory/XP. Saber contact at 720ms. Saber energy slash widths 28/11/3.5 (10x previous), branched chipped ground fissures and staggered debris.
+- Removed artificial 120m visual range cap and compensated tier scale. Ultimate range/radius no longer capped below amplified weapon stats. Grounded full-charge ranged attacks skim terrain when the camera points down; upward aim preserved; reticle agrees. Obstacles still stop attacks.
+- Monster XP = round(10 * level^0.8): levels 1/5/12/24/40 give 10/36/73/127/191. Existing player XP preserved. CSS 3D layered rotating heart HUD with exact HP and depletion fill; constant nine surfaces, no extra WebGL renderer. Honors reduced motion.
+- Responsive BAG/dock verified at 390x844, 844x390,1280x800; controls do not overlap. Title space reserved for upper-right health.
+- Validation: 67 Node tests pass, 50 ranged-ultimate rendered travel/obstacle cases pass; 13 ultimate portraits and sword ground timing pass. Standard gameplay runner screenshot/state inspected; no page/shader errors in functional browser checks. Local art benchmark warm geometry remains 227->227. Occasional Three compileAsync isReady error seen in benchmark setup; subsequent isolated runs passed; do not interpret SwiftShader timings as physical phone FPS guarantee.
+- Published 14351de2-ec9b-4b94-ae13-3dd7c93cf73e. Production health 200 and all five changed assets match local SHA-256. Original reference project/database untouched.

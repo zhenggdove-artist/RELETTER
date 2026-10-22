@@ -144,7 +144,7 @@ function updateAdventure(dt){
  }
 
  for(const m of weaponDropMeshes.values()){m.children[0].rotation.y+=dt;m.children[0].position.y=Math.sin(globalTime*2)*.12;}
- const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'50 coins');
+ const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+((affixById(nearDrop.affixes?.[selectedCharacter])?.name||'')+' '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'Weapon'));
  pickupButton.hidden=phase!==PHASE.EXPLORE||document.body.dataset.panel!=='none'||!(gameView.weaponDrops||[]).some(d=>distanceTo(d.position)<4&&Math.abs(charRoot.position.y-d.position[1])<3);
 }
 function updateFishingRods(f){

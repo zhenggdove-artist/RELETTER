@@ -53,7 +53,7 @@ export class ReletterGarden extends DurableObject {
   saveGame(g){this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(g));}
   gameView(){return worldView(this.game());}
   resetIfEmpty(){const g=this.game();if(this.sockets().length){if(g.offlineSince){delete g.offlineSince;this.saveGame(g);}return;}if(!g.offlineSince){g.offlineSince=Date.now();this.saveGame(g);this.ctx.waitUntil(this.scheduleNotifications());}else if(Date.now()-g.offlineSince>=5000){expireHoles(g,Date.now(),true);resetEncounter(g);delete g.offlineSince;this.saveGame(g);}}
-  tickBoss(){if(Date.now()-(this.lastBossTick||0)<100)return;this.lastBossTick=Date.now();const g=this.game();ensureWorld(g);advanceBoss(g,this.roster());this.saveGame(g);this.broadcast('boss',g.boss);}
+  tickBoss(){if(Date.now()-(this.lastBossTick||0)<100)return;this.lastBossTick=Date.now();const g=this.game();ensureWorld(g);const revision=g.worldRevision;advanceBoss(g,this.roster());this.saveGame(g);if(g.worldRevision!==revision)this.broadcast('game',worldView(g));this.broadcast('boss',g.boss);}
   roster(){return this.sockets().map(ws=>{const p=ws.deserializeAttachment();return{id:p.id,character:p.character,state:p.state};});}
   broadcast(type,data){const message=JSON.stringify({type,data});for(const ws of this.sockets())try{ws.send(message);}catch{ws.close(1011,'Connection interrupted');}}
   session(request){const id=request.headers.get('Cookie')?.match(/(?:^|;\s*)reletter_session=([^;]+)/)?.[1];if(!id)return null;return this.sql.exec('SELECT * FROM sessions WHERE id=? AND expires>?',id,Date.now()).toArray()[0]||null;}

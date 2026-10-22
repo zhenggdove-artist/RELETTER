@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {AQUARIUM_SIZES} from '../fishing-catalog.js';import {fishingAction,ensureFishing} from '../server/fishing-rules.js';
-import {sampleMeleePose,meleeDuration,meleeFamilies} from '../melee-motion.js';import {equipmentById} from '../equipment-catalog.js';import {battleAction} from '../server/game-rules.js';import {ensureWorld} from '../server/world-rules.js';
+import {sampleMeleePose,meleeDuration,meleeFamilies} from '../melee-motion.js';import {equipmentById} from '../equipment-catalog.js';import {battleAction} from './resolved-attack.js';import {ensureWorld} from '../server/world-rules.js';
 test('tank size, price and capacity are server-owned and survive serialization; invalid sizes cannot spend coins',()=>{
  for(const [size,option] of Object.entries(AQUARIUM_SIZES)){const g={wallets:{Ely:5000},inventories:{Ely:['pond-kit']}};ensureFishing(g);const actor={character:'Ely',state:{visible:true,position:[0,0,0]}};
   assert.ok(!fishingAction(g,actor,{action:'pond-build',size,position:[0,0,option.size[2]/2+2],price:0,capacity:9999}).error);
