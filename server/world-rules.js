@@ -1,3 +1,4 @@
+import {gardenView,dropWings} from './garden-rules.js';
 import {enemySpeed,updateEnemySkills,requestDodge,moveDodge} from './enemy-skills.js';
 import {activeWeapon} from '../combat-traits.js';
 import {applyWeaponTraits,tickCombatEffects,effectActive} from './combat-effects.js';
@@ -13,7 +14,8 @@ export const BOSS_VARIANTS=[
  {tier:'Wanderer',level:1,maxHp:100,damage:1,speed:1,weight:.4},
  {tier:'Hunter',level:5,maxHp:240,damage:1,speed:1.08,weight:.27},
  {tier:'Elder',level:12,maxHp:600,damage:2,speed:1.16,weight:.18},
- {tier:'Dread',level:24,maxHp:1400,damage:2,speed:1.24,weight:.10},
+ {tier:'Dread',level:24,maxHp:1400,damage:2,speed:1.24,weight:.06},
+ {tier:'Archon',level:30,maxHp:2200,damage:3,speed:2.5,weight:.04},
  {tier:'Ancient',level:40,maxHp:3000,damage:3,speed:1.32,weight:.05}
 ];
 export function rollBoss(rng=Math.random){let r=rng();const variant=BOSS_VARIANTS.find(v=>(r-=v.weight)<0)||BOSS_VARIANTS.at(-1);const {weight,...stats}=variant;return {...stats,speed:enemySpeed(stats.level),hp:stats.maxHp};}
@@ -26,7 +28,7 @@ export function activateEncounter(g,text,name){
  if(command==='/pk'){g.pkMode=!g.pkMode;g.redMode=!g.pkMode;g.worldRevision++;return true;}
  if(command!=='/一起打阿姨')return false;g.pkMode=false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {enemyHitEvents:g.enemyHitEvents||{},weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {garden:gardenView(g),wingDrops:g.wingDrops||[],enemyHitEvents:g.enemyHitEvents||{},weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
  ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;flushBossHits(g,now);const dot=tickCombatEffects(g,now);if(dot.killer)finishBoss(g,dot.killer,now);g.boss.paused=players.some(p=>p.state?.paused);
@@ -76,7 +78,7 @@ function bossIntersection(g,shot){
  const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
  if(p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)<-2.8||!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<Math.max(along,p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)-2.8))return null;return along;
 }
-function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);g.worldRevision++;}
+function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);dropWings(g,now);g.worldRevision++;}
 export function attackContactDelay(shot){if(shot.ultimate)return shot.family==='saber'?720:900;if(['saber','whip','swatter','pan','planter','palm'].includes(shot.family))return Math.round(meleeDuration(shot.family,shot.combo||0)*500);return shot.weapon==='water'?650+Math.round((shot.charge||0)*300):618;}
 export function shootBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;const minion=(g.boss.minions||[]).filter(m=>m.hp>0).map(m=>({m,d:rayBlock({position:m.position,size:[2,2.5,2]},shot.origin,shot.direction)})).filter(x=>x.d<=shot.range&&x.d<coverDistance(g,shot.origin,shot.direction)).sort((a,b)=>a.d-b.d)[0];const bossAlong=bossIntersection(g,shot);if(minion&&(bossAlong===null||minion.d<bossAlong)){shot.hit='Minion';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*minion.d);shot.contactDelay=attackContactDelay(shot);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},minionId:minion.m.id,due:now+shot.contactDelay,generation:g.boss.generation});return;}const along=bossAlong;if(along===null)return;

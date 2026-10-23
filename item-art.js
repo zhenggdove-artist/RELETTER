@@ -1,4 +1,6 @@
+import {botanicalIcon,wingIcon} from './garden-art.js';
 export function itemIcon(item){
+ if(['seed','harvest'].includes(item.slot))return botanicalIcon(item);if(item.slot==='wings')return wingIcon(item);
  if(item.slot==='outfit')return './art/outfits/'+item.id+'.webp';
  if(item.slot==='head')return './art/headgear/'+item.id+'.webp';
  const c=item.color||'#91b8d9',family=item.family,t=item.tier||0;

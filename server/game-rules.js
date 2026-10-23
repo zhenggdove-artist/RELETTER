@@ -1,3 +1,4 @@
+import {GARDEN_ACTIONS,gardenAction} from './garden-rules.js';
 import {effectActive} from './combat-effects.js';
 import {playerStats} from '../progression.js';
 import {attackStats} from '../equipment-catalog.js';
@@ -10,7 +11,7 @@ export const mediaKinds=['drawing','image','audio','video'];
 export const mediaTypes={drawing:['image/png','image/jpeg','image/webp'],image:['image/png','image/jpeg','image/webp'],audio:['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/ogg','audio/webm','audio/mp4','audio/aac','audio/flac'],video:['video/mp4','video/webm','video/ogg','video/quicktime']};
 export function validMedia(kind,data){if(!data)return true;if(typeof data!=='string'||data.length>(['audio','video'].includes(kind)?7_000_000:2_200_000))return false;const m=data.match(/^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/);return !!m&&mediaTypes[kind].includes(m[1])&&m[2].length%4===0;}
 export function battleAction(game,actor,players,body,now=Date.now()){
- ensureWorld(game);ensureEquipment(game);if(body.action==='paint')return paintAction(game,actor,body);if(FISH_ACTIONS.includes(body.action))return fishingAction(game,actor,body,now);if(['buy','equip','unequip','sell-rarity'].includes(body.action))return equipmentAction(game,actor.character,body);if(body.action==='build'||body.action==='destroy')return buildAction(game,actor,players,body,now);
+ ensureWorld(game);ensureEquipment(game);if(GARDEN_ACTIONS.includes(body.action))return gardenAction(game,actor,body,now);if(body.action==='paint')return paintAction(game,actor,body);if(FISH_ACTIONS.includes(body.action))return fishingAction(game,actor,body,now);if(['buy','equip','unequip','sell-rarity'].includes(body.action))return equipmentAction(game,actor.character,body);if(body.action==='build'||body.action==='destroy')return buildAction(game,actor,players,body,now);
  game.wallets??={};game.hits??={};game.shots??={};game.loot??=[];game.claims??={};game.loot=game.loot.filter(c=>now-c.time<300000);
  const name=actor.character,pos=actor.state?.position;if(!pos||!actor.state.visible)return {error:'Enter the garden first'};
  const balance=()=>game.wallets[name]||0;
@@ -26,7 +27,7 @@ export function battleAction(game,actor,players,body,now=Date.now()){
   game.wallets[name]=balance()+coin.amount;game.loot.splice(i,1);return {};
  }
  if(body.action==='monster-hit'){
-  if(game.boss.hp<=0||effectActive(game.boss,'stun',now)||effectActive(game.boss,'fear',now)||game.boss.paused||pos[1]>=5||Math.hypot(pos[0]-game.boss.position[0],pos[2]-game.boss.position[2])>5)return {blocked:true};
+  if(game.boss.hp<=0||effectActive(game.boss,'stun',now)||effectActive(game.boss,'fear',now)||game.boss.paused||pos[1]>=5||Math.abs(pos[1]-game.boss.position[1])>3||Math.hypot(pos[0]-game.boss.position[0],pos[2]-game.boss.position[2])>5)return {blocked:true};
   game.monsterHits??={};if(now-(game.monsterHits[name]||0)<1800)return {blocked:true};game.monsterHits[name]=now;
   const result=absorbShield(game,name,game.boss.damage*(1-(effectActive(game.boss,'weak',now)?.power||0)),now),hits=(game.hits[name]||0)+result.damage,defeated=hits>=playerStats(game,name,now).maxHp;game.hits[name]=defeated?0:hits;return {blocked:result.damage===0,defeated};
  }
