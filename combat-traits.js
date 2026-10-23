@@ -27,6 +27,7 @@ export function resolveItem(game,name,id){const instance=(game.weaponInstances?.
 export function activeWeapon(game,name){const slots=game.equipment?.[name]||{};return resolveItem(game,name,slots.weaponInstance||slots.weapon)||DEFAULT_WEAPON;}
 export function ownedBaseIds(game,name){return (game.inventories?.[name]||[]).map(id=>resolveItem(game,name,id)?.id||id);}
 export function traitStats(game,name,now=Date.now()){
+ const h=equipmentById(game.equipment?.[name]?.head)?.bonuses||{};
  const w=activeWeapon(game,name),s=affixById(w.affixId)?.stats||{},plant=['petal','planter','palm','whip'].includes(w.family),res=game.combatBuffs?.[name]?.resonance;
- return {hp:plant?2:0,attack:(plant?1.12:1)*(s.attack||1)*(w.affixId==='resonant'&&res?.until>now?1+.08*res.stacks:1),speed:(plant?1.08:1)*(s.speed||1),jump:(plant?1.1:1)*(s.jump||1),defense:s.defense||1};
+ return {hp:(plant?2:0)+(h.hp||0),attack:(plant?1.12:1)*(s.attack||1)*(1+(h.attack||0))*(w.affixId==='resonant'&&res?.until>now?1+.08*res.stacks:1),speed:(plant?1.08:1)*(s.speed||1)*(1+(h.speed||0)),jump:(plant?1.1:1)*(s.jump||1)*(1+(h.jump||0)),defense:(s.defense||1)*(1-(h.defense||0))};
 }

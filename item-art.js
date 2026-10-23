@@ -1,4 +1,5 @@
 export function itemIcon(item){
+ if(item.slot==='head')return './art/headgear/'+item.id+'.webp';
  const c=item.color||'#91b8d9',family=item.family,t=item.tier||0;
  const blade='<path d="M49 7L52 20 28 46 21 39Z" fill="url(#metal)" stroke="#d5f8ff"/><path d="M47 12L25 40" stroke="white" stroke-width="2"/><path d="M14 36L31 51M12 53L22 43" stroke="#6d4a35" stroke-width="6"/>';
  const gun='<path d="M10 26L46 22 52 29 43 36 24 37 21 52 13 50 16 34Z" fill="url(#metal)" stroke="#395465"/><path d="M30 22V36M36 21V35M42 21V34" stroke="#25394e" stroke-width="2"/><rect x="43" y="24" width="13" height="8" rx="2" fill="#e2f2fb"/><circle cx="22" cy="30" r="5" fill="'+c+'"/>';
