@@ -1,3 +1,4 @@
+import {OUTFITS} from './outfit-catalog.js';
 import {HEADGEAR} from './headgear-catalog.js';
 import {FISHING_TOOLS} from './fishing-catalog.js';
 // Public, immutable item definitions. Prices and combat stats are rechecked by the server.
@@ -19,7 +20,7 @@ EQUIPMENT.push(...shieldNames.map((name,i)=>({id:'shield-'+(i+1),name,slot:'shie
 EQUIPMENT.push(...ranks.map((rank,i)=>({id:'whip-'+(i+1),name:rank+' Thornweave',slot:'weapon',family:'whip',color:['#f3a4d4','#93e6d4','#d5b3ff','#ffd090','#c7eaff'][i],tier:i+1,price:12+i*24,damage:1.8+i*.5,chargeDamage:4+i,range:5+i*1.5,chargeRange:2,radius:1.5+i*.65,cooldown:1000-i*30})),...FISHING_TOOLS);
 const gardenMelee=[['swatter','Fly Swatter','#9be6dc',1.3,3.4,630],['pan','Frying Pan','#e9bc7b',3,3.1,1120],['planter','Potted Plant','#e2a8d7',3.8,3.5,1350],['palm','Coconut Palm','#97d59b',4.5,5.2,1500]];
 for(const [family,name,color,damage,range,cooldown] of gardenMelee)EQUIPMENT.push(...ranks.map((rank,i)=>({id:family+'-'+(i+1),name:rank+' '+name,slot:'weapon',family,color,tier:i+1,price:[12,30,65,110,180][i],damage:+(damage+i*.65).toFixed(2),chargeDamage:+(damage*2.2+i).toFixed(2),range:range*(1+i*.35),chargeRange:2+i*.3,radius:1.2+i*.45,cooldown:cooldown-i*20})));
-EQUIPMENT.push(...HEADGEAR);
+EQUIPMENT.push(...HEADGEAR,...OUTFITS);
 export const equipmentById=id=>id==='water'?DEFAULT_WEAPON:EQUIPMENT.find(x=>x.id===id);
 
 // Shared client/server cadence and rank identity for rapid, buffered melee chains.

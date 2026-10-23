@@ -1,4 +1,5 @@
 export function itemIcon(item){
+ if(item.slot==='outfit')return './art/outfits/'+item.id+'.webp';
  if(item.slot==='head')return './art/headgear/'+item.id+'.webp';
  const c=item.color||'#91b8d9',family=item.family,t=item.tier||0;
  const blade='<path d="M49 7L52 20 28 46 21 39Z" fill="url(#metal)" stroke="#d5f8ff"/><path d="M47 12L25 40" stroke="white" stroke-width="2"/><path d="M14 36L31 51M12 53L22 43" stroke="#6d4a35" stroke-width="6"/>';

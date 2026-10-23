@@ -19,7 +19,7 @@ export function equipmentAction(g,name,body){
   const item=resolveItem(g,name,body.item);if(!item||item.id!=='water'&&!owned.includes(body.item))return {error:'Purchase this item first'};
   slots[item.slot]=item.id;if(item.slot==='head')slots.headInstance=item.instanceId||null;if(item.slot==='weapon'){slots.weaponInstance=item.instanceId||null;if(g.combatBuffs?.[name])delete g.combatBuffs[name].resonance;}
  }else if(body.action==='unequip'){
-  if(!['weapon','shield','rod','tool','pond','head'].includes(body.slot))return {error:'Invalid equipment slot'};
+  if(!['weapon','shield','rod','tool','pond','head','outfit'].includes(body.slot))return {error:'Invalid equipment slot'};
   slots[body.slot]=body.slot==='weapon'?'water':null;if(body.slot==='head')slots.headInstance=null;if(body.slot==='weapon'){slots.weaponInstance=null;if(g.combatBuffs?.[name])delete g.combatBuffs[name].resonance;}
  }else return {error:'Unknown equipment action'};
  g.equipmentRevision++;return {};
