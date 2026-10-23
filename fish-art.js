@@ -30,4 +30,4 @@ export function fishSVG(f){
  ${f.shape==='lantern'?`<path d="M285 109q-3-53 28-48" stroke="${light}" stroke-width="2" fill="none"/><circle cx="315" cy="63" r="6" fill="#f2edff"/><g fill="${light}">${Array.from({length:12},(_,k)=>`<circle cx="${137+k*12}" cy="161" r="2.5"/>`).join('')}</g>`:''}
  </svg>`;
 }
-export const fishDataURL=f=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(fishSVG(f));
+export const fishDataURL=f=>f.eldritch?'./art/abyss/'+f.id+'.webp':'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(fishSVG(f));

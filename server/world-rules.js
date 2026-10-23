@@ -1,3 +1,4 @@
+import {enemySpeed,updateEnemySkills,requestDodge,moveDodge} from './enemy-skills.js';
 import {activeWeapon} from '../combat-traits.js';
 import {applyWeaponTraits,tickCombatEffects,effectActive} from './combat-effects.js';
 import {meleeDuration} from '../melee-motion.js';
@@ -15,7 +16,7 @@ export const BOSS_VARIANTS=[
  {tier:'Dread',level:24,maxHp:1400,damage:2,speed:1.24,weight:.10},
  {tier:'Ancient',level:40,maxHp:3000,damage:3,speed:1.32,weight:.05}
 ];
-export function rollBoss(rng=Math.random){let r=rng();const variant=BOSS_VARIANTS.find(v=>(r-=v.weight)<0)||BOSS_VARIANTS.at(-1);const {weight,...stats}=variant;return {...stats,hp:stats.maxHp};}
+export function rollBoss(rng=Math.random){let r=rng();const variant=BOSS_VARIANTS.find(v=>(r-=v.weight)<0)||BOSS_VARIANTS.at(-1);const {weight,...stats}=variant;return {...stats,speed:enemySpeed(stats.level),hp:stats.maxHp};}
 export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;g.boss.maxHp??=100;g.boss.level??=1;g.boss.tier??='Wanderer';g.boss.damage??=1;g.boss.speed??=1;return g;}
 export function resetEncounter(g,now=Date.now(),rng=Math.random){ensureWorld(g);g.pkMode=false;g.redMode=true;g.boss={...rollBoss(rng),position:[40,0,0],revision:0,generation:g.boss.generation+1};g.pendingBossHits=[];g.bossClock=now;}
 export function activateEncounter(g,text,name){
@@ -25,16 +26,17 @@ export function activateEncounter(g,text,name){
  if(command==='/pk'){g.pkMode=!g.pkMode;g.redMode=!g.pkMode;g.worldRevision++;return true;}
  if(command!=='/一起打阿姨')return false;g.pkMode=false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {enemyHitEvents:g.enemyHitEvents||{},weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
  ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;flushBossHits(g,now);const dot=tickCombatEffects(g,now);if(dot.killer)finishBoss(g,dot.killer,now);g.boss.paused=players.some(p=>p.state?.paused);
  if(g.boss.hp<=0){g.boss.respawnAt??=now+30000;if(now<g.boss.respawnAt||!players.length)return;const pk=g.pkMode;resetEncounter(g,now);g.pkMode=pk;g.redMode=!pk;g.worldRevision++;g.boss.paused=players.some(p=>p.state?.paused);}
- if(g.boss.paused)return;
+ const disabled=['stun','root','fear'].some(k=>effectActive(g.boss,k,now));updateEnemySkills(g,players,now,dt,disabled);
+ if(g.boss.paused)return;if(disabled)delete g.boss.dodge;else if(moveDodge(g.boss,now))return;
  const pos=g.boss.position,targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&p.state.position[1]<5);
  targets.sort((a,b)=>Math.hypot(a.state.position[0]-pos[0],a.state.position[2]-pos[2])-Math.hypot(b.state.position[0]-pos[0],b.state.position[2]-pos[2]));
  g.boss.target=targets[0]?.character||null;if(!targets.length){g.boss.chasing=false;return;}const t=targets[0].state.position;let dx=t[0]-pos[0],dz=t[2]-pos[2],distance=Math.hypot(dx,dz);const fear=effectActive(g.boss,'fear',now);g.boss.chasing=distance<8;if(effectActive(g.boss,'root',now)||effectActive(g.boss,'stun',now))return;if(fear){const a=Math.atan2(-dx,-dz)+Math.sin(now/160)*.9;dx=Math.sin(a)*8;dz=Math.cos(a)*8;distance=8;}else if(distance<1.3)return;
- const step=Math.min(distance-1.3,(fear?6:distance<8?4.5:1.25)*g.boss.speed*(1-(effectActive(g.boss,'slow',now)?.power||0))*dt),nx=pos[0]+dx/distance*step,nz=pos[2]+dz/distance*step;
+ const step=Math.min(distance-1.3,(fear?6:distance<8?4.5:1.25)*enemySpeed(g.boss.level)*(1-(effectActive(g.boss,'slow',now)?.power||0))*dt),nx=pos[0]+dx/distance*step,nz=pos[2]+dz/distance*step;
  const free=(x,z)=>!g.blocks.some(b=>b.position[1]<12&&containsBlock(b,x,b.position[1]+.5,z,1.1));
  if(free(nx,nz)){pos[0]=nx;pos[2]=nz;}else if(free(nx,pos[2]))pos[0]=nx;else if(free(pos[0],nz))pos[2]=nz;
  g.boss.rotation=Math.atan2(dx,dz);
@@ -74,16 +76,17 @@ function bossIntersection(g,shot){
  const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
  if(p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)<-2.8||!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<Math.max(along,p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)-2.8))return null;return along;
 }
-function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);g.worldRevision++;}
+function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);g.worldRevision++;}
 export function attackContactDelay(shot){if(shot.ultimate)return shot.family==='saber'?720:900;if(['saber','whip','swatter','pan','planter','palm'].includes(shot.family))return Math.round(meleeDuration(shot.family,shot.combo||0)*500);return shot.weapon==='water'?650+Math.round((shot.charge||0)*300):618;}
 export function shootBoss(g,shot,now=Date.now()){
- shot.red=true;if(g.boss.hp<=0)return;const along=bossIntersection(g,shot);if(along===null)return;
- shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);shot.hit='Auntie';shot.contactDelay=attackContactDelay(shot);
+ shot.red=true;if(g.boss.hp<=0)return;const minion=(g.boss.minions||[]).filter(m=>m.hp>0).map(m=>({m,d:rayBlock({position:m.position,size:[2,2.5,2]},shot.origin,shot.direction)})).filter(x=>x.d<=shot.range&&x.d<coverDistance(g,shot.origin,shot.direction)).sort((a,b)=>a.d-b.d)[0];const bossAlong=bossIntersection(g,shot);if(minion&&(bossAlong===null||minion.d<bossAlong)){shot.hit='Minion';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*minion.d);shot.contactDelay=attackContactDelay(shot);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},minionId:minion.m.id,due:now+shot.contactDelay,generation:g.boss.generation});return;}const along=bossAlong;if(along===null)return;
+ shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);shot.hit='Auntie';shot.contactDelay=attackContactDelay(shot);requestDodge(g,shot,now,['stun','root','fear','slow'].some(k=>effectActive(g.boss,k,now)));
  const weapon=activeWeapon(g,shot.shooter);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},weapon:{...weapon},due:now+shot.contactDelay,generation:g.boss.generation});
 }
 export function flushBossHits(g,now=Date.now()){
  const pending=g.pendingBossHits||[];g.pendingBossHits=[];
  for(const event of pending){if(event.generation!==g.boss.generation||g.boss.hp<=0)continue;if(event.due>now){g.pendingBossHits.push(event);continue;}
+  if(event.minionId){const m=g.boss.minions?.find(m=>m.id===event.minionId);if(m&&rayBlock({position:m.position,size:[2,2.5,2]},event.shot.origin,event.shot.direction)<=Math.min(event.shot.range,coverDistance(g,event.shot.origin,event.shot.direction))){m.hp=Math.max(0,m.hp-event.shot.damage);m.flash=now;g.worldRevision++;}continue;}
   const {shot,weapon}=event,along=bossIntersection(g,shot);if(along===null)continue;const impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);if(Math.hypot(...impact.map((v,i)=>v-shot.impact[i]))>Math.max(2.8,shot.radius||0))continue;
   const crit=weapon.affixId==='brutal'&&Math.random()<.25?1.8:1,damage=(shot.damage??(1+Math.floor(4*shot.charge)))*(1+(effectActive(g.boss,'expose',event.due)?.power||0))*crit;
   g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;applyWeaponTraits(g,weapon,shot,event.due);

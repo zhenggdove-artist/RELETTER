@@ -47,13 +47,13 @@ export function fishingAction(g,actor,body,now=Date.now(),rng=random){
   const pond=f.ponds.find(p=>p.id===body.pond);if(!pond||!close(pond.position,Math.max(7,(pond.radius||3)+4)))return {error:'Stand beside the pond'};
   if(body.action==='pond-destroy'){if(pond.fish.length)return {error:'Retrieve the fish before removing this pond'};f.ponds=f.ponds.filter(p=>p!==pond);return changed();}
   if(body.action==='pond-release'){const i=bag.findIndex(x=>x.id===body.id);if(i<0)return {error:'Fish is no longer in your collection'};const fitError=aquariumFit(pond,bag[i]);if(fitError)return {error:fitError};if(pond.fish.length>=(pond.capacity||30))return {error:'This aquarium is full'};pond.fish.push({...bag[i],owner:name});bag.splice(i,1);return changed();}
-  if(body.action==='pond-retrieve'){const i=pond.fish.findIndex(x=>x.id===body.id&&x.owner===name);if(i<0)return {error:'Only your own fish can be retrieved'};if(bag.length>=1000)return {error:'Collection full'};bag.push(pond.fish[i]);pond.fish.splice(i,1);return changed();}
+  if(body.action==='pond-retrieve'){const i=pond.fish.findIndex(x=>x.id===body.id&&x.owner===name);if(i<0)return {error:'Only your own fish can be retrieved'};bag.push(pond.fish[i]);pond.fish.splice(i,1);return changed();}
  }
  if(body.action==='cancel-fishing'){delete f.sessions[name];return changed();}
  const rod=fishingById(g.equipment?.[name]?.rod);
  if(!rod||rod.family!=='rod'||!owned.includes(rod.id))return {error:'Equip a fishing rod in the shop'};
  if(body.action==='cast'){
-  if(bag.length>=1000)return {error:'Sell or release fish to make room'};
+
   const old=f.sessions[name];if(old&&now-old.updated<120000&&['waiting','fight'].includes(old.stage))return {error:'Finish or cancel your current cast'};
   const hole=f.holes.find(h=>h.id===body.hole);if(!hole||!close(hole.position,6))return {error:'Stand beside a fishing hole'};
   const pool=FISH.filter(s=>hole.water==='crimson'?s.redOnly:!s.redOnly),affinity=Math.min(.88,.34+rod.luck*.36+Math.min(28,hole.depth||1)*.006),weights=pool.map(s=>Math.pow(affinity,s.rarity-(hole.water==='crimson'?6:1))),total=weights.reduce((a,b)=>a+b,0);let pick=rng()*total,index=0;for(;index<pool.length-1;index++){pick-=weights[index];if(pick<=0)break;}const species=pool[index],kg=+(species.minKg+rng()*(species.maxKg-species.minKg)).toFixed(2);

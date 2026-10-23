@@ -324,7 +324,7 @@ function syncLootMeshes(){
   const model=createCollectibleCoin(),group=new THREE.Group();group.name='Dropped coin';group.userData.coinId=coin.id;group.userData.floatPhase=(hash(coin.id)%628)/100;group.add(model);group.position.fromArray(coin.position);group.position.y+=COIN_FLOAT_HEIGHT;scene.add(group);lootMeshes.set(coin.id,group);
  }
 }
-function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,weaponInstances:equipmentState.weaponInstances||gameView.weaponInstances,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncDestructionEvents();syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshBag();refreshProgression();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
+function receiveGame(data){if(Number.isFinite(data.worldRevision)&&data.worldRevision<(gameView.worldRevision??-1))return;const previousLevel=currentStats().level,old=gameView.boss,boss=acceptBossSnapshot(old,data.boss),redMode=!(data.pkMode??gameView.pkMode??false);const blocks=Array.isArray(data.blocks)&&(data.buildRevision??0)>=(gameView.buildRevision??-1)?data.blocks:gameView.blocks||[],buildRevision=Math.max(data.buildRevision??-1,gameView.buildRevision??-1);const equipmentState=(data.equipmentRevision??0)>=(gameView.equipmentRevision??0)?data:gameView;gameView={...gameView,...data,boss,redMode,blocks,buildRevision,inventories:equipmentState.inventories,equipment:equipmentState.equipment,shields:equipmentState.shields,weaponInstances:equipmentState.weaponInstances||gameView.weaponInstances,equipmentRevision:equipmentState.equipmentRevision};receiveBoss(old,boss);syncDestructionEvents();syncBlocks(blocks);refreshEquipmentUI();coinCount=data.wallets?.[selectedCharacter]||0;$('coin-num').textContent='x '+coinCount;$('water-status').textContent=data.pkMode?'PK · '+(data.hits?.[selectedCharacter]||0)+' / '+currentStats().maxHp+' hits':'CO-OP';syncLootMeshes();syncAdventure();refreshBag();refreshProgression();receiveEnemyDamage();if(admitted&&currentStats().level>previousLevel)centerNotice('LEVEL UP · '+currentStats().level);}
 let worldRefreshBusy=false;
 async function refreshWorld(){if(!connected||worldRefreshBusy)return;worldRefreshBusy=true;try{receiveGame(await api('/api/world',undefined,'GET'));}catch{}finally{worldRefreshBusy=false;}}
 setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
@@ -437,18 +437,19 @@ function receiveBoss(old,boss){
  $('water-gun').classList.toggle('red-water',!!gameView.redMode);
 }
 function prepareBossBlood(m){
- if(m.bloodUniform)return;m.bloodUniform={amount:{value:0},flash:{value:0}};
+ if(m.bloodUniform)return;m.bloodUniform={amount:{value:0},flash:{value:0},ice:{value:0}};
  m.model.traverse(o=>{if(!o.isMesh)return;for(const mat of Array.isArray(o.material)?o.material:[o.material]){mat.onBeforeCompile=shader=>{
-  shader.uniforms.reletterBlood=m.bloodUniform.amount;shader.uniforms.reletterFlash=m.bloodUniform.flash;
+  shader.uniforms.reletterIce=m.bloodUniform.ice;shader.uniforms.reletterBlood=m.bloodUniform.amount;shader.uniforms.reletterFlash=m.bloodUniform.flash;
   shader.vertexShader='varying vec3 reletterWound;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nreletterWound=position*4000.0;');
-  shader.fragmentShader='varying vec3 reletterWound; uniform float reletterBlood; uniform float reletterFlash;\n'+shader.fragmentShader;
+  shader.fragmentShader='varying vec3 reletterWound; uniform float reletterBlood; uniform float reletterFlash; uniform float reletterIce;\n'+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
    float streak=(sin(reletterWound.x*4.0+sin(reletterWound.z*3.0))*0.5+0.5)*0.75+(sin(reletterWound.y*0.8+reletterWound.x*2.0)*0.5+0.5)*0.25;
    float wound=smoothstep(1.0-reletterBlood*0.95,1.12-reletterBlood*0.95,streak)*step(0.001,reletterBlood);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.32,0.006,0.018)*(0.65+diffuseColor.g),wound*0.9);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.12,.5,1.)*(.55+dot(diffuseColor.rgb,vec3(.333))),reletterIce*.85);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.82,0.82),reletterFlash*0.9);
   `);
- };mat.customProgramCacheKey=()=>'reletter-boss-blood-v1';mat.needsUpdate=true;}});
+ };mat.customProgramCacheKey=()=>'reletter-boss-blood-v2';mat.needsUpdate=true;}});
  m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model);m.bloodBounds={min:box.min.clone().sub(m.root.position),size:box.getSize(new THREE.Vector3())};m.bloodBounds.min.y=Math.max(0,m.bloodBounds.min.y);m.bloodBounds.size.y=Math.max(1,box.max.y-m.root.position.y-m.bloodBounds.min.y);
  const positions=new Float32Array(60*3),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(positions,3));geo.setDrawRange(0,0);
  m.drips=new THREE.Points(geo,new THREE.PointsMaterial({color:'#9e1030',size:.13,transparent:true,opacity:.8,depthWrite:false}));m.drips.frustumCulled=false;m.root.add(m.drips);

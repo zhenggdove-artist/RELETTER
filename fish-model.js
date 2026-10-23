@@ -1,3 +1,4 @@
+import {buildAbyssAnatomy} from './abyss-anatomy.js';
 import {fishDimensions} from './fishing-catalog.js';
 // Volumetric catch specimens. Shared geometry uses owned materials/textures and explicit disposal.
 export function createFishModel(T,species){
@@ -26,7 +27,7 @@ export function createFishModel(T,species){
   return mesh;
  }
  const abyss=species.eldritch||species.shape==='manta';
- if(!abyss){
+ if(species.eldritch){buildAbyssAnatomy(T,species,{root,sphere,tube,fin,skin,luminous,black,membrane,swimmers});}else if(!abyss){
   const deep=['discus','angel','tang','emperor','butterfly','ryukin','pearlscale'].includes(species.shape),slim=['arowana','ribbon','gar','pike','sturgeon'].includes(species.shape);
   const height=deep?.66:slim?.26:.43;
   sphere(root,[0,0,0],[1.08,height,.32]);
@@ -69,22 +70,7 @@ export function createFishModel(T,species){
   for(let i=0;i<eyeCount;i++){const a=(i-(eyeCount-1)/2)*.32,x=Math.sin(a)*.44,y=.4+Math.cos(a)*.17,z=.35+Math.cos(a)*.04;sphere(root,[x,y,z],[.085,.075,.035],luminous);sphere(root,[x,y,z+.03],[.022,.056,.015],black);}
   if(!jelly&&!nautilus)for(let i=0;i<(morph.crown||9);i++){const a=i/(morph.crown||9)*Math.PI*2;tube(root,[[Math.cos(a)*.32,.7,Math.sin(a)*.25],[Math.cos(a)*.44,1.05,Math.sin(a)*.36],[Math.cos(a)*.38,1.25,Math.sin(a)*.32]],.022,luminous);}
  }
- // Distinct anatomical constructions, layered over the mantle rather than palette swaps.
  if(species.eldritch){
-  const segments=morph.segments||7;
-  if(['worm','leviathan'].includes(shape))for(let i=0;i<segments;i++){const t=i/(segments-1),x=Math.sin(t*5)*.55,y=.7-t*2.1,z=-t*.35,r=.3*(1-t*.6);sphere(root,[x,y,z],[r,r*.85,r],skin);for(const side of [-1,1])tube(root,[[x+side*r*.7,y,z],[x+side*(r+.22),y+.12,z+.03],[x+side*(r+.32),y-.15,z+.15]],.018,luminous);}
-  if(['coral','shrine','urchin'].includes(shape))for(let i=0;i<(morph.crown||10);i++){const a=i*6.283/(morph.crown||10),x=Math.cos(a),z=Math.sin(a),h=.8+(i%3)*.18;const stem=[[x*.3,.55,z*.3],[x*.6,1,z*.5],[x*.85,h+.65,z*.8]];tube(root,stem,.026,skin);for(const side of [-1,1])tube(root,[[x*.6,1,z*.5],[x*.75+side*.14,h+.2,z*.65],[x*.9+side*.2,h+.32,z*.8]],.012,luminous);}
-  if(shape==='crab')for(const side of [-1,1]){tube(root,[[side*.55,.3,.05],[side*1.1,.35,.2],[side*1.25,.7,.45]],.07,skin);for(const branch of [-1,1])tube(root,[[side*1.25,.7,.45],[side*(1.25+branch*.18),.95,.52],[side*1.28,1.13,.58]],.04,luminous);}
-  if(shape==='hydra')for(let i=0;i<(morph.limbs||7);i++){const a=i*6.283/(morph.limbs||7),x=Math.cos(a)*.85,y=.9+(i%3)*.24,z=Math.sin(a)*.6;tube(root,[[0,.4,0],[x*.6,.9,z*.5],[x,y,z]],.038,skin);sphere(root,[x,y,z],[.11,.17,.11],skin);sphere(root,[x,y,z+.1],[.045,.06,.018],luminous);}
-  if(['shrine','mask','cthulhu','squid','lantern'].includes(shape)){
-   const mouthY=shape==='lantern'?.2:.05,mouthR=shape==='lantern'?.36:.2;
-   sphere(root,[0,mouthY,.38],[mouthR,mouthR*1.2,.09],black);
-   for(let ring=0;ring<2;ring++)for(let i=0;i<16;i++){const a=i*Math.PI/8+ring*.1,r=mouthR*(1-ring*.28);tube(root,[[Math.cos(a)*r,mouthY+Math.sin(a)*r*1.2,.44],[Math.cos(a)*r*.8,mouthY+Math.sin(a)*r*.8,.49],[Math.cos(a)*r*.5,mouthY+Math.sin(a)*r*.6,.46]],.009,luminous);}
-   if(shape==='lantern'){tube(root,[[0,.95,0],[.1,1.4,.2],[.15,1.35,.65]],.018,skin);sphere(root,[.15,1.35,.65],[.11,.15,.09],luminous);}
-  }
-  // Ribbed gills, fine capillaries and raised pores at different scales.
-  for(let i=0;i<segments;i++)for(const side of [-1,1]){const y=.7-i*.13;tube(root,[[side*.12,y,.37],[side*.36,y-.03,.41],[side*.48,y-.14,.2]],.008,luminous);}
-  for(let i=0;i<28;i++){const a=i*2.3999,y=.72-(i%7)*.12;sphere(root,[Math.cos(a)*.43,y,Math.sin(a)*.36],[.012,.018,.012],luminous);}
   // GPU deformation also moves the suckers and capillaries after batching.
   const clock={value:0};for(const mat of [skin,luminous,membrane]){mat.onBeforeCompile=shader=>{shader.uniforms.abyssTime=clock;shader.vertexShader='uniform float abyssTime;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
    float bend=clamp(-position.y,0.,2.)*.055;transformed.x+=sin(abyssTime*3.+position.y*5.+position.z*2.)*bend;transformed.z+=cos(abyssTime*2.5+position.y*4.+position.x)*bend;`);};mat.customProgramCacheKey=()=> 'abyss-motion-v2';}root.userData.abyssClock=clock;

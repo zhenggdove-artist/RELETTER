@@ -38,7 +38,7 @@ const broadcast=(type,data)=>{for(const p of peers.values())p.res.write(`event: 
 const roster=()=>[...peers].map(([id,p])=>({id,character:p.character,state:p.state}));
 function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>20_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
 function json(res,status,data,headers={}){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));}
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.mp3':'audio/mpeg','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.mp3':'audio/mpeg','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
 const server=http.createServer(async(req,res)=>{
 try{
   const url=new URL(req.url,'http://localhost');
