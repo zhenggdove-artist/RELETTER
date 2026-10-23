@@ -217,3 +217,8 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Generated all 50 actual-character WebP portraits (363446 bytes). Complete dressed model max 43 draw calls; no continuous portrait render loop.
 - Validation: 76 rule/persistence tests pass; all 50 outfit shaders/models rendered without errors. Real local purchase/equip/double-click removal/restoration, mobile/compact equipment layout, and two independent players' synchronized outfit changes pass. Standard gameplay smoke screenshot/state inspected.
 - Deployed a8944683-ff8c-44ed-8873-aaa11eea0f40; production health and 56 outfit-related asset hashes verified.
+
+## 2026-10-23 Expanded CHAT and circular ATTACK
+- CHAT opens to measured available viewport space above intersecting controls, hides top HUD while open, and scrolls to latest messages. Keyboard viewport resize retains the input and conversation.
+- ATTACK moved out of the tools dock into a 64px circular control next to jump. Pointer capture/hold/release preserved; charge rim uses a conic gradient. Dock uses seven columns on desktop and four on portrait phones.
+- Validated tests/chat-controls.mjs at 320x568, 390x844, 844x390 and 1280x800, simulated keyboard, latest scroll and 100% hold/release. No page errors. Standard game runner screenshot/state inspected.

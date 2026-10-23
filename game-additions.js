@@ -244,7 +244,7 @@ const chatInput=$('chat-input'),chatForm=$('chat-form');
 const dock=document.createElement('nav');dock.id='action-dock';dock.setAttribute('aria-label','Game tools');dock.hidden=true;
 const writeOpen=document.createElement('button');writeOpen.id='write-open';writeOpen.type='button';writeOpen.textContent='WRITE';
 $('search-btn').textContent='HISTORY';$('search-btn').setAttribute('aria-label','Plant history');searchInput.placeholder='Search messages…';
-dock.append($('search-btn'),$('chat-open'),writeOpen,$('water-gun'));document.body.append(dock);
+dock.append($('search-btn'),$('chat-open'),writeOpen);document.body.append(dock);$('game-controls').append($('water-gun'));
 const searchHeader=document.createElement('div');searchHeader.id='search-header';const searchClose=document.createElement('button');searchClose.id='search-close';searchClose.type='button';searchClose.textContent='×';searchClose.setAttribute('aria-label','Close search');searchInput.before(searchHeader);searchHeader.append(searchInput,searchClose);searchClose.onclick=()=>{searchInput.blur();claimPanel('none');};
 function reflectPanels(){const open=bagPanelOpen?'bag':typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen?'fishing':shopPanelOpen?'shop':buildPanelOpen?'build':!ui.classList.contains('mini')&&!ui.classList.contains('hidden')?'write':searchPanel.classList.contains('show')?'search':$('online-panel').classList.contains('chatting')?'chat':'none';document.body.dataset.panel=open;$('bag-open')?.setAttribute('aria-expanded',String(bagPanelOpen));$('build-open')?.setAttribute('aria-expanded',String(buildPanelOpen));writeOpen.textContent=ui.classList.contains('done-state')?'RETURN':'WRITE';for(const [id,name] of [['search-btn','search'],['chat-open','chat'],['write-open','write']])$(id).setAttribute('aria-expanded',String(open===name));}
 function setHistorySmall(small){$('online-panel').classList.toggle('minimized',small);$('chat-minimize').setAttribute('aria-expanded',String(!small));}
@@ -270,7 +270,19 @@ searchBtn.addEventListener('click',()=>{if(searchPanel.classList.contains('show'
 const panelObserver=new MutationObserver(records=>{for(const r of records){const old=r.oldValue||'',el=r.target;if(el===ui&&!ui.classList.contains('mini')&&!ui.classList.contains('hidden')&&(old.includes('mini')||old.includes('hidden')))claimPanel('write');if(el===searchPanel&&searchPanel.classList.contains('show')&&!old.includes('show'))claimPanel('search');}reflectPanels();});for(const panel of [ui,searchPanel])panelObserver.observe(panel,{attributes:true,attributeFilter:['class'],attributeOldValue:true});
 ui.classList.add('mini');setHistorySmall(true);reflectPanels();
 chatForm.onsubmit=e=>{e.preventDefault();sendChat();};
-function fitKeyboard(){const v=window.visualViewport;const active=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'');const keyboard=!!v&&active&&innerHeight-v.height>100;document.body.classList.toggle('keyboard-open',keyboard);document.documentElement.style.setProperty('--view-height',(v?.height||innerHeight)+'px');document.documentElement.style.setProperty('--view-top',(v?.offsetTop||0)+'px');if(keyboard)latestChat();}
+// Size chat from the visible controls rather than the generic tool-panel reservation.
+function layoutExpandedChat(){
+ const panel=$('online-panel');if(!panel.classList.contains('chatting'))return;
+ const v=window.visualViewport,top=(v?.offsetTop||0)+8,rect=panel.getBoundingClientRect();
+ let bottom=(v?.offsetTop||0)+(v?.height||innerHeight)-8;
+ for(const id of ['action-dock','joystick-zone','jump-btn','water-gun']){
+  const el=$(id),r=el.getBoundingClientRect(),style=getComputedStyle(el);
+  if(!r.width||!r.height||style.visibility==='hidden'||style.display==='none'||el.hidden)continue;
+  if(r.right>rect.left&&r.left<rect.right)bottom=Math.min(bottom,r.top-8);
+ }
+ panel.style.setProperty('--chat-height',Math.max(80,bottom-top)+'px');
+}
+function fitKeyboard(){const v=window.visualViewport;const active=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'');const keyboard=!!v&&active&&innerHeight-v.height>100;document.body.classList.toggle('keyboard-open',keyboard);document.documentElement.style.setProperty('--view-height',(v?.height||innerHeight)+'px');document.documentElement.style.setProperty('--view-top',(v?.offsetTop||0)+'px');layoutExpandedChat();if(keyboard)latestChat();}
 window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);window.addEventListener('resize',fitKeyboard);document.addEventListener('focusin',fitKeyboard);document.addEventListener('focusout',()=>requestAnimationFrame(fitKeyboard));fitKeyboard();
 
 window.addEventListener('keydown',e=>{
@@ -377,9 +389,9 @@ function animateWaterSpray(fx,dt){
  return fx.age<fx.duration;
 }
 let waterChargeStart=null,waterChargeSource=null;
-const waterButton=$('water-gun');waterButton.style.touchAction='none';waterButton.setAttribute('aria-label','Hold to charge water, release to spray');
+const waterButton=$('water-gun');waterButton.style.touchAction='none';waterButton.textContent='ATTACK';waterButton.setAttribute('aria-label','Attack: hold to charge, release to fire');
 function waterCharge(){return waterChargeStart===null?0:Math.min(1,(performance.now()-waterChargeStart)/1500);}
-function cancelWaterCharge(){waterChargeStart=null;waterChargeSource=null;waterButton.textContent=currentWeapon().id==='water'?'WATER':'ATTACK';waterButton.style.removeProperty('background');}
+function cancelWaterCharge(){waterChargeStart=null;waterChargeSource=null;waterButton.textContent='ATTACK';waterButton.style.setProperty('--attack-charge','0%');}
 function beginWaterCharge(source){if(waterChargeStart!==null||!admitted||!connected||phase!==PHASE.EXPLORE)return;waterChargeStart=performance.now();waterChargeSource=source;}
 function releaseWaterCharge(source){if(waterChargeSource!==source)return;const charge=waterCharge();cancelWaterCharge();shootWater(charge);}
 // Read the unposed orientation: cosmetic spins must never become gameplay aim.
@@ -417,7 +429,7 @@ waterButton.onclick=e=>{e.preventDefault();e.stopPropagation();if(e.detail===0)s
 window.addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){e.preventDefault();if(!e.repeat)beginWaterCharge('keyboard');}});
 window.addEventListener('keyup',e=>{if(e.code==='KeyQ'){e.preventDefault();releaseWaterCharge('keyboard');}});
 window.addEventListener('blur',cancelWaterCharge);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelWaterCharge();});
-function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.floor(waterCharge()*100);waterButton.textContent=percent===100?'100% READY':percent+'%';waterButton.style.background='linear-gradient(to right,#70d7ff '+percent+'%,#d9f2ff '+percent+'%)';}}syncLootMeshes();for(const [id,mesh] of lootMeshes){mesh.children[0].rotation.y=globalTime*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+COIN_FLOAT_HEIGHT+Math.sin(globalTime*1.8+mesh.userData.floatPhase)*.4;}waterEffects=waterEffects.filter(fx=>{if(animateWaterSpray(fx,dt))return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
+function updateWater(dt){if(waterChargeStart!==null){if(!connected||phase!==PHASE.EXPLORE)cancelWaterCharge();else{const percent=Math.floor(waterCharge()*100);waterButton.textContent=percent===100?'100% READY':percent+'%';waterButton.style.setProperty('--attack-charge',percent+'%');}}syncLootMeshes();for(const [id,mesh] of lootMeshes){mesh.children[0].rotation.y=globalTime*2;mesh.position.y=(gameView.loot.find(c=>c.id===id)?.position[1]||0)+COIN_FLOAT_HEIGHT+Math.sin(globalTime*1.8+mesh.userData.floatPhase)*.4;}waterEffects=waterEffects.filter(fx=>{if(animateWaterSpray(fx,dt))return true;scene.remove(fx.mesh);fx.mesh.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});return false;});if(!connected||phase!==PHASE.EXPLORE||performance.now()-lastPickup<500)return;lastPickup=performance.now();for(const coin of gameView.loot||[])if(!collecting.has(coin.id)&&Math.hypot(charRoot.position.x-coin.position[0],charRoot.position.z-coin.position[2])<2&&Math.abs(charRoot.position.y-coin.position[1])<3){collecting.add(coin.id);api('/api/game',{action:'collect',id:coin.id}).catch(()=>{}).finally(()=>collecting.delete(coin.id));}}
 
 // ===== Cooperative encounter =====
 const bossHud=document.createElement('div');bossHud.id='boss-health';bossHud.hidden=true;bossHud.setAttribute('role','progressbar');bossHud.setAttribute('aria-label','Auntie health');bossHud.setAttribute('aria-valuemax','100');bossHud.innerHTML='<div id="boss-fill"></div><span id="boss-text">AUNTIE · 100 / 100</span>';document.body.append(bossHud);
@@ -578,7 +590,7 @@ const armoryPaths={swatter:'M30 59V31M15 4h34v28H15ZM22 4v28M30 4v28M38 4v28M15 
 function itemArt(item){if(['head','outfit'].includes(item.slot))return `<img width=58 height=58 src="${itemIcon(item)}" alt="">`;return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${(armoryPaths[item.family]||'M12 52 48 12M22 18l22 22M12 50q26-5 38-35')}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
 function refreshEquipmentUI(force=false){
  const owned=gameView.inventories?.[selectedCharacter]||[],slots=gameView.equipment?.[selectedCharacter]||{},balance=gameView.wallets?.[selectedCharacter]||0;
- if(waterChargeStart===null)waterButton.textContent=currentWeapon().id==='water'?'WATER':'ATTACK';
+ if(waterChargeStart===null)waterButton.textContent='ATTACK';
  const signature=JSON.stringify([owned,slots,balance,shopTab,shopBusy,shopTab==='fish-market'?gameView.fishing?.revision:0]);if(!force&&signature===shopSignature)return;shopSignature=signature;
  if(!shopPanelOpen)return;
  $('shop-coins').textContent=balance+' coins';
