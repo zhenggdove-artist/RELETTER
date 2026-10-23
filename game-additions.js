@@ -1,5 +1,5 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
-import {AFFIXES,affixById,activeWeapon,resolveItem,FAMILY_TRAITS} from './combat-traits.js';
+import {AFFIXES,affixById,activeWeapon,activeHead,resolveItem,FAMILY_TRAITS} from './combat-traits.js';
 import {playerStats} from './progression.js';
 import {createUltimate,updateUltimate,disposeUltimate,prepareUltimates} from './ultimate-effects.js';
 import {blockSize as footprint} from './build-shapes.js';
@@ -582,7 +582,7 @@ function refreshEquipmentUI(force=false){
  const signature=JSON.stringify([owned,slots,balance,shopTab,shopBusy,shopTab==='fish-market'?gameView.fishing?.revision:0]);if(!force&&signature===shopSignature)return;shopSignature=signature;
  if(!shopPanelOpen)return;
  $('shop-coins').textContent=balance+' coins';
- $('equipment-slots').innerHTML=['head','weapon','shield','rod','tool'].map(slot=>{const item=slot==='weapon'?currentWeapon():equipmentById(slots[slot]);return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
+ $('equipment-slots').innerHTML=['head','weapon','shield','rod','tool'].map(slot=>{const item=slot==='weapon'?currentWeapon():slot==='head'?activeHead(gameView,selectedCharacter):equipmentById(slots[slot]);return `<div class="equipment-slot"><small>${slot.toUpperCase()}</small><strong>${item?.name||'Empty'}</strong>${slot==='shield'&&item?'<span id="shield-charge"></span>':''}<button data-remove="${slot}" ${!item||item.id==='water'?'disabled':''}>Unequip</button></div>`;}).join('');
  for(const btn of shopPanel.querySelectorAll('[data-tab]'))btn.setAttribute('aria-pressed',String(btn.dataset.tab===shopTab));
  if(shopTab==='fish-market'){const fish=gameView.fishing?.bags?.[selectedCharacter]||[];$('shop-items').innerHTML=fish.length?fish.map(f=>fishCard(f,`<button data-sell-fish="${f.id}">Sell · ${fishPrice(f)}</button>`)).join(''):'<p class="shop-empty">Your catches appear here. Keep favourites in FISH → Collection, or sell them for coins.</p>';return;}
  const items=EQUIPMENT.filter(i=>shopTab==='all'||shopTab==='owned'&&owned.includes(i.id)||i.slot===shopTab||shopTab==='fishing'&&['rod','tool','pond'].includes(i.slot));

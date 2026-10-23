@@ -113,7 +113,7 @@ function syncAdventure(){
  }
  const drops=gameView.weaponDrops||[],ids=new Set(drops.map(d=>d.id));for(const [id,m] of weaponDropMeshes)if(!ids.has(id)){disposeAdventure(m);weaponDropMeshes.delete(id);}for(const d of drops)if(!weaponDropMeshes.has(d.id)){const g=new THREE.Group(),gem=new THREE.Mesh(new THREE.OctahedronGeometry(.28),new THREE.MeshStandardMaterial({color:'#d1b2ff',emissive:'#946bd9',emissiveIntensity:.65,metalness:.6,roughness:.2}));g.add(gem);const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.025,8,48),glowMaterial('#efccff',.7));ring.rotation.x=-Math.PI/2;g.add(ring);g.position.fromArray(d.position);g.position.y+=1;scene.add(g);weaponDropMeshes.set(d.id,g);}renderFishing();
 }
-const pickupButton=document.createElement('button');pickupButton.id='weapon-pickup';pickupButton.hidden=true;pickupButton.textContent='PICK UP WEAPON';document.body.append(pickupButton);pickupButton.onclick=()=>{const d=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(d)adventureAction({action:'weapon-pickup',id:d.id});};
+const pickupButton=document.createElement('button');pickupButton.id='weapon-pickup';pickupButton.hidden=true;pickupButton.textContent='PICK UP EQUIPMENT';document.body.append(pickupButton);pickupButton.onclick=()=>{const d=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(d)adventureAction({action:'weapon-pickup',id:d.id});};
 const holeUniform={value:Array.from({length:40},()=>new THREE.Vector3(10000,10000,0))},holeCount={value:0};let groundPatched=false;
 function updateGroundHoles(holes){if(!groundPatched){const ground=scene.children.find(o=>o.isMesh&&o.geometry?.type==='CircleGeometry'&&o.geometry.parameters.radius===500);if(ground){groundPatched=true;ground.material.onBeforeCompile=shader=>{shader.uniforms.gardenHoles=holeUniform;shader.uniforms.gardenHoleCount=holeCount;shader.vertexShader='varying vec3 gardenWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ngardenWorld=(modelMatrix*vec4(position,1.0)).xyz;');shader.fragmentShader='varying vec3 gardenWorld;uniform vec3 gardenHoles[40];uniform int gardenHoleCount;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfor(int h=0;h<40;h++){if(h>=gardenHoleCount)break;vec2 delta=gardenWorld.xz-gardenHoles[h].xy;if(dot(delta,delta)<gardenHoles[h].z*gardenHoles[h].z)discard;}');};ground.material.needsUpdate=true;}}holeCount.value=Math.min(40,holes.length);holes.slice(0,40).forEach((h,i)=>holeUniform.value[i].set(h.position[0],h.position[2],h.radius-.03));}
 function updateAdventure(dt){
@@ -144,7 +144,7 @@ function updateAdventure(dt){
  }
 
  for(const m of weaponDropMeshes.values()){m.children[0].rotation.y+=dt;m.children[0].position.y=Math.sin(globalTime*2)*.12;}
- const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+((affixById(nearDrop.affixes?.[selectedCharacter])?.name||'')+' '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'Weapon'));
+ const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+((affixById(nearDrop.affixes?.[selectedCharacter])?.name||'')+' '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'Equipment'));
  pickupButton.hidden=phase!==PHASE.EXPLORE||document.body.dataset.panel!=='none'||!(gameView.weaponDrops||[]).some(d=>distanceTo(d.position)<4&&Math.abs(charRoot.position.y-d.position[1])<3);
 }
 function updateFishingRods(f){

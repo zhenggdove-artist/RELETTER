@@ -83,7 +83,7 @@ export class ReletterGarden extends DurableObject {
         const body=await readBody(request);this.pruneSockets();const ws=this.sockets().find(w=>w.deserializeAttachment().id===session.id);if(!ws)return json({error:'Not connected'},409);
         if(body.surface&&!this.sql.exec('SELECT id FROM surfaces WHERE id=?',body.surface).toArray().length)return json({error:'Upload the skin first'},400);
         const game=this.game();advanceBoss(game,this.roster());const result=battleAction(game,ws.deserializeAttachment(),this.roster(),body);if(result.error)return json({error:result.error},400);game.worldRevision++;
-        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,defeated:result.defeated,notice:result.notice,game:this.gameView()});
+        this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(game));this.broadcast('game',this.gameView());if(result.shot)this.broadcast('water',result.shot);return json({ok:true,blocked:result.blocked,defeated:result.defeated,notice:result.notice,sold:result.sold,proceeds:result.proceeds,game:this.gameView()});
       }
       if(path==='/api/socket'){
         this.pruneSockets();

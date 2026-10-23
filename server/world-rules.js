@@ -88,7 +88,7 @@ export function flushBossHits(g,now=Date.now()){
  for(const event of pending){if(event.generation!==g.boss.generation||g.boss.hp<=0)continue;if(event.due>now){g.pendingBossHits.push(event);continue;}
   if(event.minionId){const m=g.boss.minions?.find(m=>m.id===event.minionId);if(m&&rayBlock({position:m.position,size:[2,2.5,2]},event.shot.origin,event.shot.direction)<=Math.min(event.shot.range,coverDistance(g,event.shot.origin,event.shot.direction))){m.hp=Math.max(0,m.hp-event.shot.damage);m.flash=now;g.worldRevision++;}continue;}
   const {shot,weapon}=event,along=bossIntersection(g,shot);if(along===null)continue;const impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);if(Math.hypot(...impact.map((v,i)=>v-shot.impact[i]))>Math.max(2.8,shot.radius||0))continue;
-  const crit=weapon.affixId==='brutal'&&Math.random()<.25?1.8:1,damage=(shot.damage??(1+Math.floor(4*shot.charge)))*(1+(effectActive(g.boss,'expose',event.due)?.power||0))*crit;
+  const crit=(weapon.affixIds||[weapon.affixId]).includes('brutal')&&Math.random()<.25?1.8:1,damage=(shot.damage??(1+Math.floor(4*shot.charge)))*(1+(effectActive(g.boss,'expose',event.due)?.power||0))*crit;
   g.boss.hp=Math.max(0,+(g.boss.hp-damage).toFixed(2));g.boss.revision++;g.boss.lastHit=now;applyWeaponTraits(g,weapon,shot,event.due);
   if(shot.knockback){const p=g.boss.position,n=p.map((v,i)=>v+shot.knockback[i]);if(!g.blocks.some(b=>containsBlock(b,n[0],b.position[1]+.5,n[2],1.1)))g.boss.position=n;}
   g.worldRevision++;if(!g.boss.hp)finishBoss(g,shot.shooter,now);
