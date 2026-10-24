@@ -30,7 +30,7 @@ export function battleAction(game,actor,players,body,now=Date.now()){
   game.wallets[name]=balance()+coin.amount;game.loot.splice(i,1);return {};
  }
  if(body.action==='monster-hit'){
-  if(deathProtected(game,name,now)||game.boss.hp<=0||effectActive(game.boss,'stun',now)||effectActive(game.boss,'fear',now)||game.boss.paused||pos[1]>=5||Math.abs(pos[1]-game.boss.position[1])>3||Math.hypot(pos[0]-game.boss.position[0],pos[2]-game.boss.position[2])>5)return {blocked:true};
+  if(deathProtected(game,name,now)||game.boss.hp<=0||game.boss.sign||effectActive(game.boss,'stun',now)||effectActive(game.boss,'fear',now)||game.boss.paused||pos[1]>=5||Math.abs(pos[1]-game.boss.position[1])>3||Math.hypot(pos[0]-game.boss.position[0],pos[2]-game.boss.position[2])>5)return {blocked:true};
   game.monsterHits??={};if(now-(game.monsterHits[name]||0)<1800)return {blocked:true};game.monsterHits[name]=now;
   const result=absorbShield(game,name,game.boss.damage*incomingElement(game,name,game.boss.element)*(1-(effectActive(game.boss,'weak',now)?.power||0)),now),hits=(game.hits[name]||0)+result.damage,defeated=hits>=playerStats(game,name,now).maxHp;game.hits[name]=defeated?0:hits;if(defeated)applyDeathPenalty(game,name,now,'monster-contact');return {blocked:result.damage===0,defeated};
  }

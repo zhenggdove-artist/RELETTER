@@ -256,3 +256,11 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Equipment tier pool scales from tier 1 at low levels to tier 5 at level 50. Level 40+ wing drops use tiers 4-6. Wings now use unique instance inventory IDs while retaining base appearance slots, including BAG equip/unequip.
 - BAG shows actual rolled values and source monster level. Coin bags retain level-scaled counts and gain nonlinear values: total level1=6, level30=152, level40=280, level50=480 coins.
 - 98 Node tests pass. Browser verified mobile rolled-wing detail, keyboard/joystick flight with rolled wings, shared milk event and SQLite persistence; standard game runner passed.
+
+## 2026-10-24 Foreman scale, aerial hits, pursuit and sign retrieval
+- Renamed event boss 章萬安; normalized model to 40m (original monster model bounds ~40m). Added held wooden 蔣 sign alongside existing right-hand chainsaw.
+- Rotated multi-volume server hitboxes cover legs, torso/arms and head through 42m; fixed elevated-origin rejection while preserving ground cover rules.
+- Both monsters only target/chase/cast at players within 45m horizontal distance.
+- Each accumulated 200 HP loss drops the sign 14m away with a flight arc. Authoritative shared retrieval cancels skills/minions/aura/contact/dodge, walks to the sign and resumes after pickup. Thresholds, position and retrieval persist in encounter state. Throw paths and retrieval movement check buildings.
+- Purple fixed 章萬安 HP bar below Auntie, active-only, with panel space reserved; sign visible in hand or on ground.
+- Validation: 101 Node tests pass; desktop/mobile browser screenshots inspected, 40m height and stacked HUD assertions pass; standard game runner passes.

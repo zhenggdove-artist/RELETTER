@@ -25,7 +25,7 @@ test('every crimson monster can actually be hooked, landed, discovered and sold 
 });
 test('3–5 hits destroy blocks; cooldown, cover, aimed misses and saved damage remain authoritative',()=>{
  const capacities=new Set();for(const id of ['a','b','c']){let g={};ensureWorld(g);g.blocks=[{id,shape:'cube',position:[0,0,4],size:[2,2,2]}];g.boss.position=[0,0,8];
-  const miss=battleAction(g,actor,[actor],{...shot,charge:0,direction:[0,1,0]},10000);assert.equal(miss.shot.hit,null);assert.equal(g.blocks[0].hits,undefined);
+  const miss=battleAction(g,actor,[actor],{...shot,charge:0,direction:[-1,0,0]},10000);assert.equal(miss.shot.hit,null);assert.equal(g.blocks[0].hits,undefined);
   let n=0;while(g.blocks.length){const now=11000+n*1000,r=battleAction(g,actor,[actor],shot,now);n++;assert.equal(r.shot.hit,'Block');assert.equal(r.shot.structureHit.hits,n);assert.ok(n<=5);assert.ok(battleAction(g,actor,[actor],shot,now+1).error);g=JSON.parse(JSON.stringify(g));}
   capacities.add(n);assert.equal(g.destructions.length,1);assert.equal(g.boss.hp,100);assert.equal(g.destructions[0].id,id);
  }assert.deepEqual([...capacities].sort(),[3,4,5]);

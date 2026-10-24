@@ -7,8 +7,9 @@ const distance=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 export function hurtPlayer(g,player,damage,now,element=g.boss?.element){if(player.state?.paused||deathProtected(g,player.character,now))return;const name=player.character;g.enemyHitEvents??={};if(now-(g.enemyHitEvents[name]?.time||0)<800)return;const guard=absorbShield(g,name,damage*incomingElement(g,name,element),now);g.hits??={};const hp=(g.hits[name]||0)+guard.damage,defeated=hp>=playerStats(g,name,now).maxHp;g.hits[name]=defeated?0:+hp.toFixed(2);if(defeated)applyDeathPenalty(g,name,now,'monster-spell');g.enemyHitEvents[name]={time:now,defeated,blocked:!guard.damage};g.worldRevision++;}
 export function updateEnemySkills(g,players,now,dt,blocked){
  const b=g.boss;b.skills??=[];b.minions??=[];if(!b.hp){b.skills=[];b.minions=[];return;}
+ if(b.sign){b.skills=[];b.minions=[];b.auraRadius=0;return;}
  if(b.paused){if(b.nextSkill)b.nextSkill+=dt*1000;for(const s of b.skills){s.start+=dt*1000;s.end+=dt*1000;}for(const m of b.minions)m.expires+=dt*1000;if(b.leap){b.leap.start+=dt*1000;b.leap.end+=dt*1000;}if(b.dodge){b.dodge.start+=dt*1000;b.dodge.end+=dt*1000;}return;}
- const targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&!p.state.paused&&p.state.position[1]<5);if(!targets.length){b.skills=[];b.minions=[];b.position[1]=0;delete b.leap;return;}
+ const targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&!p.state.paused&&distance(p.state.position,b.position)<=45);if(!targets.length){b.skills=[];b.minions=[];b.position[1]=0;delete b.leap;return;}
  const nearest=targets.slice().sort((a,c)=>distance(a.state.position,b.position)-distance(c.state.position,b.position))[0];
  b.auraRadius=b.level>=30?5+(b.level-30)*.12:0;
  if(b.auraRadius&&!blocked)for(const p of targets)if(distance(p.state.position,b.position)<b.auraRadius&&Math.abs(p.state.position[1]-b.position[1])<3)hurtPlayer(g,p,Math.max(1,b.damage*.45),now);
