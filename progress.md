@@ -264,3 +264,9 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Each accumulated 200 HP loss drops the sign 14m away with a flight arc. Authoritative shared retrieval cancels skills/minions/aura/contact/dodge, walks to the sign and resumes after pickup. Thresholds, position and retrieval persist in encounter state. Throw paths and retrieval movement check buildings.
 - Purple fixed 章萬安 HP bar below Auntie, active-only, with panel space reserved; sign visible in hand or on ground.
 - Validation: 101 Node tests pass; desktop/mobile browser screenshots inspected, 40m height and stacked HUD assertions pass; standard game runner passes.
+
+## 2026-10-25 Foreman anatomy/props refinement and no delevel penalty
+- Rebuilt articulated sleeves/trousers with tapered profiles and overlapping elbows/knees, corrected lathe winding; reduced head scale and repaired neck/shoulder proportions. Bone-local geometry avoids the prior shared skinned-limb discontinuities. Retained reference-photo face and 16-bone animation. Added curled finger segments, shirt pocket/placket/seams/folds, belt loops, shoe soles/laces.
+- Chainsaw now has bevelled housing/guide plate, instanced chain/cutter links, grip, vents, fasteners/caps and label. Wooden sign adds bevelled edges, grain/knot/plank texture, rear braces, nails and cylindrical handle; moved held sign forward to avoid sleeve clipping.
+- Shared materials and merged static sibling meshes: measured 51 mesh draws and 48,200 triangles including instanced parts. Browser desktop/mobile pose/sign/HUD checks pass; no real-device frame-rate guarantee.
+- Death loss capped at current-level progress; total XP never falls below level floor. Money penalty unchanged. Repeated deaths at levels1-100, zero/low XP and SQLite restart covered; all102 Node tests pass. Standard game runner passed and screenshots inspected.
