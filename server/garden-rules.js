@@ -1,4 +1,4 @@
-import {SEEDS,seedById,cropProgress} from '../garden-catalog.js';
+import {SEEDS,seedById,cropProgress,cropAge,cropStage} from '../garden-catalog.js';
 import {equipmentById} from '../equipment-catalog.js';
 import {WINGS} from '../wing-catalog.js';
 export const GARDEN_ACTIONS=['seed-buy','seed-plant','crop-water','crop-harvest','harvest-eat','harvest-arrange','wing-pickup'];
@@ -18,8 +18,8 @@ export function gardenAction(g,actor,body,now=Date.now()){
  stacks[s.id]--;f.crops.push({id:crypto.randomUUID(),species:s.species,position:[...q],owner:name,grownMs:0,updatedAt:now,wetUntil:now});return change();}
  if(body.action==='harvest-arrange'){const item=equipmentById(body.item),b=(g.blocks||[]).find(b=>b.id===body.block);if(item?.slot!=='harvest'||!(stacks[item.id]>0)||!b||!near(b.position,8))return {error:'Bring a harvest to a built block'};b.flowers??=[];if(b.flowers.length>=12)return {error:'This arrangement is full'};stacks[item.id]--;b.flowers.push({species:item.species,id:crypto.randomUUID()});g.buildRevision=(g.buildRevision||0)+1;return change();}
  const c=f.crops.find(c=>c.id===body.id);if(!c||!near(c.position))return {error:'Move closer to the plant'};
- const s=seedById(c.species),progress=cropProgress(c,now);c.grownMs=progress*s.growMs;c.updatedAt=now;
- if(body.action==='crop-water'){if(now-(c.lastWater||0)<1200)return {error:'Wait for water to soak in'};if(progress>=1)return {error:'Ready to harvest'};c.lastWater=now;c.wetUntil=Math.min(now+s.growMs,Math.max(now,c.wetUntil)+s.growMs/s.waterNeed);return change();}
+ const s=seedById(c.species),progress=cropProgress(c,now);c.grownMs=Math.min(s.growMs*4.75,cropAge(c,now));c.updatedAt=now;
+ if(body.action==='crop-water'){if(now-(c.lastWater||0)<1200)return {error:'Wait for water to soak in'};if(cropStage(c,now)>=20)return {error:'Fully grown · stage 20'};c.lastWater=now;c.wetUntil=Math.min(now+s.growMs,Math.max(now,c.wetUntil)+s.growMs/s.waterNeed);return change();}
  if(body.action==='crop-harvest'){if(progress<1)return {error:'This plant is still growing'};const id='harvest-'+c.species;stacks[id]=(stacks[id]||0)+1;f.crops=f.crops.filter(x=>x!==c);return change();}
  return {error:'Unknown garden action'};
 }

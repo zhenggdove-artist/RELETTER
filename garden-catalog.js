@@ -5,4 +5,6 @@ const effects=['attack','speed','jump','defense','hp'];
 export const SEEDS=names.map((name,i)=>({id:'seed-'+(i+1),name:name+' Seed',species:i+1,slot:'seed',family:'seed',tier:1+Math.floor(i/6),color:colors[i],price:3+Math.floor(i/3)*2,growMs:(60+Math.floor(i/5)*30)*1000,waterNeed:3+Math.floor(i/10),effect:effects[i%5],power:effects[i%5]==='hp'?2+Math.floor(i/6):.08+Math.floor(i/6)*.035,duration:180000+i%6*30000,description:'Plant on clear ground. Water to grow; harvest when flowering.'}));
 export const HARVESTS=SEEDS.map(s=>({...s,id:'harvest-'+s.species,name:names[s.species-1],slot:'harvest',family:'harvest',price:0,notForSale:true,description:`Eat: +${s.effect==='hp'?s.power:Math.round(s.power*100)+'%'} ${s.effect} for ${s.duration/1000}s. Or arrange on a built block.`}));
 export const seedById=id=>SEEDS.find(s=>s.id===id||s.species===id);
-export const cropProgress=(crop,now=Date.now())=>Math.min(1,((crop.grownMs||0)+Math.max(0,Math.min(now,crop.wetUntil||0)-(crop.updatedAt||now)))/seedById(crop.species).growMs);
+export const cropAge=(crop,now=Date.now())=>Math.max(0,(crop.grownMs||0)+Math.max(0,Math.min(now,crop.wetUntil||0)-(crop.updatedAt??now)));
+export const cropStage=(crop,now=Date.now())=>Math.min(20,1+Math.floor(cropAge(crop,now)/seedById(crop.species).growMs*4));
+export const cropProgress=(crop,now=Date.now())=>Math.min(1,cropAge(crop,now)/seedById(crop.species).growMs);

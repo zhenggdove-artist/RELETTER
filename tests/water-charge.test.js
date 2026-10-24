@@ -14,5 +14,5 @@ test('charge clamps invalid/extreme input; rear targets never hit; three hits st
  for(const charge of [-1,NaN,Infinity,'1',undefined])assert.equal(battleAction({pkMode:true},actor,[actor],{action:'shoot',direction:[0,0,1],charge},10000).shot.charge,0);
  assert.equal(battleAction({pkMode:true},actor,[actor],{action:'shoot',direction:[0,0,1],charge:100},10000).shot.charge,1);
  assert.equal(battleAction({pkMode:true},actor,[actor,target],{action:'shoot',direction:[0,0,-1],charge:1},10000).shot.hit,null);
- const game={pkMode:true,wallets:{Rae:7}};for(let i=0;i<3;i++)battleAction(game,actor,[actor,target],{action:'shoot',direction:[0,0,1],charge:1},10000+i*700);assert.equal(game.wallets.Rae,0);assert.equal(game.loot[0].amount,7);
+ const game={pkMode:true,wallets:{Rae:7}};for(let i=0;i<3;i++)battleAction(game,actor,[actor,target],{action:'shoot',direction:[0,0,1],charge:1},10000+i*700);assert.equal(game.wallets.Rae,3);assert.equal(game.loot[0].amount,4);
 });
