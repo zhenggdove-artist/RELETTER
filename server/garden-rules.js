@@ -2,7 +2,7 @@ import {SEEDS,seedById,cropProgress,cropAge,cropStage} from '../garden-catalog.j
 import {equipmentById} from '../equipment-catalog.js';
 import {WINGS} from '../wing-catalog.js';
 export const GARDEN_ACTIONS=['seed-buy','seed-plant','crop-water','crop-harvest','harvest-eat','harvest-arrange','wing-pickup'];
-export function ensureGarden(g){g.garden??={crops:[],stacks:{},buffs:{},revision:0};g.wingDrops??=[];return g.garden;}
+export function ensureGarden(g){g.garden??={crops:[],stacks:{},buffs:{},revision:0};g.wingDrops??=[];for(const d of g.wingDrops){d.claimed??=[];d.position[1]=0;}return g.garden;}
 export function gardenView(g){return ensureGarden(g);}
 export function dropWings(g,now,rng=Math.random){ensureGarden(g);if(g.boss.level<30||g.wingDrops.some(d=>d.generation===g.boss.generation))return;const choices={};for(const name of ['Ely','Rae']){const pool=WINGS.filter(w=>g.boss.level>=40||w.tier<=4),fresh=pool.filter(w=>!(g.inventories?.[name]||[]).includes(w.id)),list=fresh.length?fresh:pool;choices[name]=list[Math.min(list.length-1,Math.floor(rng()*list.length))].id;}g.wingDrops.push({id:crypto.randomUUID(),generation:g.boss.generation,position:[g.boss.position[0],0,g.boss.position[2]],choices,claimed:[],time:now});g.wingDrops=g.wingDrops.slice(-30);}
 export function gardenAction(g,actor,body,now=Date.now()){

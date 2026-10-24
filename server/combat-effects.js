@@ -1,9 +1,10 @@
+import {elementMultiplier} from '../elements.js';
 import {activeHead} from '../combat-traits.js';
 // Time-based effects are server-owned; one slot per effect prevents unbounded stacks.
 export function effectActive(boss,key,now){const e=boss.effects?.[key];return e&&e.until>now?e:null;}
 function status(boss,key,owner,now,duration,power=0,recovery=0){boss.effects??={};boss.effectLocks??={};if(recovery&&(boss.effectLocks[key]||0)>now)return;const old=boss.effects[key];if(old&&old.until>now){old.until=Math.max(old.until,now+duration);if(power>=old.power){old.power=power;old.owner=owner;}return;}boss.effects[key]={owner,power,until:now+duration,next:now+1000};if(recovery)boss.effectLocks[key]=now+duration+recovery;}
 export function applyWeaponTraits(g,weapon,shot,now){
- const boss=g.boss,name=shot.shooter,rank=weapon.tier||0,put=(key,dur,power=0,lock=0)=>status(boss,key,name,now,dur,power,lock);
+ const boss=g.boss,name=shot.shooter,rank=weapon.tier||0,put=(key,dur,power=0,lock=0)=>status(boss,key,name,now,dur,power*(['burn','poison','bleed'].includes(key)?elementMultiplier(weapon.element,boss.element):1),lock);
  if(weapon.family==='fire')put('burn',5000,1+rank*.4);
  if(weapon.family==='swatter')put('poison',12000,.35+rank*.12);
  if(weapon.family==='ice')put('slow',4000,.4);

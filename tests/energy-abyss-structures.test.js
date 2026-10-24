@@ -4,9 +4,9 @@ import {ensureWorld,rollBoss,BOSS_VARIANTS,resetEncounter,worldView} from '../se
 import {battleAction} from '../server/game-rules.js';import {ensureFishing,fishingAction} from '../server/fishing-rules.js';
 const actor={id:'a',character:'Ely',state:{visible:true,position:[0,0,0],phase:2}};
 const shot={action:'shoot',direction:[0,0,1],charge:1};
-test('server rolls five persistent strengths including 3000 HP; no snapshot rerolls',()=>{
+test('server rolls persistent strengths through 6000 HP; no snapshot rerolls',()=>{
  let sum=0;for(const variant of BOSS_VARIANTS){const r=sum+variant.weight/2;sum+=variant.weight;const g={progression:{Ely:{xp:30}}};resetEncounter(g,100,()=>r);assert.equal(g.boss.maxHp,variant.maxHp);assert.equal(g.boss.level,variant.level);const saved=JSON.parse(JSON.stringify(worldView(g)));for(let i=0;i<20;i++)assert.equal(worldView(saved).boss.maxHp,variant.maxHp);g.boss.position=[0,0,2];battleAction(g,actor,[actor],{action:'monster-hit'},10000);assert.equal(g.hits.Ely,variant.damage);assert.equal(g.progression.Ely.xp,30);}
- assert.equal(rollBoss(()=>.999).hp,3000);
+ assert.equal(rollBoss(()=>.999).hp,6000);
 });
 test('50 distinct eldritch species, legacy IDs and correct aquarium limits',()=>{
  const pool=FISH.filter(f=>f.eldritch);assert.equal(pool.length,50);assert.equal(new Set(FISH.map(f=>f.id)).size,FISH.length);assert.equal(ABYSSAL_FISH.length,54);assert.equal(FISH.length,104);

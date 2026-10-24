@@ -111,7 +111,7 @@ function syncAdventure(){
  const f=fstate();syncFishingPoses(f);if(f.revision!==adventureRevision){adventureRevision=f.revision;const ids=new Set([...f.holes,...f.ponds].map(x=>x.id));for(const [id,m] of waterFeatures)if(!ids.has(id)){disposeAdventure(m);waterFeatures.delete(id);}for(const x of [...f.holes,...f.ponds])if(!waterFeatures.has(x.id))waterFeatures.set(x.id,waterFeature(x,!!x.fish));
   const fishIds=new Set();for(const p of f.ponds)for(const fish of p.fish){fishIds.add(fish.id);let m=pondFish.get(fish.id);if(!m){m=swimmingFish(fish);const owner=fish.owner===selectedCharacter?charRoot:[...remotePlayers.values()].find(r=>r.character===fish.owner)?.root;if(owner&&owner.position.distanceTo(new THREE.Vector3(...p.position))<9){m.userData.throwStart=owner.position.clone().add(new THREE.Vector3(0,1.1,0));m.userData.throwAge=0;}pondFish.set(fish.id,m);}m.userData.pond=p;}for(const [id,m] of pondFish)if(!fishIds.has(id)){m.userData.giant?(scene.remove(m),disposeFishModel(m)):disposeAdventure(m);pondFish.delete(id);}updateGroundHoles(f.holes);
  }
- const drops=gameView.weaponDrops||[],ids=new Set(drops.map(d=>d.id));for(const [id,m] of weaponDropMeshes)if(!ids.has(id)){disposeAdventure(m);weaponDropMeshes.delete(id);}for(const d of drops)if(!weaponDropMeshes.has(d.id)){const g=new THREE.Group(),gem=new THREE.Mesh(new THREE.OctahedronGeometry(.28),new THREE.MeshStandardMaterial({color:'#d1b2ff',emissive:'#946bd9',emissiveIntensity:.65,metalness:.6,roughness:.2}));g.add(gem);const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.025,8,48),glowMaterial('#efccff',.7));ring.rotation.x=-Math.PI/2;g.add(ring);g.position.fromArray(d.position);g.position.y+=1;scene.add(g);weaponDropMeshes.set(d.id,g);}renderFishing();
+ const drops=gameView.weaponDrops||[],ids=new Set(drops.map(d=>d.id));for(const [id,m] of weaponDropMeshes)if(!ids.has(id)){disposeAdventure(m);weaponDropMeshes.delete(id);}for(const d of drops)if(!weaponDropMeshes.has(d.id)){const g=createItemDrop(equipmentById(d.choices[selectedCharacter])||DEFAULT_WEAPON,!!d.affixes?.[selectedCharacter]);g.position.fromArray(d.position);g.position.y=1.2;scene.add(g);weaponDropMeshes.set(d.id,g);}renderFishing();
 }
 const pickupButton=document.createElement('button');pickupButton.id='weapon-pickup';pickupButton.hidden=true;pickupButton.textContent='PICK UP EQUIPMENT';document.body.append(pickupButton);pickupButton.onclick=()=>{const d=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(d)adventureAction({action:'weapon-pickup',id:d.id});};
 const holeUniform={value:Array.from({length:40},()=>new THREE.Vector3(10000,10000,0))},holeCount={value:0};let groundPatched=false;
@@ -145,7 +145,7 @@ function updateAdventure(dt){
 
  for(const m of weaponDropMeshes.values()){m.children[0].rotation.y+=dt;m.children[0].position.y=Math.sin(globalTime*2)*.12;}
  const nearDrop=(gameView.weaponDrops||[]).find(d=>distanceTo(d.position)<4);if(nearDrop)pickupButton.textContent='PICK UP · '+((affixById(nearDrop.affixes?.[selectedCharacter])?.name||'')+' '+(equipmentById(nearDrop.choices?.[selectedCharacter])?.name||'Equipment'));
- pickupButton.hidden=phase!==PHASE.EXPLORE||document.body.dataset.panel!=='none'||!(gameView.weaponDrops||[]).some(d=>distanceTo(d.position)<4&&Math.abs(charRoot.position.y-d.position[1])<3);
+ pickupButton.hidden=true;updateAutoLoot();
 }
 function updateFishingRods(f){
  const players=[{character:selectedCharacter,model:charModel},...[...remotePlayers.values()]],active=new Set();
