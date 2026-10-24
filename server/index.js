@@ -1,3 +1,4 @@
+import {milkView} from './milk-encounter.js';
 import {surfaceHash,validSurfaceId} from './surface-rules.js';
 import {expireHoles} from './fishing-rules.js';
 import {ensureWorld,resetEncounter,activateEncounter,advanceBoss,worldView} from './world-rules.js';
@@ -104,7 +105,7 @@ try{
   const content=await readFile(path);res.writeHead(200,{'Content-Type':mime[extname(path).toLowerCase()]});res.end(content);
 }catch(e){if(!res.headersSent)json(res,e.code==='ENOENT'?404:500,{error:'Request failed'});else res.end();console.error(e.message);}
 });
-setInterval(()=>{if(!peers.size)return;prunePeers();const revision=game.worldRevision,generation=game.boss.generation;advanceBoss(game,roster());if(generation!==game.boss.generation||revision!==game.worldRevision){saveWorld().catch(console.error);broadcast('game',worldView(game));}broadcast('boss',game.boss);},100).unref();
+setInterval(()=>{if(!peers.size)return;prunePeers();const revision=game.worldRevision,generation=game.boss.generation;advanceBoss(game,roster());if(generation!==game.boss.generation||revision!==game.worldRevision){saveWorld().catch(console.error);broadcast('game',worldView(game));}broadcast('boss',game.boss);broadcast('milk',milkView(game));},100).unref();
 server.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('RELETTER http://localhost:'+(process.env.PORT||3000)));
 
 setInterval(()=>{prunePeers();if(expireHoles(game)){saveWorld().catch(console.error);broadcast('game',worldView(game));}},15000).unref();

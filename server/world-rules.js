@@ -1,3 +1,4 @@
+import {ensureMilk,withMilkBoss,refreshMilk,summonMilkBoss,milkView,MILK_COOLDOWN} from './milk-encounter.js';
 import {elementMultiplier} from '../elements.js';
 import {gardenView,dropWings} from './garden-rules.js';
 import {tickPlayerPoison,enemySpeed,updateEnemySkills,requestDodge,moveDodge} from './enemy-skills.js';
@@ -17,11 +18,10 @@ export const BOSS_VARIANTS=[
  {tier:'Elder',level:12,maxHp:600,damage:2,speed:1.16,weight:.18,element:'water'},
  {tier:'Dread',level:24,maxHp:1400,damage:2,speed:1.24,weight:.15,element:'fire'},
  {tier:'Archon',level:30,maxHp:2200,damage:3,speed:2.5,weight:.15,element:'light'},
- {tier:'Ancient',level:40,maxHp:3000,damage:3,speed:1.32,weight:.14,element:'dark'},
- {tier:'Night Foreman',kind:'foreman',level:50,maxHp:6000,damage:4,speed:3.5,weight:.08,element:'dark'}
+ {tier:'Ancient',level:40,maxHp:3000,damage:3,speed:1.32,weight:.22,element:'dark'}
 ];
 export function rollBoss(rng=Math.random){let r=rng();const variant=BOSS_VARIANTS.find(v=>(r-=v.weight)<0)||BOSS_VARIANTS.at(-1);const {weight,...stats}=variant;return {...stats,speed:enemySpeed(stats.level),hp:stats.maxHp};}
-export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;g.boss.maxHp??=100;g.boss.level??=1;g.boss.tier??='Wanderer';g.boss.element??=BOSS_VARIANTS.find(v=>v.level===g.boss.level)?.element||'earth';g.boss.damage??=1;g.boss.speed??=1;return g;}
+export function ensureWorld(g){g.progression??={};g.blocks??=[];g.buildRevision??=0;g.worldRevision??=0;g.boss??={hp:100,maxHp:100,position:[40,0,0],revision:0,generation:1};g.pkMode??=false;g.redMode=!g.pkMode;g.boss.tick??=0;g.boss.maxHp??=100;g.boss.level??=1;g.boss.tier??='Wanderer';g.boss.element??=BOSS_VARIANTS.find(v=>v.level===g.boss.level)?.element||'earth';g.boss.damage??=1;g.boss.speed??=1;const first=!g.milkEncounter,e=ensureMilk(g);if(first&&g.boss.kind==='foreman'){const oldGeneration=g.boss.generation||0;if(g.boss.hp>0){e.phase='active';e.boss=g.boss;e.boss.generation=1000000000+e.cycle;}else{e.phase='cooldown';e.respawnAt=Date.now()+MILK_COOLDOWN;}g.boss={...rollBoss(),position:[40,0,0],revision:0,generation:oldGeneration+1};g.pendingBossHits=[];}return g;}
 export function resetEncounter(g,now=Date.now(),rng=Math.random){ensureWorld(g);g.pkMode=false;g.redMode=true;g.boss={...rollBoss(rng),position:[40,0,0],revision:0,generation:g.boss.generation+1};g.pendingBossHits=[];g.bossClock=now;}
 export function activateEncounter(g,text,name){
  ensureWorld(g);const command=text.trim().toLowerCase();
@@ -30,11 +30,14 @@ export function activateEncounter(g,text,name){
  if(command==='/pk'){g.pkMode=!g.pkMode;g.redMode=!g.pkMode;g.worldRevision++;return true;}
  if(command!=='/一起打阿姨')return false;g.pkMode=false;g.redMode=true;g.worldRevision++;return true;
 }
-export function worldView(g){ensureWorld(g);return {playerEffects:g.playerEffects||{},deaths:g.deaths||{},garden:gardenView(g),wingDrops:g.wingDrops||[],enemyHitEvents:g.enemyHitEvents||{},weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
+export function worldView(g){ensureWorld(g);return {milkEncounter:milkView(g),playerEffects:g.playerEffects||{},deaths:g.deaths||{},garden:gardenView(g),wingDrops:g.wingDrops||[],enemyHitEvents:g.enemyHitEvents||{},weaponInstances:g.weaponInstances||{},combatBuffs:g.combatBuffs||{},progression:g.progression,fishing:fishingView(g),weaponDrops:g.weaponDrops,worldRevision:g.worldRevision,wallets:g.wallets||{},hits:g.hits||{},loot:g.loot||[],redMode:g.redMode,pkMode:g.pkMode,boss:g.boss,destructions:g.destructions||[],blocks:g.blocks,buildRevision:g.buildRevision,inventories:g.inventories||{},equipment:g.equipment||{},shields:g.shields||{},equipmentRevision:g.equipmentRevision||0};}
 export function containsBlock(b,x,y,z,padding=0){const [w,h,d]=blockSize(b),p=b.position;if(y<p[1]||y>=p[1]+h)return false;if(b.shape==='cylinder')return Math.hypot(x-p[0],z-p[2])<w/2+padding;return Math.abs(x-p[0])<w/2+padding&&Math.abs(z-p[2])<d/2+padding;}
 export function advanceBoss(g,players,now=Date.now()){
- ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;tickPlayerPoison(g,players,now);flushBossHits(g,now);const dot=tickCombatEffects(g,now);if(dot.killer)finishBoss(g,dot.killer,now);g.boss.paused=players.some(p=>p.state?.paused);
- if(g.boss.hp<=0){g.boss.respawnAt??=now+30000;if(now<g.boss.respawnAt||!players.length)return;const pk=g.pkMode;resetEncounter(g,now);g.pkMode=pk;g.redMode=!pk;g.worldRevision++;g.boss.paused=players.some(p=>p.state?.paused);}
+ ensureWorld(g);refreshMilk(g,now);tickPlayerPoison(g,players,now);flushMilkHits(g,now);advanceSingleBoss(g,players,now);if(g.milkEncounter.phase==='active')withMilkBoss(g,()=>advanceSingleBoss(g,players,now));
+}
+function advanceSingleBoss(g,players,now=Date.now()){
+ ensureWorld(g);const dt=Math.max(0,Math.min(.25,(now-(g.bossClock||now))/1000));g.bossClock=now;g.boss.tick++;flushBossHits(g,now);const dot=tickCombatEffects(g,now);if(dot.killer)finishBoss(g,dot.killer,now);g.boss.paused=players.some(p=>p.state?.paused);
+ if(g.boss.hp<=0){if(g.boss.kind==='foreman')return;g.boss.respawnAt??=now+30000;if(now<g.boss.respawnAt||!players.length)return;const pk=g.pkMode;resetEncounter(g,now);g.pkMode=pk;g.redMode=!pk;g.worldRevision++;g.boss.paused=players.some(p=>p.state?.paused);}
  const disabled=['stun','root','fear'].some(k=>effectActive(g.boss,k,now));updateEnemySkills(g,players,now,dt,disabled);
  if(g.boss.paused)return;if(g.boss.kind==='foreman'&&g.boss.skills.some(s=>['timber-fall','dark-stomp'].includes(s.type)&&(s.phase==='warning'||now-s.start<900)))return;if(disabled)delete g.boss.dodge;else if(moveDodge(g.boss,now))return;
  const pos=g.boss.position,targets=players.filter(p=>p.state?.visible&&p.state.phase===2&&p.state.position[1]<5);
@@ -59,6 +62,7 @@ export function buildAction(g,actor,players,body,now=Date.now()){
  if(body.surface&&!validSurfaceId(body.surface))return {error:'Invalid skin'};
  const block={surface:body.surface||null,surfaceRevision:0,size:[...size],id:crypto.randomUUID(),shape:body.shape,rotation:body.rotation===1?1:0,position:[...p],color:/^#[0-9a-f]{6}$/i.test(body.color||'')?body.color:'#c6a5dc',createdAt:now};
  const [w,h,d]=blockSize(block),overlap=(b,vertical=true)=>{const [bw,bh,bd]=blockSize(b);return Math.abs(p[0]-b.position[0])<(w+bw)/2-.01&&Math.abs(p[2]-b.position[2])<(d+bd)/2-.01&&(!vertical||(p[1]<b.position[1]+bh-.01&&p[1]+h>b.position[1]+.01));};
+ if(Math.hypot(p[0]-g.milkEncounter.position[0],p[2]-g.milkEncounter.position[2])<4+Math.max(w,d)/2)return {error:'Leave the milk shrine clear'};
  if(g.blocks.some(b=>overlap(b)))return {error:'This space is occupied'};
  if([...(g.fishing?.holes||[]),...(g.fishing?.ponds||[])].some(f=>p[1]<1&&Math.abs(p[0]-f.position[0])<w/2+f.radius&&Math.abs(p[2]-f.position[2])<d/2+f.radius))return {error:'Leave the water feature clear'};
  if(p[1]>0&&!g.blocks.some(b=>Math.abs(b.position[1]+blockSize(b)[1]-p[1])<.01&&overlap(b,false)))return {error:'Stack on the ground or an existing block'};
@@ -75,14 +79,14 @@ export function rayBlock(b,origin,direction){
  if(a<1e-8)return c<=0?near:Infinity;const disc=bb*bb-4*a*c;if(disc<0)return Infinity;
  near=Math.max(near,(-bb-Math.sqrt(disc))/(2*a));far=Math.min(far,(-bb+Math.sqrt(disc))/(2*a));return far>=near?near:Infinity;
 }
-export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)),...(g.fishing?.ponds||[]).map(p=>rayBlock({shape:'cube',position:p.position,size:p.size||[6,2.1,4]},origin,direction)));}
+export function coverDistance(g,origin,direction){return Math.min(direction[1]<-1e-6?Math.max(0,origin[1]/-direction[1]):Infinity,...(g.milkEncounter?.phase==='sealed'?[rayBlock({shape:'cylinder',position:g.milkEncounter.position,size:[5,9,5]},origin,direction)]:[]),...(g.blocks||[]).map(b=>rayBlock(b,origin,direction)),...(g.fishing?.ponds||[]).map(p=>rayBlock({shape:'cube',position:p.position,size:p.size||[6,2.1,4]},origin,direction)));}
 function bossIntersection(g,shot){
  const p=g.boss.position,padding=Math.max(0,(shot.radius||.12)-.12),along=rayBlock({shape:'cube',position:[p[0],p[1]-padding,p[2]],size:[5.6+padding*2,12+padding*2,5.6+padding*2]},shot.origin,shot.direction);
  if(p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)<-2.8||!Number.isFinite(along)||along>shot.range||coverDistance(g,shot.origin,shot.direction)<Math.max(along,p.reduce((sum,v,i)=>sum+(v+(i===1?1:0)-shot.origin[i])*shot.direction[i],0)-2.8))return null;return along;
 }
-function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);dropWings(g,now);g.loot??=[];const count=2+Math.floor(g.boss.level/5);for(let i=0;i<count;i++){const a=i*Math.PI*2/count,r=2+(i%3)*.8;g.loot.push({id:crypto.randomUUID(),kind:'coin-bag',position:[g.boss.position[0]+Math.cos(a)*r,0,g.boss.position[2]+Math.sin(a)*r],amount:2+Math.ceil(g.boss.level/5),owner:null,time:now});}g.worldRevision++;}
+function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];if(g.boss.kind==='foreman'){const e=ensureMilk(g);e.phase='cooldown';e.respawnAt=now+MILK_COOLDOWN;e.pendingHits=[];}else g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);dropWings(g,now);g.loot??=[];const count=2+Math.floor(g.boss.level/5);for(let i=0;i<count;i++){const a=i*Math.PI*2/count,r=2+(i%3)*.8;g.loot.push({id:crypto.randomUUID(),kind:'coin-bag',position:[g.boss.position[0]+Math.cos(a)*r,0,g.boss.position[2]+Math.sin(a)*r],amount:2+Math.ceil(g.boss.level/4)+Math.floor(g.boss.level*g.boss.level/100),owner:null,time:now});}g.worldRevision++;}
 export function attackContactDelay(shot){if(shot.ultimate)return shot.family==='saber'?720:900;if(['saber','whip','swatter','pan','planter','palm'].includes(shot.family))return Math.round(meleeDuration(shot.family,shot.combo||0)*500);return shot.weapon==='water'?650+Math.round((shot.charge||0)*300):618;}
-export function shootBoss(g,shot,now=Date.now()){
+function shootSingleBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;const minion=(g.boss.minions||[]).filter(m=>m.hp>0).map(m=>({m,d:rayBlock({position:m.position,size:[2,2.5,2]},shot.origin,shot.direction)})).filter(x=>x.d<=shot.range&&x.d<coverDistance(g,shot.origin,shot.direction)).sort((a,b)=>a.d-b.d)[0];const bossAlong=bossIntersection(g,shot);if(minion&&(bossAlong===null||minion.d<bossAlong)){shot.hit='Minion';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*minion.d);shot.contactDelay=attackContactDelay(shot);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},minionId:minion.m.id,due:now+shot.contactDelay,generation:g.boss.generation});return;}const along=bossAlong;if(along===null)return;
  shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*along);shot.hit='Auntie';shot.contactDelay=attackContactDelay(shot);requestDodge(g,shot,now,['stun','root','fear','slow'].some(k=>effectActive(g.boss,k,now)));
  const weapon=activeWeapon(g,shot.shooter);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},weapon:{...weapon},due:now+shot.contactDelay,generation:g.boss.generation});
@@ -113,3 +117,11 @@ export function shootConstruction(g,shot,now=Date.now()){
  else {if(destroyed)g.fishing.ponds=g.fishing.ponds.filter(p=>p.id!==row.id);g.fishing.revision++;}
  if(destroyed){g.destructions??=[];g.destructions.push({id:row.id,kind,position:row.position,size:kind==='pond'?row.size||[6,2.1,4]:blockSize(row),color:row.color||'#a7daed',time:now});g.destructions=g.destructions.slice(-12);}
 }
+
+function targetDistance(g,shot){const d=g.boss?.hp>0?bossIntersection(g,shot):null;return Math.min(d??Infinity,...(g.boss?.minions||[]).filter(m=>m.hp>0).map(m=>rayBlock({position:m.position,size:[2,2.5,2]},shot.origin,shot.direction)).filter(v=>v<=shot.range&&v<=coverDistance(g,shot.origin,shot.direction)));}
+function milkDistance(g,shot){const e=ensureMilk(g),padding=Math.max(0,(shot.radius||.12)-.12),d=rayBlock({shape:'cylinder',position:e.position,size:[5+padding*2,9,5+padding*2]},shot.origin,shot.direction);return d<=shot.range&&d<=coverDistance(g,shot.origin,shot.direction)+.01?d:Infinity;}
+export function shootBoss(g,shot,now=Date.now()){const e=ensureMilk(g),normal=targetDistance(g,shot),special=e.phase==='active'?withMilkBoss(g,()=>targetDistance(g,shot)):e.phase==='sealed'?milkDistance(g,shot):Infinity;if(!Number.isFinite(special)||normal<special){shootSingleBoss(g,shot,now);return;}
+ shot.enemy='foreman';if(e.phase==='active'){withMilkBoss(g,()=>shootSingleBoss(g,shot,now));if(shot.hit==='Auntie')shot.hit='Foreman';return;}
+ shot.hit='Milk';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*special);shot.contactDelay=attackContactDelay(shot);e.pendingHits.push({shot:{...shot},due:now+shot.contactDelay,cycle:e.cycle});
+}
+function flushMilkHits(g,now){const e=ensureMilk(g),pending=e.pendingHits||[];e.pendingHits=[];for(const hit of pending){if(e.phase!=='sealed'||hit.cycle!==e.cycle)continue;if(hit.due>now){e.pendingHits.push(hit);continue;}if(!Number.isFinite(milkDistance(g,hit.shot)))continue;e.hits=Math.min(5,e.hits+1);e.lastHit=now;g.worldRevision++;if(e.hits===5)summonMilkBoss(g,now);}}

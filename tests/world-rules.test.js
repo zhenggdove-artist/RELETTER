@@ -5,7 +5,7 @@ test('co-op trigger, 100 health, 1/5 damage, no friendly fire, defeat and reset 
  const g={};ensureWorld(g);assert.equal(g.boss.hp,100);assert.equal(activateEncounter(g,'other'),false);assert.equal(activateEncounter(g,'/一起打阿姨'),true);
  let shot=battleAction(g,a,[a,b],{action:'shoot',direction:[1,0,0],charge:0},10000).shot;assert.equal(g.boss.hp,99);assert.equal(shot.red,true);assert.equal(g.hits.Rae,undefined);
  shot=battleAction(g,b,[a,b],{action:'shoot',direction:[1,0,0],charge:1},11000).shot;assert.equal(shot.damage,11);assert.equal(g.boss.hp,88);
- for(let i=0;i<19;i++)battleAction(g,a,[a,b],{action:'shoot',direction:[1,0,0],charge:1},12000+i*700);assert.equal(g.boss.hp,0);assert.equal(g.loot.length,0);
+ for(let i=0;i<19;i++)battleAction(g,a,[a,b],{action:'shoot',direction:[1,0,0],charge:1},12000+i*700);assert.equal(g.boss.hp,0);assert.equal(g.loot.filter(x=>x.kind==='coin-bag').length,2);
  activateEncounter(g,'/一起打阿姨');assert.equal(g.boss.hp,0);g.blocks.push({id:'saved'});const gen=g.boss.generation;resetEncounter(g);assert.equal(g.boss.hp,g.boss.maxHp);assert.equal(g.redMode,true);assert.equal(g.boss.generation,gen+1);assert.equal(g.blocks.length,1);
 });
 test('normal water takes exactly 100 successful hits to defeat the monster',()=>{const g={};activateEncounter(g,'/一起打阿姨');for(let i=0;i<100;i++){battleAction(g,a,[a,b],{action:'shoot',direction:[1,0,0],charge:0},10000+i*700);assert.equal(g.boss.hp,99-i);}});

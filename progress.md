@@ -244,3 +244,15 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Level 24+ encounter probability increased from 15% to 52%; level 30+ is 37%. New level-50 dark Night Foreman (8% probability) has 6000 HP, three exclusive skills: killable particle rats with 8-second poison, chainsaw/falling particle forest with cracks, and stomp shockwave. Dead minions cannot attack on their last tick; poison continues after boss defeat and clears on player death.
 - New 16-bone character with four skinned limbs, photo-projected face, shirt/tie, chainsaw, walking/casting/stomp poses and damage flash. This is an approximation using the supplied frontal photograph, NOT a reconstructed facial scan; unseen sides/back are modeled. Model exported to output/foreman/night-foreman.glb. Chain teeth instanced; particle counts bounded (forest 8000 desktop/4000 mobile, other spells 2400/1200).
 - Validation: 28 related rules tests, two-browser automatic pickups, persisted balances, desktop/mobile BAG screenshots, 16-bone/four-skinned-mesh rendering, 3 special shaders, in-game original-monster replacement and falling forest, plus standard game runner. Inspected screenshots and reduced forest bloom to retain particle detail.
+
+## 2026-10-24 Milk encounter and wing air control
+- Separate persistent milk event: five delayed real hits summon level-50 / 6000 HP Foreman, independent of ordinary enemy; 30-minute cooldown after death, shared over SSE/WebSocket and preserved on restart/disconnect. Existing live Foreman migrates without losing HP.
+- Giant labelled milk jar with progressive cracks, world-space hit/HP/countdown tag; reserves space against build/dig/pond overlap. Both enemy actors and skill/status effects coexist.
+- Wings now accelerate/steer/brake from camera-relative keyboard or mobile joystick input in midair, including stationary takeoff; collision checks preserved.
+- Validation: all 95 Node tests pass; two-player browser test verifies exact five-hit summon, simultaneous monsters, keyboard reversal/braking, mobile joystick air steering, actual SQLite restart/cooldown; Foreman world rendering test and standard web-game runner pass, screenshots inspected. Corrected two stale test expectations for prior coinbag and level-30 rewards.
+
+## 2026-10-24 Level-scaled rolled monster loot
+- New monster drops have persistent, independently randomized weapon ATK/charged ATK/range/radius/cooldown, head bonuses, and wing lift/gravity/flap cooldown. Rolls happen on death; server uses stored values. Legacy equipment remains compatible.
+- Equipment tier pool scales from tier 1 at low levels to tier 5 at level 50. Level 40+ wing drops use tiers 4-6. Wings now use unique instance inventory IDs while retaining base appearance slots, including BAG equip/unequip.
+- BAG shows actual rolled values and source monster level. Coin bags retain level-scaled counts and gain nonlinear values: total level1=6, level30=152, level40=280, level50=480 coins.
+- 98 Node tests pass. Browser verified mobile rolled-wing detail, keyboard/joystick flight with rolled wings, shared milk event and SQLite persistence; standard game runner passed.
