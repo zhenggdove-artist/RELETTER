@@ -206,7 +206,7 @@ function beginPlantReply(entry){
 }
 let monsterInteractionWasPaused=false,monsterResumeGraceUntil=0;
 function monstersPausedForGarden(){
- const paused=admitted&&(fishingHUDActive||catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||bagPanelOpen||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
+ const paused=admitted&&(document.getElementById('updates-dialog')?.open||fishingHUDActive||catchViewerOpen||imageViewerOpen||(typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen)||bagPanelOpen||shopPanelOpen||buildPanelOpen||document.body.dataset.panel==='search'||document.body.dataset.panel==='write'||!!activeLabelEntry);
  if(paused){monsterInteractionWasPaused=true;return true;}
  if(monsterInteractionWasPaused){monsterInteractionWasPaused=false;monsterResumeGraceUntil=performance.now()+1200;}
  return performance.now()<monsterResumeGraceUntil;
@@ -442,7 +442,7 @@ function acceptBossSnapshot(old,next){
  return next;
 }
 function receiveBoss(old,boss){
- if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;m.walkAction?.reset().play();}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.38;
+ if(!boss)return;if(old&&boss.generation!==old.generation){bossFlash=0;bossDefeatGeneration=null;for(const m of monsters){m.root.position.fromArray(boss.position);m.hitCooldown=1.5;m.walkAction?.reset().play();}if(old.hp===0&&burst){scene.remove(burst.mesh);burst.geo.dispose();burst.mesh.material.dispose();burst=null;}}if(old&&boss.generation===old.generation&&boss.hp<old.hp)bossFlash=.7;
  if(boss.hp===0&&old?.hp>0&&bossDefeatGeneration!==boss.generation){bossDefeatGeneration=boss.generation;const m=monsters[0];if(m){m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model),center=box.getCenter(new THREE.Vector3());center.y=Math.max(m.root.position.y+1,(box.max.y+m.root.position.y)/2);createBurst(center);}}
  if(boss.hp===0)for(const m of monsters){m.root.visible=false;m.isChasing=false;m.mixer.stopAllAction();}
  bossHud.setAttribute('aria-valuenow',String(boss.hp));bossHud.setAttribute('aria-valuemax',String(boss.maxHp||100));$('boss-fill').style.width=(100*boss.hp/(boss.maxHp||100))+'%';$('boss-text').textContent=(boss.kind==='foreman'?'NIGHT FOREMAN':'AUNTIE')+' · LV '+(boss.level||1)+' · '+boss.hp+' / '+(boss.maxHp||100)+(boss.hp===0?' · DEFEATED':'')+Object.keys(boss.effects||{}).filter(k=>boss.effects[k].until>Date.now()).slice(0,2).map(k=>' · '+k.toUpperCase()).join('');
@@ -459,7 +459,7 @@ function prepareBossBlood(m){
    float wound=smoothstep(1.0-reletterBlood*0.95,1.12-reletterBlood*0.95,streak)*step(0.001,reletterBlood);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.32,0.006,0.018)*(0.65+diffuseColor.g),wound*0.9);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.12,.5,1.)*(.55+dot(diffuseColor.rgb,vec3(.333))),reletterIce*.85);
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.82,0.82),reletterFlash*0.9);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.015,0.025),reletterFlash);
   `);
  };mat.customProgramCacheKey=()=>'reletter-boss-blood-v2';mat.needsUpdate=true;}});
  m.root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(m.model);m.bloodBounds={min:box.min.clone().sub(m.root.position),size:box.getSize(new THREE.Vector3())};m.bloodBounds.min.y=Math.max(0,m.bloodBounds.min.y);m.bloodBounds.size.y=Math.max(1,box.max.y-m.root.position.y-m.bloodBounds.min.y);
@@ -641,7 +641,7 @@ function showEquipmentAttack(data){
 }
 function updateEquipmentEffects(dt){
  updateUltimateEffects(dt);updateSignatureEffects(dt);updateMeleeEffects(dt);updateCrosshair();updateAdventure(dt);updateConstructionDamage(dt);updateCombatAura(dt);
- const chargeLabel=$('shield-charge'),guard=equipmentById(gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
+ const chargeLabel=$('shield-charge'),guard=resolveItem(gameView,selectedCharacter,gameView.equipment?.[selectedCharacter]?.shieldInstance||gameView.equipment?.[selectedCharacter]?.shield),guardState=gameView.shields?.[selectedCharacter];
  if(chargeLabel&&guard){const left=guardState?Math.max(0,Math.ceil(guard.recharge-(Date.now()-guardState.lastHit)/1000)):0;chargeLabel.textContent=left?Math.max(0,guard.capacity-guardState.used).toFixed(1)+' / '+guard.capacity+' · '+left+'s':guard.capacity+' / '+guard.capacity+' · Ready';}
 
  for(let j=equipmentFX.length-1;j>=0;j--){const fx=equipmentFX[j];fx.age+=dt;const u=fx.age/fx.duration,attr=fx.points.geometry.attributes.position,f=fx.data.family,charge=fx.data.charge||0,head=Math.min(1,u*1.7)*fx.travel;
