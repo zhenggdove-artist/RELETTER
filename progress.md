@@ -287,3 +287,10 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 
 - Supplied original guardian portrait mapped onto curved face particles (no solid photo plane); shared texture across summons, slight face drift preserves recognizable features. 38,862 total points for3 guardians, single draw each. Face closeup and full group inspected, shader errors absent;112 Node tests pass. Focused melee-motion regression passed; legacy choreography browser test stops at an obsolete reticle-visibility assumption before melee and was not counted as passing.
 - Deployed and byte-verified production assets: version0d18a8e4-92b8-4f63-800d-d36e17678357. Final standard runner screenshot inspected.
+
+## 2026-10-25 Supplied OBJ rig, 2-second guardians and percentage sign thresholds
+- Replaced procedural body with supplied original OBJ, matching FBX vertex order verified to <1e-6. Transferred skin weights and Run/Kick clips; converted to1.72MB GLB, original source files untouched. Added projection of existing Foreman face photograph directly onto skinned face shader, bone-relative prop/bleed anchors, corrected FBX root yaw, retained hit flash and sign retrieval. Model preview11draws/11352triangles (world13/11354).
+- Token summons expire at exactly2000ms; UI updated. Sign trigger maxHP/10, migrated old200HP thresholds, preserves5s pickup hold and no repeat during pickup.113 Node tests pass.
+- Guardian face uses ~14k individually colored GPU particles with jittered spacing and soft spherical alpha, recognizable original portrait; shared texture, no face-plane mesh. Three guardians75,963points, three draws. Reduced dot sizes/backface overdraw and refined motion.
+- Inspected OBJ front, running, attack, face closeup, particle face and full summons. HUD/anatomy, live Foreman world and standard runner passed.
+- Production version e6588788-1051-4c7f-a949-482e64f481f6 deployed; all changed runtime assets and GLB byte-verified.
