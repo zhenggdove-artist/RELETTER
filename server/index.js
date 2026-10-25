@@ -1,3 +1,4 @@
+import {restoreLegacyFusion} from './fusion-restoration.js';
 import {milkView} from './milk-encounter.js';
 import {surfaceHash,validSurfaceId} from './surface-rules.js';
 import {expireHoles} from './fishing-rules.js';
@@ -35,11 +36,12 @@ resetEncounter(game);
 let worldWrite=Promise.resolve();
 function saveWorld(){const payload=JSON.stringify(game);worldWrite=worldWrite.catch(()=>{}).then(async()=>{if(pool)await pool.query('INSERT INTO reletter_world VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',[payload]);else db.prepare('INSERT OR REPLACE INTO reletter_world VALUES(1,?)').run(payload);});return worldWrite;}
 function resetIfEmpty(){if(peers.size){delete game.offlineSince;return;}if(!game.offlineSince){game.offlineSince=Date.now();setTimeout(resetIfEmpty,5100).unref();}else if(Date.now()-game.offlineSince>=5000){expireHoles(game,Date.now(),true);resetEncounter(game);delete game.offlineSince;saveWorld().catch(console.error);}}
+if(restoreLegacyFusion(game))await saveWorld();
 const broadcast=(type,data)=>{for(const p of peers.values())p.res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);};
 const roster=()=>[...peers].map(([id,p])=>({id,character:p.character,state:p.state}));
 function body(req){return new Promise((ok,no)=>{let s='';req.on('data',c=>{s+=c;if(s.length>20_000_000){no(new Error('File too large'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(s||'{}'));}catch{no(new Error('Invalid JSON'));}});});}
 function json(res,status,data,headers={}){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));}
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.mp3':'audio/mpeg','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
+const mime={'.json':'application/json','.bin':'application/octet-stream','.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.mp3':'audio/mpeg','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
 const server=http.createServer(async(req,res)=>{
 try{
   const url=new URL(req.url,'http://localhost');
@@ -101,6 +103,7 @@ try{
   const path=resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));
   const relative=path.slice(root.length+1);
   if(!path.startsWith(root+'\\')&&!path.startsWith(root+'/'))return json(res,403,{error:'Forbidden'});
+  if(['.json','.bin'].includes(extname(path).toLowerCase())&&!relative.replaceAll('\\','/').startsWith('art/'))return json(res,403,{error:'Forbidden'});
   if(relative.split(/[\\/]/).some(x=>x.startsWith('.'))||/^(server|data|tests|node_modules)([\\/]|$)/.test(relative)||!mime[extname(path).toLowerCase()])return json(res,403,{error:'Forbidden'});
   const content=await readFile(path);res.writeHead(200,{'Content-Type':mime[extname(path).toLowerCase()]});res.end(content);
 }catch(e){if(!res.headersSent)json(res,e.code==='ENOENT'?404:500,{error:'Request failed'});else res.end();console.error(e.message);}

@@ -1,3 +1,4 @@
+import {restoreLegacyFusion} from '../server/fusion-restoration.js';
 import {milkView} from '../server/milk-encounter.js';
 import {surfaceHash,validSurfaceId} from '../server/surface-rules.js';
 import {expireHoles} from '../server/fishing-rules.js';
@@ -50,7 +51,7 @@ export class ReletterGarden extends DurableObject {
   }
   pruneSockets(){for(const ws of this.ctx.getWebSockets()){const p=ws.deserializeAttachment();if(ws.readyState!==1||!p||p.expires<Date.now()||Date.now()-(p.lastSeen||0)>35000){this.closedSockets.add(ws);try{ws.close(1000,'Session inactive');}catch{}}}this.resetIfEmpty();}
   sockets(){return this.ctx.getWebSockets().filter(ws=>ws.readyState===1&&!this.closedSockets.has(ws));}
-  game(){return JSON.parse(this.sql.exec('SELECT payload FROM game_state WHERE id=1').toArray()[0]?.payload||'{}');}
+  game(){const g=JSON.parse(this.sql.exec('SELECT payload FROM game_state WHERE id=1').toArray()[0]?.payload||'{}');if(restoreLegacyFusion(g))this.saveGame(g);return g;}
   saveGame(g){this.sql.exec('INSERT OR REPLACE INTO game_state VALUES(1,?)',JSON.stringify(g));}
   gameView(){return worldView(this.game());}
   resetIfEmpty(){const g=this.game();if(this.sockets().length){if(g.offlineSince){delete g.offlineSince;this.saveGame(g);}return;}if(!g.offlineSince){g.offlineSince=Date.now();this.saveGame(g);this.ctx.waitUntil(this.scheduleNotifications());}else if(Date.now()-g.offlineSince>=5000){expireHoles(g,Date.now(),true);resetEncounter(g);delete g.offlineSince;this.saveGame(g);}}

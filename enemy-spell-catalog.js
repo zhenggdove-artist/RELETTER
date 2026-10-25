@@ -1,3 +1,4 @@
+import {ADVANCED_SPELLS,advancedSpell,spatialContains} from './advanced-enemy-spells.js';
 // Shared timings and geometry: rendering and server damage use the same definitions.
 export const ENEMY_SPELLS=[
  ['bolt','Ember Comet',5,1,8,7,1000,1700,'projectile','origin'],
@@ -23,11 +24,11 @@ export const ENEMY_SPELLS=[
 ].map(([id,name,level,multiplier,radius,height,windup,duration,kind,anchor],mode)=>({id,name,level,multiplier,radius,height,windup,duration,kind,anchor,mode}));
 export const FOREMAN_SPELLS=[{id:'rat-swarm',name:'Vermin Covenant',level:50,multiplier:0,radius:8,height:4,windup:1400,duration:1600,kind:'summon',anchor:'origin',mode:20},{id:'timber-fall',name:'Falling Forest',level:50,multiplier:1.5,radius:16,height:15,windup:2100,duration:3000,kind:'impact',anchor:'target',mode:21},{id:'dark-stomp',name:'Seismic Rage',level:50,multiplier:1.3,radius:20,height:2,windup:1200,duration:1600,kind:'ring',anchor:'origin',mode:22}];
 FOREMAN_SPELLS.push({id:'saw-sparks',name:'Chainsaw Sparks',level:50,multiplier:.6,radius:14,height:5,windup:0,duration:1200,kind:'pulse',anchor:'origin',mode:23});
-export const enemySpell=id=>FOREMAN_SPELLS.find(s=>s.id===id)||ENEMY_SPELLS.find(s=>s.id===id)||ENEMY_SPELLS[1];
-export const spellsForLevel=level=>ENEMY_SPELLS.filter(s=>s.level<=level);
+export const enemySpell=id=>advancedSpell(id)||FOREMAN_SPELLS.find(s=>s.id===id)||ENEMY_SPELLS.find(s=>s.id===id)||ENEMY_SPELLS[1];
+export const spellsForLevel=level=>[...ENEMY_SPELLS,...ADVANCED_SPELLS].filter(s=>s.level<=level);
 export function spellCenter(s){return enemySpell(s.type).anchor==='target'?s.aim:s.origin;}
 export function spellRadius(s,now){const d=enemySpell(s.type),r=s.radius||d.radius;return d.kind==='ring'?r*Math.min(1,Math.max(0,(now-s.start)/d.duration)):['meteor','eclipse'].includes(d.id)?r*Math.max(0,Math.min(1,((now-s.start)/d.duration-.3)/.7)):r;}
-export function spellContains(s,p,now){const d=enemySpell(s.type);if(s.phase!=='active'||now>=s.end)return false;const c=spellCenter(s),r=s.radius||d.radius,u=Math.max(0,Math.min(1,(now-s.start)/d.duration)),x=p[0]-c[0],z=p[2]-c[2],y=p[1]-c[1],dist=Math.hypot(x,z),a=Math.atan2(z,x);if(y<-.5||y>d.height)return false;
+export function spellContains(s,p,now){const d=enemySpell(s.type);if(d.air)return spatialContains(s,p,now);if(s.phase!=='active'||now>=s.end)return false;const c=spellCenter(s),r=s.radius||d.radius,u=Math.max(0,Math.min(1,(now-s.start)/d.duration)),x=p[0]-c[0],z=p[2]-c[2],y=p[1]-c[1],dist=Math.hypot(x,z),a=Math.atan2(z,x);if(y<-.5||y>d.height)return false;
  if(s.type==='saw-sparks')return sparkPositions(s,now).some(q=>Math.hypot(q[0]-p[0],q[1]-(p[1]+.8),q[2]-p[2])<1.15);
  if(d.kind==='summon'||d.kind==='projectile')return false;
  if(s.type==='timber-fall'){const tilt=Math.min(1,u/.3)*Math.PI/2;for(let i=0;i<7;i++){const angle=i*2.39996;for(let k=0;k<=20;k++){const along=k/20*d.height,rr=r*.75-along*Math.sin(tilt),qy=Math.max(.08,along*Math.cos(tilt));if(Math.hypot(x-Math.cos(angle)*rr,z-Math.sin(angle)*rr)<1.3&&Math.abs(y+.7-qy)<1.8)return true;}}return false;}

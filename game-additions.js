@@ -1,4 +1,5 @@
 // Runs inside the original game's module, sharing its scene and plant lifecycle.
+import {createFusionEcho,updateFusionEcho,disposeFusionEcho} from './fusion-effects.js';
 import {AFFIXES,affixById,activeWeapon,activeHead,resolveItem,FAMILY_TRAITS} from './combat-traits.js';
 import {playerStats} from './progression.js';
 import {createUltimate,updateUltimate,disposeUltimate,prepareUltimates} from './ultimate-effects.js';
@@ -345,7 +346,7 @@ setInterval(()=>{if(!document.hidden)refreshWorld();},4000);
 window.addEventListener('focus',refreshWorld);
 // A short moving jet breaks into droplets, then scatters into a splash.
 // Instancing keeps each spray to one droplet draw call on phones.
-function showWater(data){if(data.defeated&&data.hit===selectedCharacter)triggerPlayerHit();
+function showWater(data){showFusionEcho(data);if(data.defeated&&data.hit===selectedCharacter)triggerPlayerHit();
  if(data.ultimate){showUltimateAttack(data);if(meleeFamilies.includes(data.family))showMeleeAttack(data);if(!data.red&&['Ely','Rae'].includes(data.hit)&&!data.blocked)flashPlayerHit(data.hit);return;}
  if((data.charge||0)>=.65&&!meleeFamilies.includes(data.family))showSignatureBurst(data);
  if(data.family&&(data.family!=='water'||data.weapon!=='water')){showEquipmentAttack(data);if(!data.red&&data.hit&&(!data.blocked||data.blocked<Math.min(2,data.damage)))flashPlayerHit(data.hit);return;}
@@ -781,7 +782,10 @@ let heldSignature=null;const signatureBursts=[];
 function showSignatureBurst(data){
  const item=equipmentById(data.weapon)||{...DEFAULT_WEAPON,family:data.family||'water'},fx=createWeaponSignature(THREE,item,'burst');fx.root.position.fromArray(data.origin);fx.root.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...data.direction).normalize());fx.root.position.addScaledVector(new THREE.Vector3(...data.direction),Math.min(data.range*.3,3));fx.duration=(data.charge||0)>=.65?1.05:.55;fx.power=(data.charge||0)>=.65?1.5:.8;scene.add(fx.root);signatureBursts.push(fx);while(signatureBursts.length>6)disposeWeaponSignature(signatureBursts.shift());
 }
+const fusionEchoes=[];
+function showFusionEcho(data){const fx=createFusionEcho(THREE,data);if(!fx)return;scene.add(fx.root);fusionEchoes.push(fx);while(fusionEchoes.length>8)disposeFusionEcho(fusionEchoes.shift());}
 function updateSignatureEffects(dt){
+ for(let i=fusionEchoes.length-1;i>=0;i--){const fx=fusionEchoes[i];if(updateFusionEcho(THREE,fx,dt)){disposeFusionEcho(fx);fusionEchoes.splice(i,1);}}
  const item=currentWeapon(),charging=waterChargeStart!==null&&waterCharge()>.06;
  if(heldSignature&&(!charging||heldSignature.weapon!==item.id)){disposeWeaponSignature(heldSignature);heldSignature=null;}
  if(charging){if(!heldSignature){heldSignature=createWeaponSignature(THREE,item);heldSignature.weapon=item.id;scene.add(heldSignature.root);}heldSignature.root.position.copy(charRoot.position).add(new THREE.Vector3(0,1.1,0));heldSignature.root.rotation.y=gameplayHeading(charModel);updateWeaponSignature(THREE,heldSignature,globalTime,waterCharge());}
