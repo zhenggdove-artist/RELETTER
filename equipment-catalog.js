@@ -24,8 +24,10 @@ EQUIPMENT.push(...ranks.map((rank,i)=>({id:'whip-'+(i+1),name:rank+' Thornweave'
 const gardenMelee=[['swatter','Fly Swatter','#9be6dc',1.3,3.4,630],['pan','Frying Pan','#e9bc7b',3,3.1,1120],['planter','Potted Plant','#e2a8d7',3.8,3.5,1350],['palm','Coconut Palm','#97d59b',4.5,5.2,1500]];
 for(const [family,name,color,damage,range,cooldown] of gardenMelee)EQUIPMENT.push(...ranks.map((rank,i)=>({id:family+'-'+(i+1),name:rank+' '+name,slot:'weapon',family,color,tier:i+1,price:[12,30,65,110,180][i],damage:+(damage+i*.65).toFixed(2),chargeDamage:+(damage*2.2+i).toFixed(2),range:range*(1+i*.35),chargeRange:2+i*.3,radius:1.2+i*.45,cooldown:cooldown-i*20})));
 EQUIPMENT.push(...HEADGEAR,...OUTFITS,...WINGS,...SEEDS,...HARVESTS);
+EQUIPMENT.push({id:'chiang-token',name:'蔣家令牌',slot:'weapon',family:'pan',color:'#ae7bd5',tier:5,price:0,notForSale:true,element:'dark',damage:8,chargeDamage:30,range:5,chargeRange:20,radius:2,cooldown:380,description:'Dark melee · Life drain + poison · Full charge summons three spectral bronze guardians.'});
 for(const item of [DEFAULT_WEAPON,...EQUIPMENT])item.element=itemElement(item);
-export const equipmentById=id=>id==='water'?DEFAULT_WEAPON:EQUIPMENT.find(x=>x.id===id);
+const equipmentIndex=new Map([DEFAULT_WEAPON,...EQUIPMENT].map(item=>[item.id,item]));
+export const equipmentById=id=>equipmentIndex.get(id);
 
 // Shared client/server cadence and rank identity for rapid, buffered melee chains.
 for(const item of EQUIPMENT)if(['saber','whip','swatter','pan','planter','palm'].includes(item.family)){
@@ -40,3 +42,5 @@ export function attackStats(weapon,charge=0){
  const damage=weapon.id==='water'?1+Math.floor(4*charge):+(weapon.damage+(weapon.chargeDamage-weapon.damage)*charge).toFixed(2);
  return {ultimate,range:ultimate?+Math.max(30,weapon.range*2,baseRange*1.8).toFixed(2):baseRange,radius:ultimate?Math.max(6,baseRadius*2.4):baseRadius,damage:ultimate?+(Math.max(10,damage*2.2)).toFixed(2):damage};
 }
+
+Object.assign(equipmentById('chiang-token'),{element:'dark',color:'#ae7bd5',cooldown:380});

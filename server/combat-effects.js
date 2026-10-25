@@ -5,6 +5,7 @@ export function effectActive(boss,key,now){const e=boss.effects?.[key];return e&
 function status(boss,key,owner,now,duration,power=0,recovery=0){boss.effects??={};boss.effectLocks??={};if(recovery&&(boss.effectLocks[key]||0)>now)return;const old=boss.effects[key];if(old&&old.until>now){old.until=Math.max(old.until,now+duration);if(power>=old.power){old.power=power;old.owner=owner;}return;}boss.effects[key]={owner,power,until:now+duration,next:now+1000};if(recovery)boss.effectLocks[key]=now+duration+recovery;}
 export function applyWeaponTraits(g,weapon,shot,now){
  const boss=g.boss,name=shot.shooter,rank=weapon.tier||0,put=(key,dur,power=0,lock=0)=>status(boss,key,name,now,dur,power*(['burn','poison','bleed'].includes(key)?elementMultiplier(weapon.element,boss.element):1),lock);
+ if(weapon.id==='chiang-token'){put('poison',12000,Math.max(.5,weapon.damage*.08));g.hits??={};g.hits[name]=Math.max(0,(g.hits[name]||0)-Math.max(.2,(shot.damage||weapon.damage)*.12));}
  if(weapon.family==='fire')put('burn',5000,1+rank*.4);
  if(weapon.family==='swatter')put('poison',12000,.35+rank*.12);
  if(weapon.family==='ice')put('slow',4000,.4);

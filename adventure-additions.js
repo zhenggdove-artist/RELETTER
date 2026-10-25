@@ -1,3 +1,4 @@
+import {createToken,createTokenGuardian} from './token-model.js';
 // Garden adventures: hand-held equipment, water features and a server-authoritative fishing loop.
 import {FISH,fishById,fishPrice,fishingById,selectedChisel,AQUARIUM_SIZES,fishDimensions,aquariumFit,chooseFishingHole} from './fishing-catalog.js';
 import {fishSVG,fishDataURL} from './fish-art.js';
@@ -7,6 +8,7 @@ function centerNotice(text){notice.textContent=text;notice.classList.add('show')
 const boneCache=new WeakMap(),handPosition=new THREE.Vector3(),handRotation=new THREE.Quaternion(),auraRotation=new THREE.Quaternion();
 function rightHand(model){if(!boneCache.has(model)){let hand;model.traverse(b=>{if(b.isBone&&b.name.replace(/[^a-z]/gi,'').endsWith('RightHand'))hand=b;});boneCache.set(model,hand);}return boneCache.get(model);}
 function makeHeldWeapon(item){
+ if(item.id==='chiang-token')return createToken(THREE);
  if(['swatter','pan','planter','palm'].includes(item.family))return makeNovelWeapon(item);
  const tier=item.tier||1,length=1.6+(tier-1)*1.05,width=1+(tier-1)*.8;const group=new THREE.Group();group.userData.tier=tier;group.name='Hand-held '+item.family;group.userData.family=item.family;group.userData.reach=length+.35;
  const metal=new THREE.MeshStandardMaterial({color:'#bcb6c9',metalness:.88,roughness:.22}),gold=new THREE.MeshStandardMaterial({color:'#dabd7e',metalness:.85,roughness:.27}),grip=new THREE.MeshStandardMaterial({color:'#33253f',roughness:.7});

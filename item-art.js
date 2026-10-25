@@ -1,5 +1,6 @@
 import {botanicalIcon,wingIcon} from './garden-art.js';
 export function itemIcon(item){
+ if(item.id==='chiang-token')return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M15 53L12 17Q32-6 52 17L49 53Z" fill="#493455" stroke="#c8a565" stroke-width="3"/><path d="M20 51V18Q32 5 44 18V51Z" fill="none" stroke="#987548"/><text x="32" y="38" text-anchor="middle" fill="#efd6a3" font-size="24" font-family="serif">蔣</text><path d="M27 55V63M32 55V64M37 55V63" stroke="#a875ba" stroke-width="3"/></svg>');
  if(['seed','harvest'].includes(item.slot))return botanicalIcon(item);if(item.slot==='wings')return wingIcon(item);
  if(item.slot==='outfit')return './art/outfits/'+item.id+'.webp';
  if(item.slot==='head')return './art/headgear/'+item.id+'.webp';

@@ -2,7 +2,7 @@ import {incomingElement} from './element-rules.js';
 import {applyDeathPenalty,deathProtected} from './death-rules.js';
 import {enemySpell,spellsForLevel,spellContains} from '../enemy-spell-catalog.js';
 import {absorbShield} from './equipment-rules.js';import {playerStats} from '../progression.js';
-export function enemySpeed(level){return 1+Math.min(2.5,Math.max(0,(level||1)-1)*.065);}
+export function enemySpeed(level){return 1+Math.min(2.5,Math.max(0,(level||1)-1)*.065)+Math.max(0,Math.log(Math.max(40,Math.min(300,level||1))/40))*.7;}
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 export function hurtPlayer(g,player,damage,now,element=g.boss?.element){if(player.state?.paused||deathProtected(g,player.character,now))return;const name=player.character;g.enemyHitEvents??={};if(now-(g.enemyHitEvents[name]?.time||0)<800)return;const guard=absorbShield(g,name,damage*incomingElement(g,name,element),now);g.hits??={};const hp=(g.hits[name]||0)+guard.damage,defeated=hp>=playerStats(g,name,now).maxHp;g.hits[name]=defeated?0:+hp.toFixed(2);if(defeated)applyDeathPenalty(g,name,now,'monster-spell');g.enemyHitEvents[name]={time:now,defeated,blocked:!guard.damage};g.worldRevision++;}
 export function updateEnemySkills(g,players,now,dt,blocked){
