@@ -253,7 +253,7 @@ function closeChat(){chatForm.hidden=true;chatInput.hidden=true;chatInput.blur()
 function claimPanel(name){
  if(name!=='fishing'&&typeof fishingHUDActive!=='undefined'){fishingHUDActive=false;reelHeld=false;syncFishingHUD();}
  if(name!=='fishing'&&typeof fishingPanelOpen!=='undefined'&&fishingPanelOpen){fishingPanelOpen=false;fishingPanel.hidden=true;reelHeld=false;}
- if(name!=='bag'&&bagPanelOpen){bagPanelOpen=false;bagPanel.hidden=true;}
+ if(name!=='bag'&&bagPanelOpen){bagPanelOpen=false;bagPanel.hidden=true;bagInspectName=null;bagPanel.dataset.inspect='';bagPanel.querySelector('header b').textContent='BAG';}
  if(name!=='shop'&&shopPanelOpen){shopPanelOpen=false;shopPanel.hidden=true;}
  if(name!=='build'&&buildPanelOpen){stopPaint();buildPanelOpen=false;buildPanel.hidden=true;buildGhost.visible=false;}
  if(name!=='chat')closeChat();

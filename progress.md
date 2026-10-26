@@ -311,3 +311,9 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Token held face now single蔣. Existing suppliedOBJ point model retained, added2 shared-geometry GPU aura layers per guardian: engraved ground/halo circuits and6 flowing energy ribbons. Three guardians97,200points/9draws; lifecycle shares existing2-secondexpiry and cleanup.
 -122Node tests pass; browser regression real rejected API, deterministic rules-backed success/failure, actualCDPmobile drag, rarity toggle, +1name. Reviewed success/failure/blocked screenshots and fusion/guardian rendering, no shader errors.
 - Deployed version1966506c-6ea3-4d1e-88dc-8a6a2af4e623. Final standard game runner passed and screenshot inspected. New shader visuals reviewed; no claims of measured real-device FPS.
+
+## 2026-10-26 Inspect the other player
+- Desktop doubleclick and touch doubletap on the actual remote model opens read-only equipment/portrait; model raycast only after screen-space doubletap qualifies, avoiding expensive first-raycast timing breaking doubleclick. Camera drags/long holds ignored.
+- Displays authoritative remote slots, rolled/affixed stats and +N; hides own bag tabs/sort/fusion actions. Clicks never mutate equipment; closing/reopening own BAG restores normal behavior. Full-body portrait framing uses view-projected bounds.
+- Real two-session local browser test verifies desktop+390px touch against remote model, equipped head/outfit/weapon/wings, portrait and zero mutation requests; own fusion regression still passes.
+- Final122Node tests and standard game runner passed; peer/mobile+desktop screenshots inspected. Deployed bef22349-7ab2-4a03-9a96-fa7d536d08ef.
