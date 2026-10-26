@@ -7,7 +7,7 @@ import {applyWeaponTraits,tickCombatEffects,effectActive} from './combat-effects
 import {meleeDuration} from '../melee-motion.js';
 import {awardKill} from '../progression.js';
 import {validSurfaceId} from './surface-rules.js';
-import {dropWeapon,fishingView} from './fishing-rules.js';
+import {dropWeapon,dropOutfit,fishingView} from './fishing-rules.js';
 // Shared, server-owned encounter and persistent construction rules.
 import {blockSize,validBlockSize} from '../build-shapes.js';
 export {blockSize};
@@ -90,7 +90,7 @@ function bossIntersection(g,shot){
  const along=Math.min(...boxes.map(([y,size])=>rayBlock({position:[0,y-padding,0],size:size.map(v=>v+padding*2)},origin,direction)));
  const center=p.reduce((sum,v,i)=>sum+(v+(i===1?Math.max(1,Math.min(40,origin[1])):0)-shot.origin[i])*shot.direction[i],0),cover=coverDistance(g,shot.origin,shot.direction);if(!Number.isFinite(along)||along>shot.range||center<-(foreman?9:2.8)||cover+.001<Math.max(along,origin[1]<12?center-(foreman?4:2.8):along))return null;return along;
 }
-function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];if(g.boss.kind==='foreman'){const e=ensureMilk(g);e.phase='cooldown';e.defeats++;e.respawnAt=now+MILK_COOLDOWN;e.pendingHits=[];}else g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);dropWings(g,now);g.loot??=[];const count=2+Math.floor(g.boss.level/5);for(let i=0;i<count;i++){const a=i*Math.PI*2/count,r=2+(i%3)*.8;g.loot.push({id:crypto.randomUUID(),kind:'coin-bag',position:[g.boss.position[0]+Math.cos(a)*r,0,g.boss.position[2]+Math.sin(a)*r],amount:2+Math.ceil(g.boss.level/4)+Math.floor(g.boss.level*g.boss.level/100),owner:null,time:now});}g.worldRevision++;}
+function finishBoss(g,name,now){if(g.boss.rewarded)return;g.boss.rewarded=true;g.boss.skills=[];g.boss.minions=[];if(g.boss.kind==='foreman'){const e=ensureMilk(g);e.phase='cooldown';e.defeats++;e.respawnAt=now+MILK_COOLDOWN;e.pendingHits=[];}else g.boss.respawnAt=now+30000;awardKill(g,name);dropWeapon(g,now);dropOutfit(g,now);dropWings(g,now);g.loot??=[];const count=2+Math.floor(g.boss.level/5);for(let i=0;i<count;i++){const a=i*Math.PI*2/count,r=2+(i%3)*.8;g.loot.push({id:crypto.randomUUID(),kind:'coin-bag',position:[g.boss.position[0]+Math.cos(a)*r,0,g.boss.position[2]+Math.sin(a)*r],amount:2+Math.ceil(g.boss.level/4)+Math.floor(g.boss.level*g.boss.level/100),owner:null,time:now});}g.worldRevision++;}
 export function attackContactDelay(shot){if(shot.ultimate)return shot.family==='saber'?720:900;if(['saber','whip','swatter','pan','planter','palm'].includes(shot.family))return Math.round(meleeDuration(shot.family,shot.combo||0)*500);return shot.weapon==='water'?650+Math.round((shot.charge||0)*300):618;}
 function shootSingleBoss(g,shot,now=Date.now()){
  shot.red=true;if(g.boss.hp<=0)return;const minion=(g.boss.minions||[]).filter(m=>m.hp>0).map(m=>({m,d:rayBlock({position:m.position,size:[2,2.5,2]},shot.origin,shot.direction)})).filter(x=>x.d<=shot.range&&x.d<coverDistance(g,shot.origin,shot.direction)).sort((a,b)=>a.d-b.d)[0];const bossAlong=bossIntersection(g,shot);if(minion&&(bossAlong===null||minion.d<bossAlong)){shot.hit='Minion';shot.impact=shot.origin.map((v,i)=>v+shot.direction[i]*minion.d);shot.contactDelay=attackContactDelay(shot);g.pendingBossHits??=[];g.pendingBossHits.push({shot:{...shot},minionId:minion.m.id,due:now+shot.contactDelay,generation:g.boss.generation});return;}const along=bossAlong;if(along===null)return;

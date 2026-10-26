@@ -317,3 +317,10 @@ Original prompt: 複製指定 webar-meatball-game-framework 到 RELETTER，以�
 - Displays authoritative remote slots, rolled/affixed stats and +N; hides own bag tabs/sort/fusion actions. Clicks never mutate equipment; closing/reopening own BAG restores normal behavior. Full-body portrait framing uses view-projected bounds.
 - Real two-session local browser test verifies desktop+390px touch against remote model, equipped head/outfit/weapon/wings, portrait and zero mutation requests; own fusion regression still passes.
 - Final122Node tests and standard game runner passed; peer/mobile+desktop screenshots inspected. Deployed bef22349-7ab2-4a03-9a96-fa7d536d08ef.
+
+## 2026-10-26 Outfit loot for both bosses
+- Both Auntie and independent Foreman deaths add one outfit alongside existing weapon/head/token rewards. Outfit generation is idempotent by encounter generation/kind; append cap60 preserves paired rewards. All50 catalog outfits available across monsterlevels; tier window rises1→5 with tier-squared weighting, unowned preference,20affixes, persisted rolled bonuses.
+- Pickup accepts outfit slot (previously would fallback to weapon), retains exact serverrolledinstance/affix/origin. Exclusive shared pickup prevents duplicate collection; outfit instances equip/fuse and appear in BAG/remote inspection.
+- Outfit prefixes now join active weapon proc IDs and passive modifiers (attack/speed/jump/defense/cooldown/range/radius), remove on unequip. Existing prefix-purple rarity rule retained, qualitytier and rolled stats shown separately.
+- Added4 rule tests: actual deaths of bothbosses, token preserved, seeded variety/quality, idempotence, exclusive pickup, serialization/equip/fusion and active prefixes. Browser test walks into outfit, auto-picks it, doubleclick equips and verifies SQLite persistence with exactstats. Updated old randomized respawn assertion to current300-level variant catalog.
+-126 Node tests pass; mobile auto-pickup/equip/SQLite and standard browser runner passed, screenshots inspected. Deployed18ada32b-c5ea-47d1-848c-b5a3e10647a4.
